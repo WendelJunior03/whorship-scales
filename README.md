@@ -1,154 +1,164 @@
-# Sistema de Gerenciamento de Escalas — Ministério de Louvor
+# 🎵 Sistema de Gerenciamento de Escalas — Louvor
 
-## 1. Contexto e Problema
+Sistema para organizar e automatizar as escalas do ministério de louvor de uma igreja, substituindo o processo manual em planilha Excel enviada por foto.
 
-Hoje as escalas são montadas em Excel e enviadas por foto no grupo. Problemas:
-- Não é dinâmico (qualquer mudança exige nova foto e reenvio)
-- Cada pessoa precisa procurar seu nome na planilha inteira
-- Sem histórico organizado de quem já tocou/cantou quando
-- Trocas de última hora são difíceis de comunicar
-- Sem visão individual de agenda
+> Projeto pessoal desenvolvido para resolver um problema real do meu próprio ministério de louvor, aplicando conceitos de back-end, modelagem de dados e integrações externas.
 
-## 2. Modelo de Escala da Igreja
+---
 
-- **Cultos fixos:** quarta, sábado e domingo
-- **Instrumentistas/ministros:** vínculo fixo a um dia da semana (recorrente, não muda toda semana)
-- **Vocais:** rotativos — grupo de vocalistas que se revezam entre os cultos
+## 📋 Sobre o Projeto
 
-Ou seja, o sistema tem duas lógicas diferentes:
-1. Escala fixa (cadastro único + gestão de exceções/faltas)
-2. Escala de vocais (rotação semanal com sugestão de balanceamento)
+Hoje as escalas são feitas em Excel e enviadas por foto em grupo — processo estático, difícil de atualizar e sem visão individual para cada membro.
 
-## 3. Stack Técnica
+Este sistema resolve isso com dois modelos de escala:
 
-Reaproveitando a base do projeto BankJS, mantendo consistência de aprendizado:
+- **Escala fixa**: instrumentistas e ministros com dia da semana fixo (quarta, sábado, domingo), com suporte a exceções e substituições pontuais.
+- **Escala de vocais**: grupo rotativo, com sugestão automática de rodízio baseada em quem cantou menos recentemente.
 
-| Camada | Tecnologia |
+Cada membro acessa e visualiza apenas sua própria agenda, recebendo notificações automáticas quando a escala é publicada ou alterada.
+
+---
+
+## ✨ Funcionalidades
+
+- 🔐 Autenticação com JWT e papéis (admin, ministro, vocal, membro)
+- 📅 Cadastro de escala fixa por instrumento e dia da semana
+- 🔄 Geração/sugestão automática de escala de vocais (rodízio balanceado)
+- ✅ Confirmação de presença pelo próprio membro
+- 🔁 Registro de exceções e substituições
+- 🎶 Repertório por culto (música, tom, link de referência)
+- 📱 Visão individual da agenda (mobile-first)
+- 🔔 Notificações automáticas (WhatsApp/e-mail) em criação ou mudança de escala
+
+---
+
+## 🛠️ Stack Técnica
+
+**Back-end**
+- Node.js + Express 5
+- PostgreSQL (via `pg`, sem ORM)
+- JWT + bcrypt para autenticação
+- Arquitetura MVC
+
+**Front-end**
+- React + Vite
+- Tailwind CSS
+
+**Integrações**
+- Twilio (notificações via WhatsApp/SMS)
+
+**Deploy**
+- Railway
+
+---
+
+## 🗄️ Modelagem do Banco de Dados
+
+| Tabela | Descrição |
 |---|---|
-| Backend | Node.js + Express 5 |
-| Banco de dados | PostgreSQL (via `pg`, sem ORM — mesma abordagem do BankJS) |
-| Autenticação | JWT + bcrypt |
-| Frontend | React + Vite + Tailwind |
-| Notificações | Twilio (WhatsApp/SMS) ou e-mail (a definir) |
-| Deploy | Railway (mesmo ambiente do BankJS) |
-| Arquitetura | MVC |
+| `membros` | Cadastro de todos os participantes (dados, papel, instrumento) |
+| `escala_fixa` | Vínculo fixo membro → dia da semana → função |
+| `cultos` | Datas dos cultos (quarta, sábado, domingo) |
+| `escala_vocal` | Escala rotativa de vocais por culto |
+| `excecoes` | Faltas pontuais na escala fixa e seus substitutos |
+| `repertorio` | Músicas de cada culto, com tom e link de referência |
 
-## 4. Modelagem do Banco de Dados
+Modelagem detalhada disponível em [`docs/escalas-louvor-spec.md`](./docs/escalas-louvor-spec.md).
 
-### `membros`
-| Campo | Tipo | Descrição |
-|---|---|---|
-| id | serial PK | |
-| nome | varchar | |
-| telefone | varchar | para notificações |
-| email | varchar | |
-| senha_hash | varchar | bcrypt |
-| tipo | enum | `admin`, `ministro`, `vocal`, `membro` |
-| instrumento | varchar | nullable, ex: teclado, bateria, guitarra |
-| ativo | boolean | |
+---
 
-### `escala_fixa`
-| Campo | Tipo | Descrição |
-|---|---|---|
-| id | serial PK | |
-| membro_id | FK → membros | |
-| dia_semana | enum | `quarta`, `sabado`, `domingo` |
-| funcao | varchar | ex: "teclado", "bateria", "ministro" |
-| ativo | boolean | permite desativar sem apagar histórico |
+## 📁 Estrutura do Projeto
 
-### `cultos`
-| Campo | Tipo | Descrição |
-|---|---|---|
-| id | serial PK | |
-| data | date | |
-| dia_semana | enum | derivado ou explícito |
-| observacoes | text | nullable |
+```
+├── src/
+│   ├── controllers/
+│   ├── models/
+│   ├── routes/
+│   ├── middlewares/
+│   └── config/
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   └── services/
+├── docs/
+│   └── escalas-louvor-spec.md
+├── .env.example
+├── package.json
+└── README.md
+```
 
-### `escala_vocal`
-| Campo | Tipo | Descrição |
-|---|---|---|
-| id | serial PK | |
-| culto_id | FK → cultos | |
-| membro_id | FK → membros | |
-| confirmado | boolean | default false |
+---
 
-### `excecoes`
-| Campo | Tipo | Descrição |
-|---|---|---|
-| id | serial PK | |
-| escala_fixa_id | FK → escala_fixa | |
-| culto_id | FK → cultos | data específica da falta |
-| substituto_id | FK → membros | nullable |
-| motivo | varchar | nullable |
+## 🚀 Como Rodar o Projeto
 
-### `repertorio`
-| Campo | Tipo | Descrição |
-|---|---|---|
-| id | serial PK | |
-| culto_id | FK → cultos | |
-| musica | varchar | |
-| tom | varchar | nullable |
-| link_referencia | varchar | nullable (cifra/YouTube) |
-| ordem | int | ordem de execução |
+### Pré-requisitos
+- Node.js 18+
+- PostgreSQL instalado e rodando
 
-## 5. Funcionalidades do Sistema (MVP)
+### Instalação
 
-### 5.1 Autenticação e Perfis
-- Login com e-mail/senha (JWT)
-- Papéis: admin (gerencia tudo), ministro (edita repertório e vê escala), membro (só visualiza sua própria agenda)
+```bash
+# Clone o repositório
+git clone https://github.com/jvrbatista/escalas-louvor.git
+cd escalas-louvor
 
-### 5.2 Escala Fixa
-- CRUD de membros com instrumento e dia fixo
-- Tela de visualização "quem toca quando" (visão geral por dia da semana)
-- Registro de exceções: marcar falta pontual e indicar substituto
+# Instale as dependências do back-end
+npm install
 
-### 5.3 Escala de Vocais
-- Cadastro do grupo de vocalistas disponíveis
-- Geração/sugestão automática por culto, baseada em quem cantou menos recentemente (algoritmo simples de rotação)
-- Ajuste manual pelo admin/ministro antes de publicar
-- Confirmação de presença pelo próprio vocal (aceitar/recusar)
+# Configure as variáveis de ambiente
+cp .env.example .env
+# preencha DATABASE_URL, JWT_SECRET, etc.
 
-### 5.4 Repertório
-- Cadastro de músicas por culto (nome, tom, link de referência)
-- Ordem de execução
-- Histórico de repertórios já usados (evitar repetir demais)
+# Rode as migrations
+npm run migrate
 
-### 5.5 Notificações
-- Aviso automático quando a escala do vocal é publicada ou alterada
-- Aviso para o time fixo apenas em caso de exceção/troca
-- Canal: WhatsApp (Twilio) como prioridade, e-mail como fallback
+# Inicie o servidor
+npm run dev
+```
 
-### 5.6 Visão Individual
-- Cada membro loga e vê **apenas sua agenda** (próximos cultos que participa)
-- Sem precisar procurar em planilha
+### Front-end
 
-## 6. Roadmap de Desenvolvimento Sugerido
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-**Fase 1 — Base**
-- Modelagem do banco + migrations
-- Auth (JWT/bcrypt) + papéis
-- CRUD de membros e escala fixa
+---
 
-**Fase 2 — Vocais**
-- CRUD de cultos
-- Escala de vocais com lógica de rotação simples
-- Confirmação de presença
+## 🔑 Variáveis de Ambiente
 
-**Fase 3 — Repertório e Exceções**
-- CRUD de repertório
-- Fluxo de exceções/substituição na escala fixa
+```env
+DATABASE_URL=postgresql://usuario:senha@localhost:5432/escalas_louvor
+JWT_SECRET=sua_chave_secreta
+PORT=3000
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+```
 
-**Fase 4 — Notificações**
-- Integração com Twilio ou e-mail
-- Disparo automático em criação/alteração de escala
+---
 
-**Fase 5 — Polimento**
-- Frontend responsivo (mobile-first, já que a maioria acessa pelo celular)
-- Dashboard geral para admin
+## 🗺️ Roadmap
 
-## 7. Por que esse projeto é bom pro portfólio
+- [ ] Modelagem do banco de dados
+- [ ] Autenticação (JWT + papéis)
+- [ ] CRUD de membros e escala fixa
+- [ ] Escala de vocais com rodízio automático
+- [ ] Confirmação de presença
+- [ ] Repertório por culto
+- [ ] Notificações via Twilio
+- [ ] Front-end mobile-first completo
 
-- Regras de negócio diferentes do BankJS (agendamento, recorrência, notificações) — mostra variedade
-- Problema real, resolvido para uso real (sua própria igreja)
-- Dá pra demonstrar modelagem de dados mais rica (relacionamentos, exceções, histórico)
-- Espaço natural pra usar integrações externas (Twilio) — bom diferencial em entrevista
+---
+
+## 👤 Autor
+
+**João Victor Batista**
+- GitHub: [@jvrbatista](https://github.com/jvrbatista)
+
+---
+
+## 📄 Licença
+
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](./LICENSE) para mais detalhes.
