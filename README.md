@@ -1,4 +1,4 @@
-# Sistema de Gerenciamento de Escalas — Ministério de Louvor 🎶
+# Sistema de Gerenciamento de Escalas — Ministério de Louvor
 
 ## 1. Contexto e Problema
 
