@@ -100,8 +100,8 @@ Modelagem detalhada disponível em [`docs/escalas-louvor-spec.md`](./docs/escala
 
 ```bash
 # Clone o repositório
-git clone https://github.com/jvrbatista/escalas-louvor.git
-cd escalas-louvor
+git clone https://github.com/jvrbatista/Gerenciador_escalas.git
+cd Gerenciador_escalas
 
 # Instale as dependências do back-end
 npm install
