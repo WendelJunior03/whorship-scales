@@ -36,12 +36,14 @@ Cada membro acessa e visualiza apenas sua própria agenda, recebendo notificaç�
 
 **Back-end**
 - Node.js + Express 5
+- TypeScript
 - PostgreSQL (via `pg`, sem ORM)
 - JWT + bcrypt para autenticação
 - Arquitetura MVC
 
 **Front-end**
 - React + Vite
+- TypeScript
 - Tailwind CSS
 
 **Integrações**
@@ -70,21 +72,26 @@ Modelagem detalhada disponível em [`docs/escalas-louvor-spec.md`](./docs/escala
 ## 📁 Estrutura do Projeto
 
 ```
-├── src/
-│   ├── controllers/
-│   ├── models/
-│   ├── routes/
-│   ├── middlewares/
-│   └── config/
+├── backend/
+│   ├── src/
+│   │   ├── controllers/
+│   │   ├── models/
+│   │   ├── routes/
+│   │   ├── middlewares/
+│   │   └── config/
+│   ├── tsconfig.json
+│   ├── .env.example
+│   └── package.json
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
 │   │   ├── pages/
 │   │   └── services/
+│   ├── tsconfig.json
+│   └── package.json
 ├── docs/
 │   └── escalas-louvor-spec.md
-├── .env.example
-├── package.json
+├── TASKS.md
 └── README.md
 ```
 
@@ -104,6 +111,7 @@ git clone https://github.com/jvrbatista/Gerenciador_escalas.git
 cd Gerenciador_escalas
 
 # Instale as dependências do back-end
+cd backend
 npm install
 
 # Configure as variáveis de ambiente
@@ -113,7 +121,7 @@ cp .env.example .env
 # Rode as migrations
 npm run migrate
 
-# Inicie o servidor
+# Inicie o servidor (hot-reload em TypeScript)
 npm run dev
 ```
 
