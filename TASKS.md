@@ -172,9 +172,9 @@ CREATE TABLE repertorio (
 - [x] Model + controller de `membros`: cadastro básico (nome, e-mail, senha, papel) — `membroModel.ts` (`createMembers`) + `membroController.ts` (`cadastrarUser`), rota `POST /membros/cadastro`
 - [x] Hash de senha com `bcrypt` no cadastro — nunca salvar senha em texto puro — testado, hash confirmado no banco
 - [x] Rota de login: validar credenciais e gerar um token JWT — `loginUser`, testado com senha certa (200 + token) e errada (400)
-- [ ] Middleware de autenticação: extrair e validar o token do header `Authorization`
-- [ ] Middleware de autorização por papel: bloquear rotas de admin para quem não é admin
-- [x] Testar manualmente com Insomnia: cadastro — feito, incluindo teste de e-mail duplicado (`400`)
+- [x] Middleware de autenticação: extrair e validar o token do header `Authorization` — `authMiddleware.ts`, testado (401 sem token, 200 com token válido via rota `/membros/me`)
+- [ ] Middleware de autorização por papel: bloquear rotas de admin para quem não é admin — pendente, deixado pra próxima sessão
+- [x] Testar manualmente com Insomnia: cadastro, login e rota protegida — feito (401 sem token → login → 200 com token em `/membros/me`)
 
 **Conceitos para pesquisar:** diferença entre autenticação e autorização, como funciona um JWT (header/payload/signature), tempo de expiração de token, por que salvar hash e não senha crua, salt rounds do bcrypt.
 

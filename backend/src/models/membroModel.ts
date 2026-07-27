@@ -19,3 +19,9 @@ export async function findByEmail(email: string) {
 
     return membro.rows[0];
 }
+
+export async function findById(id: number) {
+    const membro = await query('SELECT * FROM membros WHERE id = $1', [id])
+
+    return membro.rows[0];
+}

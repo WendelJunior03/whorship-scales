@@ -2,7 +2,7 @@ import bcrypt from 'bcrypt';
 import { query } from '../config/database';
 import { Request, Response } from 'express';
 import { createMembers } from '../models/membroModel';
-import { findByEmail } from '../models/membroModel';
+import { findByEmail, findById } from '../models/membroModel';
 import jwt from 'jsonwebtoken';
 
 export async function cadastrarUser(req: Request, res: Response) {
@@ -45,4 +45,16 @@ export async function loginUser(req: Request, res: Response) {
 
         return res.status(200).json({ token, message: 'Login realizado com sucesso!'})
         
+}
+
+export async function myProfile(req: Request, res: Response) {
+    if (!req.user) {
+        throw new Error('req.user não configurado!')
+    }
+
+    const { id } = req.user
+    
+    const membro = await findById(id)
+
+    return res.status(200).json(membro)
 }
