@@ -243,13 +243,13 @@ CREATE TABLE repertorio (
 
 **Objetivo:** a parte mais interessante do projeto — um algoritmo de sugestão.
 
-- [ ] CRUD básico de `escala_vocal` (vincular vocal a um culto)
-- [ ] Pensar no algoritmo de rodízio: "sugerir quem cantou menos recentemente"
-  - Que dado você precisa consultar para saber "há quanto tempo"? (última data em que cada vocal cantou)
-  - Como lidar com empates (dois vocais que nunca cantaram)?
-  - O algoritmo deve considerar quantos vocais o culto precisa (ex: 3 por culto)?
-- [ ] Implementar o endpoint de sugestão (ele sugere, não decide sozinho — quem confirma é o admin/ministro)
-- [ ] Endpoint para o admin aceitar/ajustar a sugestão e gravar a escala definitiva
+- [x] CRUD básico de `escala_vocal` (vincular vocal a um culto) — `POST /escala-vocal`, admin e ministro, protegido pela `UNIQUE (membro_id, culto_id)` já existente
+- [x] Pensar no algoritmo de rodízio: "sugerir quem cantou menos recentemente"
+  - Critério escolhido: baseado em **quando foi escalado** (não em confirmação de presença, que ainda não existe — Fase 8)
+  - Empates (nunca cantaram) resolvidos com `LEFT JOIN` + `ORDER BY ultima_vez ASC NULLS FIRST` — quem nunca cantou aparece primeiro
+  - Quantidade fixada em 2 vocais por culto (decisão do projeto)
+- [x] Implementar o endpoint de sugestão (ele sugere, não decide sozinho — quem confirma é o admin/ministro) — `GET /escala-vocal/sugestao`, admin e ministro, só consulta, não grava nada
+- [x] Endpoint para o admin aceitar/ajustar a sugestão e gravar a escala definitiva — reaproveita o `POST /escala-vocal` do CRUD básico (admin decide manualmente após ver a sugestão)
 
 **Conceitos para pesquisar:** ordenação por data (`ORDER BY`), `LEFT JOIN` para incluir vocais que nunca cantaram, diferença entre "sugestão" (cálculo) e "estado persistido" (o que foi de fato escalado).
 
