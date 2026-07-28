@@ -210,10 +210,14 @@ CREATE TABLE repertorio (
 
 **Objetivo:** modelar e expor a escala que não muda toda semana.
 
-- [ ] CRUD de `escala_fixa`: vincular membro → dia da semana → função/instrumento
-- [ ] Regra de negócio: um membro pode ter mais de uma função no mesmo dia? Pode estar em dois dias?
-- [ ] Endpoint que retorna a escala fixa "montada" (join de membro + dia + função) de forma legível
-- [ ] Endpoint "minha agenda": membro autenticado vê só a própria escala fixa
+- [x] CRUD de `escala_fixa`: vincular membro → dia da semana → função/instrumento — `POST /escala-fixa`, admin e ministro
+- [x] Regra de negócio: um membro pode ter mais de uma função no mesmo dia? Pode estar em dois dias? — decidido: pode ter mais de uma função no mesmo dia, mas não pode repetir a mesma combinação; `UNIQUE (membro_id, dia_semana, funcao)` via `ALTER TABLE`
+- [x] Endpoint que retorna a escala fixa "montada" (join de membro + dia + função) de forma legível — `GET /escala-fixa`, com `JOIN` em `membros`, admin e ministro
+- [x] Endpoint "minha agenda": membro autenticado vê só a própria escala fixa — `GET /escala-fixa/me`, qualquer papel logado
+
+**Decisões registradas:**
+- Criar/editar escala fixa: só `admin` e `ministro`
+- CRUD de `escala_fixa` ficou restrito a criação e leitura nessa fase — update/delete de vínculos individuais não foram pedidos no roteiro original; avaliar se vale adicionar depois
 
 **Conceitos para pesquisar:** queries com múltiplos `JOIN`, como modelar "dia da semana" (enum, número, string?), filtragem por usuário logado (`req.user` vindo do middleware de auth).
 

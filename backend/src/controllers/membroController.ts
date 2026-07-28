@@ -98,7 +98,7 @@ export async function updateMemberController (req: Request, res: Response) {
         return res.status(400).json({message: 'Todos os campos devem ser preechidos!'})
     }
 
-    const alteracoes = await updateMember(id, name, phone, instrument, email);
+    await updateMember(id, name, phone, instrument, email);
 
     return res.status(200).json({message: 'Alterações realizadas com sucesso!'})
 }
