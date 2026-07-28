@@ -275,12 +275,14 @@ CREATE TABLE repertorio (
 
 **Objetivo:** CRUD simples, mas conectado ao culto certo.
 
-- [ ] CRUD de `repertorio` vinculado a um `culto` (música, tom, link de referência)
-- [ ] Endpoint que retorna o culto com escala + repertório juntos (visão completa do "meu próximo culto")
+- [x] CRUD de `repertorio` vinculado a um `culto` (música, tom, link de referência) — `POST /repertorio`, admin e ministro
+- [x] Endpoint que retorna o culto com escala + repertório juntos (visão completa do "meu próximo culto") — `GET /repertorio/meu-proximo-culto`, qualquer papel logado
+
+**Decisão registrada:** a versão implementada busca o próximo culto via `escala_vocal` (já ligada a um `culto_id` específico). A variante baseada em `escala_fixa` (que exigiria calcular a próxima ocorrência de um dia da semana) ficou de fora por complexidade/tempo — melhoria futura.
 
 **Conceitos para pesquisar:** agregação de dados de várias tabelas numa única resposta de API (moldar o JSON pensando em quem consome, não só no banco).
 
-**Pronto quando:** o endpoint "meu próximo culto" devolve, numa resposta só, quem toca, o que confirmar e o que vai ser tocado.
+**Pronto quando:** o endpoint "meu próximo culto" devolve, numa resposta só, o culto e o repertório (repertório vazio é um estado válido, não erro).
 
 ---
 
