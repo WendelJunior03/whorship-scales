@@ -21,7 +21,23 @@ export async function findByEmail(email: string) {
 }
 
 export async function findById(id: number) {
-    const membro = await query('SELECT * FROM membros WHERE id = $1', [id])
+    const membro = await query('SELECT nome, telefone, instrumento, email, papel FROM membros WHERE ativo = true AND id = $1', [id])
 
     return membro.rows[0];
+}
+
+export async function findAllMembers() {
+    const membros = await query('SELECT nome, telefone, instrumento, email, papel FROM membros WHERE ativo = true');
+    
+    return membros.rows;
+}
+
+export async function updateMember(id: number, name: string, phone: string, instrument: string, email: string) {
+    const alteracoes = await query('UPDATE membros SET nome = $1, telefone = $2, instrumento = $3, email = $4 WHERE id = $5 RETURNING *', [name, phone, instrument, email, id]);
+    return alteracoes.rows[0];
+}
+
+export async function deactivateMember(id: number, ative: boolean) {
+    const alteracoes = await query('UPDATE membros SET ativo = $1 WHERE id = $2 RETURNING *', [ative, id]);
+    return alteracoes.rows[0]
 }

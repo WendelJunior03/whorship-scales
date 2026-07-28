@@ -186,12 +186,19 @@ CREATE TABLE repertorio (
 
 **Objetivo:** primeiro CRUD completo do zero, sem ajuda de ORM.
 
-- [ ] Listar membros (com paginação simples, se quiser ir além)
-- [ ] Buscar membro por id
-- [ ] Atualizar dados de um membro (quem pode: o próprio ou admin?)
-- [ ] Remover/inativar membro (pense: delete físico ou campo `ativo`?)
-- [ ] Validação de entrada (nome obrigatório, e-mail válido, etc.) — decida se valida no controller ou numa camada própria
-- [ ] Tratamento de erros consistente (formato de resposta de erro padronizado)
+- [x] Listar membros — `GET /membros`, só admin, sem paginação por ora
+- [x] Buscar membro por id — `GET /membros/:id`, admin e ministro
+- [x] Atualizar dados de um membro (quem pode: o próprio ou admin?) — decidido: o próprio OU admin; `PUT /membros/:id`, checagem de permissão dentro do controller (regra condicional, não cabia no `roleMiddleware` genérico)
+- [x] Remover/inativar membro (pense: delete físico ou campo `ativo`?) — decidido: inativação lógica (coluna `ativo BOOLEAN DEFAULT true`), só admin; `DELETE /membros/:id`
+- [x] Validação de entrada — feita nos controllers (campos obrigatórios no update, e-mail duplicado verificado antes de salvar)
+- [x] Tratamento de erros consistente — `400`/`401`/`403` usados de forma consistente entre as rotas
+
+**Decisões registradas:**
+- Cadastro (`POST /membros/cadastro`) deixou de ser público na Fase 4 — virou admin-only, fechando uma falha de segurança onde qualquer um podia se auto-nomear `admin` no cadastro
+- `senha` nunca mais sai da API: `findById`/`findAllMembers` selecionam colunas explícitas, sem `SELECT *`
+- Atualização é "completa" (cliente reenvia todos os campos), não parcial — atualização parcial (`PATCH`) fica como melhoria futura
+- `papel` não é editável pela rota de update (nem por admin, nem pelo próprio) — promover alguém de papel exige uma rota própria, ainda não construída
+- `findById`/`findAllMembers` agora filtram `WHERE ativo = true`, escondendo membros desativados das buscas normais
 
 **Conceitos para pesquisar:** SQL injection e por que usar queries parametrizadas (`$1, $2` no `pg`), soft delete vs hard delete, padrões de resposta de API (status codes corretos: 200, 201, 400, 404, 409).
 

@@ -1,15 +1,19 @@
 import { Router } from 'express';
-import { cadastrarUser, myProfile } from '../controllers/membroController';
+import { cadastrarUser, myProfile, getMemberById } from '../controllers/membroController';
 import { loginUser } from '../controllers/membroController';
 import { authMiddleware } from '../middlewares/authMiddleware';
 import { autorizator } from '../middlewares/roleMiddleware';
+import { listAllMembers } from '../controllers/membroController';
+import { updateMemberController, deactivateMemberController } from '../controllers/membroController';
 
 const router = Router();
 
-router.post('/cadastro', cadastrarUser);
+router.post('/cadastro', authMiddleware, autorizator(['admin']),cadastrarUser);
 router.post('/login', loginUser);
-router.get('/me', authMiddleware, myProfile)
-router.get('/admin-teste', authMiddleware, autorizator(['admin']), (req, res) => {
-    res.status(200).json({ mensagem: 'Seja Bem-vindo(a) Administrador(a)!' })
-})
+router.get('/me', authMiddleware, myProfile);
+router.get('/', authMiddleware, autorizator(['admin']), listAllMembers);
+router.get('/:id', authMiddleware, autorizator(['admin', 'ministro']), getMemberById)
+router.put('/:id', authMiddleware, updateMemberController)
+router.delete('/:id', authMiddleware, autorizator(['admin']), deactivateMemberController)
+
 export default router;
