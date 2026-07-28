@@ -229,9 +229,9 @@ CREATE TABLE repertorio (
 
 **Objetivo:** lidar com o caso real de "essa semana eu não vou, fulano vai no meu lugar".
 
-- [ ] CRUD de `excecoes`: vincular a um registro de `escala_fixa` (ou a uma data específica), com motivo e substituto opcional
-- [ ] Regra: como a "escala montada" da Fase 5 deve mudar quando existe uma exceção para aquela data?
-- [ ] Endpoint que retorna a escala já considerando exceções (a visão "efetiva" da semana)
+- [x] CRUD de `excecoes`: vincular a um registro de `escala_fixa` (ou a uma data específica), com motivo e substituto opcional — `POST /excecoes`; sem campo `motivo` (decisão da Fase 1, mantida); permissão: admin OU dono do vínculo de escala fixa
+- [x] Regra: como a "escala montada" da Fase 5 deve mudar quando existe uma exceção para aquela data? — resolvida via `LEFT JOIN` + `COALESCE`, sem alterar `escala_fixa`
+- [x] Endpoint que retorna a escala já considerando exceções (a visão "efetiva" da semana) — `GET /escala-fixa/efetiva?data=AAAA-MM-DD`, aberto a qualquer papel logado
 
 **Conceitos para pesquisar:** como sobrepor dados (override) sem duplicar lógica, diferença entre alterar a fonte da verdade vs. calcular por cima dela.
 
