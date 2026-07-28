@@ -261,13 +261,13 @@ CREATE TABLE repertorio (
 
 **Objetivo:** o membro interage com o sistema, não só recebe informação.
 
-- [ ] Campo de status de confirmação (pendente/confirmado/recusado) na escala fixa e/ou vocal
-- [ ] Endpoint para o próprio membro confirmar ou recusar sua participação
-- [ ] Regra: o que acontece quando alguém recusa? Vira uma exceção automática (Fase 6)? Notifica alguém (Fase 10)?
+- [x] Campo de status de confirmação (pendente/confirmado/recusado) na escala fixa e/ou vocal — só em `escala_vocal` (`VARCHAR` + `CHECK`, `DEFAULT 'pendente'`); decidido não duplicar em `escala_fixa`
+- [x] Endpoint para o próprio membro confirmar ou recusar sua participação — `PUT /escala-vocal/:id/status`, só o dono do registro
+- [x] Regra: o que acontece quando alguém recusa? — decisão diferente da hipótese original: pra `escala_fixa`, "recusar" já é o `POST /excecoes` da Fase 6 (não precisa de status próprio); pra `escala_vocal`, recusar só muda o `status` — cabe ao admin/ministro perceber e escalar outra pessoa manualmente (sem automação ainda). Notificação automática fica pra Fase 10.
 
 **Conceitos para pesquisar:** máquina de estados simples (quais transições de status são válidas), idempotência (confirmar duas vezes não deve quebrar nada).
 
-**Pronto quando:** o fluxo recusar → virar exceção → escala efetiva atualizada funciona ponta a ponta.
+**Pronto quando:** confirmar/recusar presença em `escala_vocal` funciona ponta a ponta, e recusar uma `escala_fixa` numa data específica já funciona via `excecoes` (Fase 6).
 
 ---
 

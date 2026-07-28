@@ -12,3 +12,13 @@ export async function sugerirVocais(quantidade: number) {
 
     return result.rows
 }
+
+export async function updateStatusEscalaVocal(id: number, status: string) {
+    const alteracoes = await query('UPDATE escala_vocal SET status = $1 WHERE id = $2 RETURNING *', [status, id]);
+    return alteracoes.rows[0];
+}
+
+export async function findEscalaVocalById(id: number) {
+    const result = await query ('SELECT * FROM escala_vocal WHERE id = $1', [id])
+    return result.rows[0]
+}
