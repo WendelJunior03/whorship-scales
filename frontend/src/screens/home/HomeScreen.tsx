@@ -1,16 +1,31 @@
-import React from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { useAuth } from '@/contexts/AuthContext';
-import { MainStackParamList } from '@/navigation/MainNavigator';
+import { MainTabScreenNavigationProp } from '@/navigation/types';
+import * as escalaFixaService from '@/services/escalaFixa';
+import * as repertorioService from '@/services/repertorio';
+import { ApiError } from '@/services/api';
+import { EscalaFixaMontada } from '@/types';
+import { MeuProximoCulto } from '@/services/repertorio';
 import { colors, spacing, typography } from '@/theme';
+import { formatDiaCompleto, formatHora } from '@/utils/date';
+import { getSaudacao } from '@/utils/greeting';
+import { isGestor } from '@/utils/papel';
 
-const ATALHOS = [
+const ATALHOS_GESTAO = [
   { icon: 'calendar-outline' as const, label: 'Escalas', sublabel: 'Ver escalas' },
   {
     icon: 'people-outline' as const,
@@ -22,105 +37,185 @@ const ATALHOS = [
   { icon: 'checkmark-done-outline' as const, label: 'Confirmações', sublabel: 'Acompanhar' },
 ];
 
-const PROXIMAS_ESCALAS = [
-  {
-    dia: 'Quarta-feira',
-    data: '22/05',
-    hora: '19:30',
-    culto: 'Culto de Oração',
-    confirmacoes: '8/12',
-  },
-  { dia: 'Sábado', data: '24/05', hora: '19:00', culto: 'Ensaio', confirmacoes: '10/12' },
-  {
-    dia: 'Domingo',
-    data: '25/05',
-    hora: '19:00',
-    culto: 'Culto de Adoração',
-    confirmacoes: '9/12',
-  },
-];
-
 export function HomeScreen() {
   const { user } = useAuth();
-  const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();
+  const navigation = useNavigation<MainTabScreenNavigationProp<'Home'>>();
+
+  const [proximoCulto, setProximoCulto] = useState<MeuProximoCulto | null>(null);
+  const [minhaEscala, setMinhaEscala] = useState<EscalaFixaMontada[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const carregarDados = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const [culto, escala] = await Promise.all([
+        repertorioService.getMeuProximoCulto().catch((err) => {
+          // 404 aqui significa "sem culto futuro", um estado válido, não um erro
+          if (err instanceof ApiError && err.status === 404) return null;
+          throw err;
+        }),
+        escalaFixaService.getMinhaEscalaFixa(),
+      ]);
+      setProximoCulto(culto);
+      setMinhaEscala(escala);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Não foi possível carregar os dados.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    carregarDados();
+  }, [carregarDados]);
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={[styles.screen, styles.centered]} edges={['top']}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={[styles.screen, styles.centered]} edges={['top']}>
+        <Ionicons name="cloud-offline-outline" size={40} color={colors.textMuted} />
+        <Text style={styles.errorText}>{error}</Text>
+        <Button
+          title="Tentar novamente"
+          onPress={carregarDados}
+          variant="outline"
+          style={styles.retryButton}
+        />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={styles.header}>
         <Ionicons name="menu" size={26} color={colors.text} />
-        <View>
+        <TouchableOpacity onPress={() => navigation.navigate('Notificacoes')}>
           <Ionicons name="notifications-outline" size={24} color={colors.text} />
           <View style={styles.badgeDot} />
-        </View>
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.greeting}>Boa noite, {user?.nome?.split(' ')[0] ?? 'membro'} 👋</Text>
+        <Text style={styles.greeting}>
+          {getSaudacao()}, {user?.nome?.split(' ')[0] ?? 'membro'} 👋
+        </Text>
         <Text style={styles.subtitle}>Aqui está o que acontece no ministério.</Text>
 
-        <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={() => navigation.navigate('DetalhesCulto', { cultoId: 1 })}
-        >
-          <LinearGradient
-            colors={colors.primaryGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.proximoCultoCard}
+        {proximoCulto ? (
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('DetalhesCulto', { cultoId: proximoCulto.culto.id })}
           >
-            <View style={styles.proximoCultoBadge}>
-              <Ionicons name="musical-notes" size={18} color={colors.textInverse} />
-            </View>
-            <Text style={styles.proximoCultoLabel}>Próximo culto</Text>
-            <Text style={styles.proximoCultoData}>Domingo, 25 de Maio</Text>
-            <Text style={styles.proximoCultoHora}>19:00 · Igreja Central</Text>
-            <Text style={styles.proximoCultoTipo}>Culto de Adoração</Text>
-          </LinearGradient>
-        </TouchableOpacity>
-
-        <View style={styles.grid}>
-          {ATALHOS.map((atalho) => (
-            <Card
-              key={atalho.label}
-              style={styles.gridCard}
-              onPress={() => atalho.route && navigation.navigate(atalho.route)}
+            <LinearGradient
+              colors={colors.primaryGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.proximoCultoCard}
             >
-              <Ionicons name={atalho.icon} size={22} color={colors.primary} />
-              <Text style={styles.gridLabel}>{atalho.label}</Text>
-              <Text style={styles.gridSublabel}>{atalho.sublabel}</Text>
+              <View style={styles.proximoCultoBadge}>
+                <Ionicons name="musical-notes" size={18} color={colors.textInverse} />
+              </View>
+              <Text style={styles.proximoCultoLabel}>Próximo culto</Text>
+              <Text style={styles.proximoCultoData}>
+                {formatDiaCompleto(proximoCulto.culto.data_hora)}
+              </Text>
+              <Text style={styles.proximoCultoHora}>
+                {formatHora(proximoCulto.culto.data_hora)}
+              </Text>
+              {proximoCulto.culto.tipo && (
+                <Text style={styles.proximoCultoTipo}>{proximoCulto.culto.tipo}</Text>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+        ) : (
+          <Card>
+            <Text style={styles.semCultoTexto}>
+              Você não está escalado como vocal em nenhum culto futuro no momento.
+            </Text>
+          </Card>
+        )}
+
+        {user && isGestor(user.papel) ? (
+          <View style={styles.grid}>
+            {ATALHOS_GESTAO.map((atalho) => (
+              <Card
+                key={atalho.label}
+                style={styles.gridCard}
+                onPress={() => atalho.route && navigation.navigate(atalho.route)}
+              >
+                <Ionicons name={atalho.icon} size={22} color={colors.primary} />
+                <Text style={styles.gridLabel}>{atalho.label}</Text>
+                <Text style={styles.gridSublabel}>{atalho.sublabel}</Text>
+              </Card>
+            ))}
+          </View>
+        ) : (
+          <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('Agenda')}>
+            <Card style={styles.confirmarCard}>
+              <View style={styles.confirmarIcon}>
+                <Ionicons name="checkmark-done" size={20} color={colors.primary} />
+              </View>
+              <View style={styles.confirmarInfo}>
+                <Text style={styles.gridLabel}>Confirmar Presença</Text>
+                <Text style={styles.gridSublabel}>Ver e confirmar seus próximos compromissos</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
             </Card>
-          ))}
-        </View>
+          </TouchableOpacity>
+        )}
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Próximas escalas</Text>
-          <Text style={styles.sectionLink}>Ver todas</Text>
+          <Text style={styles.sectionTitle}>Sua escala fixa</Text>
         </View>
 
-        {PROXIMAS_ESCALAS.map((escala) => (
-          <Card
-            key={escala.data}
-            style={styles.escalaCard}
-            onPress={() => navigation.navigate('DetalhesCulto', { cultoId: 1 })}
-          >
-            <Text style={styles.escalaDia}>
-              {escala.dia} · {escala.data}
-            </Text>
-            <Text style={styles.escalaInfo}>
-              {escala.hora} · {escala.culto}
-            </Text>
-            <Text style={styles.escalaConfirmacoes}>Confirmações: {escala.confirmacoes}</Text>
+        {minhaEscala.length === 0 ? (
+          <Card>
+            <Text style={styles.semCultoTexto}>Você ainda não tem uma escala fixa cadastrada.</Text>
           </Card>
-        ))}
+        ) : (
+          minhaEscala.map((escala, index) => (
+            <Card key={`${escala.dia_semana}-${escala.funcao}-${index}`} style={styles.escalaCard}>
+              <Text style={styles.escalaDia}>{capitalize(escala.dia_semana)}</Text>
+              <Text style={styles.escalaInfo}>{escala.funcao}</Text>
+            </Card>
+          ))
+        )}
       </ScrollView>
     </SafeAreaView>
   );
+}
+
+function capitalize(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  centered: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  errorText: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  retryButton: {
+    minWidth: 200,
   },
   header: {
     flexDirection: 'row',
@@ -184,6 +279,10 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.75)',
     marginTop: 2,
   },
+  semCultoTexto: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+  },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -203,6 +302,23 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.textSecondary,
   },
+  confirmarCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  confirmarIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.surfaceElevated,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmarInfo: {
+    flex: 1,
+    gap: 2,
+  },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -212,10 +328,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     ...typography.h3,
     color: colors.text,
-  },
-  sectionLink: {
-    ...typography.bodySmall,
-    color: colors.primary,
   },
   escalaCard: {
     gap: 2,
@@ -228,10 +340,5 @@ const styles = StyleSheet.create({
   escalaInfo: {
     ...typography.bodySmall,
     color: colors.textSecondary,
-  },
-  escalaConfirmacoes: {
-    ...typography.caption,
-    color: colors.primary,
-    marginTop: 2,
   },
 });
