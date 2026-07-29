@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -8,13 +9,12 @@ import {
   Text,
   View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { useAuth } from '@/contexts/AuthContext';
 import { ApiError } from '@/services/api';
 import { colors, spacing, typography } from '@/theme';
+import logo from '../../../assets/logo.png';
 
 export function LoginScreen() {
   const { signIn } = useAuth();
@@ -61,16 +61,7 @@ export function LoginScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <LinearGradient
-              colors={colors.primaryGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.logo}
-            >
-              <Ionicons name="musical-notes" size={48} color={colors.textInverse} />
-            </LinearGradient>
-
-            <Text style={styles.title}>Deep Scales</Text>
+            <Image source={logo} style={styles.logo} resizeMode="contain" />
             <Text style={styles.subtitle}>Organize seu ministério com excelência</Text>
           </View>
 
@@ -148,16 +139,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xxl,
   },
   logo: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.lg,
-  },
-  title: {
-    ...typography.h1,
-    color: colors.text,
+    width: 220,
+    height: 220,
     marginBottom: spacing.xs,
   },
   subtitle: {
