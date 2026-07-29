@@ -304,22 +304,32 @@ CREATE TABLE repertorio (
 
 ---
 
-## Fase 11 — Front-end (React + Vite + TypeScript + Tailwind, mobile-first)
+## Fase 11 — Front-end (React Native + Expo + TypeScript)
 
-**Objetivo:** interface para os quatro papéis de usuário, já tipada.
+**Objetivo:** app mobile nativo para os quatro papéis de usuário, já tipado.
 
-- [ ] Criar o projeto com o template TypeScript do Vite (`npm create vite@latest frontend -- --template react-ts`) e instalar/configurar o Tailwind
-- [ ] Definir tipos/interfaces para as entidades que vêm da API (`Membro`, `EscalaFixa`, `Culto`, etc.) — devem espelhar o que o back-end retorna
-- [ ] Tela de login e armazenamento do token (pense onde: localStorage? cookie?)
+> **Decisão de stack (revisada):** trocamos React + Vite (web) por **React Native + Expo** (app nativo) — decisão do meio da Fase 11. Muda o plano de deploy (ver README, seção Deploy) e a forma de "rodar localmente" (Expo Go / emulador, não navegador).
+>
+> **Modo de trabalho diferente do resto do projeto:** a partir daqui, o front-end é construído com a IA escrevendo o código diretamente a partir de prompts do usuário — não o método socrático usado no back-end (Fases 0–10). É uma escolha deliberada, pra praticar outra habilidade (dirigir um agente de IA), não uma mudança de padrão pro projeto todo.
+
+- [x] Criar o projeto Expo (TypeScript, template blank) dentro de `frontend/`
+- [x] Estrutura de pastas em `src/`: `screens/` (auth, home, escalas, disponibilidade, perfil), `components/`, `navigation/`, `services/`, `contexts/`, `hooks/`, `types/`, `theme/`, `utils/`
+- [x] Instalar e configurar React Navigation (native + stack + bottom-tabs + gesture-handler), axios, `expo-secure-store`
+- [x] TypeScript strict mode + path aliases (`@/...`) via `tsconfig.json` + `babel.config.js` (`babel-plugin-module-resolver`)
+- [x] ESLint (flat config) + Prettier configurados
+- [x] `.env.example` com `EXPO_PUBLIC_API_URL`
+- [x] Tipos das entidades da API (`Membro`, `EscalaFixa`, `Culto`, `EscalaVocal`, `Excecao`, `Repertorio`) em `src/types`, espelhando o formato real das respostas do back-end (`snake_case`, já que os models não fazem alias pra camelCase)
+- [x] `AuthContext` com armazenamento de token via `SecureStore` e checagem de sessão ao abrir o app
+- [x] Esqueleto rodando: `App.tsx` com `NavigationContainer` + `SafeAreaProvider` + tema aplicado, build validado (`expo export`, sem telas de conteúdo ainda)
+- [ ] Tela de login
 - [ ] Tela "minha agenda" consumindo os endpoints das Fases 5–9
 - [ ] Fluxo de confirmação de presença na UI
 - [ ] Telas de admin: CRUD de membros, escala fixa, geração/ajuste da escala de vocais
-- [ ] Responsividade mobile-first (comece pelo layout mobile, depois expanda pro desktop)
 - [ ] Tratamento de estados de carregamento e erro na UI (loading, erro de rede, sem permissão)
 
-**Conceitos para pesquisar:** hooks do React tipados (`useState<T>`, `useEffect`), organização em `components/pages/services`, chamada de API centralizada (uma camada `services` em vez de `fetch` espalhado) com tipos de retorno explícitos, proteção de rotas no front baseada no papel do usuário, `interface` vs `type` no TypeScript.
+**Conceitos:** hooks do React tipados, `Context` API para estado global de autenticação, armazenamento seguro de token em app nativo (`SecureStore` em vez de `localStorage`), proteção de rotas/telas baseada no papel do usuário, path aliases em projetos Metro/Babel (diferente de projetos Vite/webpack).
 
-**Pronto quando:** você consegue logar como cada um dos 4 papéis, ver uma experiência coerente com o que cada um deveria enxergar, e `npm run build` do front compila sem erro de tipo.
+**Pronto quando:** você consegue logar como cada um dos 4 papéis, ver uma experiência coerente com o que cada um deveria enxergar, rodando de verdade no Expo Go ou num emulador.
 
 ---
 
@@ -337,19 +347,21 @@ CREATE TABLE repertorio (
 
 ---
 
-## Fase 13 — Deploy (Neon + Render + Vercel)
+## Fase 13 — Deploy (Neon + Render + EAS)
 
 **Objetivo:** sistema acessível fora da sua máquina.
 
+> **Nota (revisada):** o front-end virou app nativo (React Native + Expo, Fase 11), não um site — Vercel não se aplica mais a ele. Deploy do front-end vira "gerar um build instalável" via EAS Build, não "hospedar num domínio".
+
 - [ ] Criar projeto no [Neon](https://neon.tech/) e provisionar um Postgres serverless
 - [ ] Criar serviço web no [Render](https://render.com/) pro back-end
-- [ ] Criar projeto no [Vercel](https://vercel.com/) pro front-end
 - [ ] Configurar variáveis de ambiente de produção (nunca reaproveitar segredo local)
 - [ ] Rodar as migrations em produção (contra o banco do Neon)
-- [ ] Deploy do back-end (Render) e do front-end (Vercel), cada um na sua plataforma
+- [ ] Deploy do back-end no Render
+- [ ] Gerar build do app com [EAS Build](https://docs.expo.dev/build/introduction/) (Android/iOS), apontando `EXPO_PUBLIC_API_URL` pro back-end em produção — decidir se distribui via Expo Go, build interno (sem lojas) ou publicação nas lojas de verdade
 - [ ] Testar o fluxo completo em produção com um usuário de teste real
 
-**Conceitos para pesquisar:** diferença entre ambiente local/produção, migrations vs. rodar SQL manualmente em prod, CORS entre front e back em domínios diferentes.
+**Conceitos para pesquisar:** diferença entre ambiente local/produção, migrations vs. rodar SQL manualmente em prod, CORS entre front e back em domínios diferentes, diferença entre build de desenvolvimento (Expo Go) e build nativo standalone (EAS).
 
 **Pronto quando:** alguém do seu ministério, fora da sua rede, consegue logar e ver a própria escala pelo celular.
 

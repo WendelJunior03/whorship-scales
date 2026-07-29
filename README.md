@@ -42,9 +42,8 @@ Cada membro acessa e visualiza apenas sua própria agenda, recebendo notificaç�
 - Arquitetura MVC
 
 **Front-end**
-- React + Vite
+- React Native + Expo
 - TypeScript
-- Tailwind CSS
 
 **Integrações**
 - Resend (notificações via e-mail)
@@ -52,7 +51,7 @@ Cada membro acessa e visualiza apenas sua própria agenda, recebendo notificaç�
 **Deploy**
 - Neon (PostgreSQL serverless)
 - Render (back-end)
-- Vercel (front-end)
+- Front-end (app nativo, não site): a definir — provavelmente EAS Build (Expo) para gerar o app, com distribuição via Expo Go ou build interno pro ministério, sem necessariamente publicar nas lojas
 
 ---
 
@@ -86,10 +85,19 @@ Modelagem detalhada disponível em [`docs/escalas-louvor-spec.md`](./docs/escala
 │   └── package.json
 ├── frontend/
 │   ├── src/
+│   │   ├── screens/
 │   │   ├── components/
-│   │   ├── pages/
-│   │   └── services/
+│   │   ├── navigation/
+│   │   ├── services/
+│   │   ├── contexts/
+│   │   ├── hooks/
+│   │   ├── types/
+│   │   ├── theme/
+│   │   └── utils/
+│   ├── App.tsx
 │   ├── tsconfig.json
+│   ├── babel.config.js
+│   ├── .env.example
 │   └── package.json
 ├── docs/
 │   └── escalas-louvor-spec.md
@@ -127,13 +135,18 @@ npm run migrate
 npm run dev
 ```
 
-### Front-end
+### Front-end (React Native + Expo)
 
 ```bash
 cd frontend
 npm install
-npm run dev
+cp .env.example .env
+# preencha EXPO_PUBLIC_API_URL com o endereço do back-end
+
+npx expo start
 ```
+
+Abre o app **Expo Go** no seu celular e escaneia o QR code que aparece no terminal (ou roda num emulador Android/iOS, se tiver configurado).
 
 ---
 
