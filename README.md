@@ -28,7 +28,7 @@ Cada membro acessa e visualiza apenas sua própria agenda, recebendo notificaç�
 - 🔁 Registro de exceções e substituições
 - 🎶 Repertório por culto (música, tom, link de referência)
 - 📱 Visão individual da agenda (mobile-first)
-- 🔔 Notificações automáticas (WhatsApp/e-mail) em criação ou mudança de escala
+- 🔔 Notificações automáticas por e-mail em criação ou mudança de escala
 
 ---
 
@@ -47,7 +47,6 @@ Cada membro acessa e visualiza apenas sua própria agenda, recebendo notificaç�
 - Tailwind CSS
 
 **Integrações**
-- Meta WhatsApp Cloud API (notificações via WhatsApp)
 - Resend (notificações via e-mail)
 
 **Deploy**
@@ -144,8 +143,6 @@ npm run dev
 DATABASE_URL=postgresql://usuario:senha@host.neon.tech/escalas_louvor?sslmode=require
 JWT_SECRET=sua_chave_secreta
 PORT=3000
-META_WHATSAPP_TOKEN=
-META_WHATSAPP_PHONE_ID=
 RESEND_API_KEY=
 ```
 
@@ -159,7 +156,7 @@ RESEND_API_KEY=
 - [ ] Escala de vocais com rodízio automático
 - [ ] Confirmação de presença
 - [ ] Repertório por culto
-- [ ] Notificações via WhatsApp Cloud API / Resend
+- [ ] Notificações via Resend (e-mail)
 - [ ] Front-end mobile-first completo
 
 ---

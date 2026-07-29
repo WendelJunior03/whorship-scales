@@ -286,20 +286,19 @@ CREATE TABLE repertorio (
 
 ---
 
-## Fase 10 — Notificações (Meta WhatsApp Cloud API + Resend)
+## Fase 10 — Notificações (Resend)
 
-**Objetivo:** integração com serviços externos.
+**Objetivo:** integração com serviço externo.
 
-> **Decisão de stack (revisada):** trocamos Twilio por **Meta WhatsApp Cloud API** (WhatsApp) e **Resend** (e-mail) — ambos com camada gratuita mais duradoura que o trial do Twilio. Railway também saiu do plano de deploy (ver Fase 13).
+> **Decisão de stack (revisada 2x):** primeiro trocamos Twilio por Meta WhatsApp Cloud API + Resend. Depois, ao tentar configurar o WhatsApp Cloud API, esbarramos em fricção real (aprovação de número de teste, processo de revisão do Meta pra produção) — decidimos **cortar o WhatsApp do escopo** e notificar só por **e-mail (Resend)**. Mais simples de manter, e suficiente pro tamanho do ministério. Railway saiu do plano de deploy (ver Fase 13).
 
 - [x] Criar conta no [Resend](https://resend.com/) e pegar a API key
-- [x] Isolar a lógica de envio numa camada própria (`src/services/emailService.ts`) — e-mail feito; WhatsApp pendente (ver abaixo)
+- [x] Isolar a lógica de envio numa camada própria (`src/services/emailService.ts`)
 - [x] Disparar notificação quando alguém é colocado como substituto (Fase 6) — feito via e-mail, em `createExcecoesController`
 - [x] Tratar falha de envio sem derrubar a operação principal — `try/catch` isolado em volta do envio, `console.error` no lugar de interromper a resposta de sucesso
-- [ ] Disparar notificação quando uma escala é publicada ou alterada — ainda não implementado (só o gatilho de substituto foi feito)
-- [ ] **WhatsApp (Meta Cloud API) — pausado, retomar depois.** App criado no Meta for Developers, Business Portfolio "Ministério de Louvor" criado, token e Phone Number ID obtidos e configurados no `.env`. Travou no teste de envio (`Etapa 1. Experimente`): erro `131030 - Recipient phone number not in allowed list`, mesmo com o número aparentemente verificado na lista de destinatários de teste (tentado com e sem o 9º dígito do celular brasileiro, sem sucesso). Provável causa: alguma etapa de verificação do número não finalizou corretamente do lado do Meta — investigar o painel com calma numa próxima sessão antes de tentar de novo.
+- [ ] Disparar notificação quando uma escala é publicada ou alterada — ainda não implementado (só o gatilho de substituto foi feito); avaliar se vale a pena antes do front-end existir
 
-**Conceitos para pesquisar:** chamadas assíncronas a APIs externas, variáveis de ambiente sensíveis (nunca commitar `META_WHATSAPP_TOKEN`/`RESEND_API_KEY`), como isolar efeitos colaterais (side effects) do resto da aplicação.
+**Conceitos para pesquisar:** chamadas assíncronas a APIs externas, variáveis de ambiente sensíveis (nunca commitar `RESEND_API_KEY`), como isolar efeitos colaterais (side effects) do resto da aplicação.
 
 **Pronto quando:** alterar uma escala de teste dispara uma mensagem real (ou no console/log, se preferir simular antes de configurar as contas de verdade).
 
@@ -332,7 +331,7 @@ CREATE TABLE repertorio (
 - [ ] Testes de integração básicos para autenticação (login válido/inválido, acesso negado)
 - [ ] Revisar tratamento de erros em toda a API (respostas consistentes)
 
-**Conceitos para pesquisar:** diferença entre teste unitário e de integração, mocks para não depender das APIs externas (Meta WhatsApp/Resend) reais nos testes.
+**Conceitos para pesquisar:** diferença entre teste unitário e de integração, mocks para não depender da API do Resend real nos testes.
 
 **Pronto quando:** rodar a suíte de testes te dá confiança para mexer no algoritmo de rodízio sem medo de quebrar algo.
 
