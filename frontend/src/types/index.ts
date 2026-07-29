@@ -54,3 +54,34 @@ export interface LoginResponse {
   token: string;
   message: string;
 }
+
+/**
+ * Formato que GET /escala-fixa e GET /escala-fixa/me devolvem —
+ * é um JOIN, não a entidade EscalaFixa crua (não tem id nem membro_id).
+ */
+export interface EscalaFixaMontada {
+  dia_semana: DiaSemana;
+  funcao: string;
+  nome: string;
+}
+
+/**
+ * Formato de cada item de GET /escala-fixa/efetiva — já considera
+ * substituições (excecoes), por isso "quem_toca" pode ser o titular
+ * ou o substituto.
+ */
+export interface EscalaEfetivaItem {
+  dia_semana: DiaSemana;
+  funcao: string;
+  quem_toca: string;
+}
+
+/**
+ * Formato de cada item de GET /escala-vocal/sugestao. `ultima_vez` é
+ * null quando o vocal nunca foi escalado antes (prioridade máxima).
+ */
+export interface SugestaoVocal {
+  id: number;
+  nome: string;
+  ultima_vez: string | null;
+}

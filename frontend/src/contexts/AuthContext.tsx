@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { getToken, saveToken, clearToken } from '@/services/api';
+import { getToken, saveToken, clearToken, setUnauthorizedHandler } from '@/services/api';
 
 interface AuthContextData {
   isAuthenticated: boolean;
@@ -30,6 +30,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await clearToken();
     setIsAuthenticated(false);
   }
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => setIsAuthenticated(false));
+    return () => setUnauthorizedHandler(null);
+  }, []);
 
   return (
     <AuthContext.Provider value={{ isAuthenticated, isLoading, signIn, signOut }}>
