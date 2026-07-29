@@ -286,19 +286,22 @@ CREATE TABLE repertorio (
 
 ---
 
-## Fase 10 — Notificações (Twilio)
+## Fase 10 — Notificações (Meta WhatsApp Cloud API + Resend)
 
-**Objetivo:** integração com serviço externo.
+**Objetivo:** integração com serviços externos.
 
-- [ ] Criar conta de teste no Twilio e entender sandbox de WhatsApp/SMS
-- [ ] Isolar a lógica de envio numa camada própria (não espalhar chamada ao Twilio pelos controllers)
-- [ ] Disparar notificação quando uma escala é publicada ou alterada
-- [ ] Disparar notificação quando alguém é colocado como substituto (Fase 6)
-- [ ] Tratar falha de envio sem derrubar a operação principal (ex: escala salva mesmo se o WhatsApp falhar)
+> **Decisão de stack (revisada):** trocamos Twilio por **Meta WhatsApp Cloud API** (WhatsApp) e **Resend** (e-mail) — ambos com camada gratuita mais duradoura que o trial do Twilio. Railway também saiu do plano de deploy (ver Fase 13).
 
-**Conceitos para pesquisar:** chamadas assíncronas a APIs externas, variáveis de ambiente sensíveis (nunca commitar `TWILIO_AUTH_TOKEN`), como isolar efeitos colaterais (side effects) do resto da aplicação.
+- [x] Criar conta no [Resend](https://resend.com/) e pegar a API key
+- [x] Isolar a lógica de envio numa camada própria (`src/services/emailService.ts`) — e-mail feito; WhatsApp pendente (ver abaixo)
+- [x] Disparar notificação quando alguém é colocado como substituto (Fase 6) — feito via e-mail, em `createExcecoesController`
+- [x] Tratar falha de envio sem derrubar a operação principal — `try/catch` isolado em volta do envio, `console.error` no lugar de interromper a resposta de sucesso
+- [ ] Disparar notificação quando uma escala é publicada ou alterada — ainda não implementado (só o gatilho de substituto foi feito)
+- [ ] **WhatsApp (Meta Cloud API) — pausado, retomar depois.** App criado no Meta for Developers, Business Portfolio "Ministério de Louvor" criado, token e Phone Number ID obtidos e configurados no `.env`. Travou no teste de envio (`Etapa 1. Experimente`): erro `131030 - Recipient phone number not in allowed list`, mesmo com o número aparentemente verificado na lista de destinatários de teste (tentado com e sem o 9º dígito do celular brasileiro, sem sucesso). Provável causa: alguma etapa de verificação do número não finalizou corretamente do lado do Meta — investigar o painel com calma numa próxima sessão antes de tentar de novo.
 
-**Pronto quando:** alterar uma escala de teste dispara uma mensagem real (ou no console/log, se preferir simular antes de gastar créditos).
+**Conceitos para pesquisar:** chamadas assíncronas a APIs externas, variáveis de ambiente sensíveis (nunca commitar `META_WHATSAPP_TOKEN`/`RESEND_API_KEY`), como isolar efeitos colaterais (side effects) do resto da aplicação.
+
+**Pronto quando:** alterar uma escala de teste dispara uma mensagem real (ou no console/log, se preferir simular antes de configurar as contas de verdade).
 
 ---
 
@@ -329,20 +332,22 @@ CREATE TABLE repertorio (
 - [ ] Testes de integração básicos para autenticação (login válido/inválido, acesso negado)
 - [ ] Revisar tratamento de erros em toda a API (respostas consistentes)
 
-**Conceitos para pesquisar:** diferença entre teste unitário e de integração, mocks para não depender do Twilio real nos testes.
+**Conceitos para pesquisar:** diferença entre teste unitário e de integração, mocks para não depender das APIs externas (Meta WhatsApp/Resend) reais nos testes.
 
 **Pronto quando:** rodar a suíte de testes te dá confiança para mexer no algoritmo de rodízio sem medo de quebrar algo.
 
 ---
 
-## Fase 13 — Deploy (Railway)
+## Fase 13 — Deploy (Neon + Render + Vercel)
 
 **Objetivo:** sistema acessível fora da sua máquina.
 
-- [ ] Criar projeto no Railway e provisionar um Postgres gerenciado
+- [ ] Criar projeto no [Neon](https://neon.tech/) e provisionar um Postgres serverless
+- [ ] Criar serviço web no [Render](https://render.com/) pro back-end
+- [ ] Criar projeto no [Vercel](https://vercel.com/) pro front-end
 - [ ] Configurar variáveis de ambiente de produção (nunca reaproveitar segredo local)
-- [ ] Rodar as migrations em produção
-- [ ] Deploy do back-end e do front-end (separados ou juntos — decida e justifique)
+- [ ] Rodar as migrations em produção (contra o banco do Neon)
+- [ ] Deploy do back-end (Render) e do front-end (Vercel), cada um na sua plataforma
 - [ ] Testar o fluxo completo em produção com um usuário de teste real
 
 **Conceitos para pesquisar:** diferença entre ambiente local/produção, migrations vs. rodar SQL manualmente em prod, CORS entre front e back em domínios diferentes.

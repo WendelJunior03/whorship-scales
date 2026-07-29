@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { createExcecao } from '../models/excecoesModel';
 import { findEscalaFixaById } from '../models/escalaFixaModel';
+import { enviarEmail } from '../services/emailService';
+import { findById } from '../models/membroModel';
 
 export async function createExcecoesController(req: Request, res: Response) {
     const { escalaFixaId, substitutoId, data } = req.body;
@@ -23,5 +25,18 @@ export async function createExcecoesController(req: Request, res: Response) {
     }
     
     await createExcecao(escalaFixaId, data, substitutoId);
+
+    const substituto = await findById(substitutoId);
+    if (substituto) {
+        try {
+            await enviarEmail(
+            substituto.email,
+            'Você foi escalado para um culto!',
+            `Olá ${substituto.nome}, você foi escalado para um culto no dia ${data}.`
+        );
+        } catch (error) {
+            console.error('Erro ao enviar email:', error);
+        }
+    }
     return res.status(201).json({ message: 'Exceção cadastrada com sucesso!' })
 }

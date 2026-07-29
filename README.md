@@ -47,10 +47,13 @@ Cada membro acessa e visualiza apenas sua própria agenda, recebendo notificaç�
 - Tailwind CSS
 
 **Integrações**
-- Twilio (notificações via WhatsApp/SMS)
+- Meta WhatsApp Cloud API (notificações via WhatsApp)
+- Resend (notificações via e-mail)
 
 **Deploy**
-- Railway
+- Neon (PostgreSQL serverless)
+- Render (back-end)
+- Vercel (front-end)
 
 ---
 
@@ -138,11 +141,12 @@ npm run dev
 ## 🔑 Variáveis de Ambiente
 
 ```env
-DATABASE_URL=postgresql://usuario:senha@localhost:5432/escalas_louvor
+DATABASE_URL=postgresql://usuario:senha@host.neon.tech/escalas_louvor?sslmode=require
 JWT_SECRET=sua_chave_secreta
 PORT=3000
-TWILIO_ACCOUNT_SID=
-TWILIO_AUTH_TOKEN=
+META_WHATSAPP_TOKEN=
+META_WHATSAPP_PHONE_ID=
+RESEND_API_KEY=
 ```
 
 ---
@@ -155,7 +159,7 @@ TWILIO_AUTH_TOKEN=
 - [ ] Escala de vocais com rodízio automático
 - [ ] Confirmação de presença
 - [ ] Repertório por culto
-- [ ] Notificações via Twilio
+- [ ] Notificações via WhatsApp Cloud API / Resend
 - [ ] Front-end mobile-first completo
 
 ---
