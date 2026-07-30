@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { createEscalaVocal, sugerirVocais, findEscalaVocalById, updateStatusEscalaVocal } from '../models/escalaVocalModel';
+import { createEscalaVocal, sugerirVocais, findEscalaVocalById, updateStatusEscalaVocal, findMyEscalaVocal } from '../models/escalaVocalModel';
 
 export async function createEscalaVocalController(req: Request, res: Response) {
     try {
@@ -50,4 +50,16 @@ export async function confirmarPresencaController (req: Request, res: Response) 
 
     await updateStatusEscalaVocal(Number(id), status);
     return res.status(200).json({message: 'Escala vocal atualizada com sucesso!'})
+}
+
+export async function getMyEscalaVocalController(req: Request, res: Response) {
+    if (!req.user) {
+                throw new Error('req.user não configurado!')
+            }
+        
+            const { id } = req.user
+            
+            const membro = await findMyEscalaVocal(id)
+        
+            return res.status(200).json(membro)
 }

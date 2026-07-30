@@ -27,3 +27,8 @@ export async function findProximoCultoDoMembro(membroId: number) {
     const result = await query(`SELECT cultos.id, cultos.data_hora, cultos.tipo FROM escala_vocal JOIN cultos ON escala_vocal.culto_id = cultos.id WHERE escala_vocal.membro_id = $1 AND cultos.data_hora >= NOW() ORDER BY cultos.data_hora ASC LIMIT 1`, [membroId]);
     return result.rows[0]
 }
+
+export async function findMyEscalaVocal(membroId: number) {
+    const result = await query('SELECT escala_vocal.id, escala_vocal.status, cultos.id AS culto_id, cultos.data_hora, cultos.tipo FROM escala_vocal JOIN cultos ON escala_vocal.culto_id = cultos.id WHERE escala_vocal.membro_id = $1', [membroId])
+    return result.rows;
+}
