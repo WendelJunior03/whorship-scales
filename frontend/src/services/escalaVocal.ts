@@ -1,5 +1,5 @@
 import { api } from './api';
-import { StatusEscalaVocal, SugestaoVocal } from '@/types';
+import { MinhaEscalaVocalItem, StatusEscalaVocal, SugestaoVocal } from '@/types';
 
 export interface CriarEscalaVocalInput {
   membroId: number;
@@ -32,4 +32,13 @@ export async function getSugestaoVocais(): Promise<SugestaoVocal[]> {
  */
 export async function confirmarPresenca(id: number, status: StatusEscalaVocal): Promise<void> {
   await api.put(`/escala-vocal/${id}/status`, { status });
+}
+
+/**
+ * Todos os compromissos de vocal do usuário logado (passados e
+ * futuros), cada um com id, status e dados do culto.
+ */
+export async function getMinhaEscalaVocal(): Promise<MinhaEscalaVocalItem[]> {
+  const response = await api.get<MinhaEscalaVocalItem[]>('/escala-vocal/me');
+  return response.data;
 }

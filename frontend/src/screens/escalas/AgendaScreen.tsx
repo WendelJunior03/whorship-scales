@@ -1,53 +1,151 @@
-import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Calendar, DateData } from 'react-native-calendars';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import * as escalaFixaService from '@/services/escalaFixa';
+import * as escalaVocalService from '@/services/escalaVocal';
+import * as excecoesService from '@/services/excecoes';
+import { ApiError } from '@/services/api';
+import { MinhaEscalaFixaItem, MinhaEscalaVocalItem, StatusEscalaVocal } from '@/types';
 import { colors, spacing, typography } from '@/theme';
+import { formatDiaCompleto, formatHora } from '@/utils/date';
 
-const DIAS_SEMANA = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+const statusLabel: Record<StatusEscalaVocal, string> = {
+  pendente: 'Pendente',
+  confirmado: 'Confirmado',
+  recusado: 'Recusado',
+};
 
-// Grade estática de maio/2025, só pra layout — vira dinâmico quando a
-// tela ganhar lógica de dados de verdade.
-const SEMANAS = [
-  [null, null, null, 1, 2, 3, null],
-  [4, 5, 6, 7, 8, 9, 10],
-  [11, 12, 13, 14, 15, 16, 17],
-  [18, 19, 20, 21, 22, 23, 24],
-  [25, 26, 27, 28, 29, 30, null],
-];
+const statusTone: Record<StatusEscalaVocal, 'warning' | 'success' | 'error'> = {
+  pendente: 'warning',
+  confirmado: 'success',
+  recusado: 'error',
+};
 
-const COMPROMISSOS = [
-  {
-    dia: 'Domingo',
-    data: '25/05',
-    hora: '19:00',
-    tipo: 'Culto de Adoração',
-    funcao: 'Teclado',
-    status: 'Pendente' as const,
-  },
-  {
-    dia: 'Quarta-feira',
-    data: '28/05',
-    hora: '19:30',
-    tipo: 'Culto de Oração',
-    funcao: 'Teclado',
-    status: 'Confirmado' as const,
-  },
-  {
-    dia: 'Sábado',
-    data: '31/05',
-    hora: '19:00',
-    tipo: 'Ensaio Geral',
-    funcao: 'Teclado',
-    status: 'Pendente' as const,
-  },
-];
+function capitalize(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
 
 export function AgendaScreen() {
-  const [diaSelecionado, setDiaSelecionado] = useState(25);
+  const [escalaVocal, setEscalaVocal] = useState<MinhaEscalaVocalItem[]>([]);
+  const [escalaFixa, setEscalaFixa] = useState<MinhaEscalaFixaItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
+
+  const carregarDados = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const [vocal, fixa] = await Promise.all([
+        escalaVocalService.getMinhaEscalaVocal(),
+        escalaFixaService.getMinhaEscalaFixa(),
+      ]);
+      setEscalaVocal(vocal);
+      setEscalaFixa(fixa);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Não foi possível carregar sua agenda.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    carregarDados();
+  }, [carregarDados]);
+
+  async function handleAtualizarStatus(item: MinhaEscalaVocalItem, status: StatusEscalaVocal) {
+    setActionLoadingId(item.id);
+    try {
+      await escalaVocalService.confirmarPresenca(item.id, status);
+      setEscalaVocal((prev) => prev.map((e) => (e.id === item.id ? { ...e, status } : e)));
+    } catch (err) {
+      Alert.alert('Erro', err instanceof ApiError ? err.message : 'Não foi possível atualizar.');
+    } finally {
+      setActionLoadingId(null);
+    }
+  }
+
+  function handleRecusarEscalaFixa(item: MinhaEscalaFixaItem) {
+    if (!selectedDate) {
+      Alert.alert(
+        'Selecione uma data',
+        'Toque no dia do calendário em que você vai faltar antes de recusar.',
+      );
+      return;
+    }
+
+    Alert.alert(
+      'Recusar presença',
+      `Isso registra uma falta para "${item.funcao}" (${item.dia_semana}) no dia ${selectedDate}. O ministério vai precisar definir um substituto pra essa data. Confirmar?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Recusar',
+          style: 'destructive',
+          onPress: async () => {
+            setActionLoadingId(item.id);
+            try {
+              await excecoesService.criarExcecao({ escalaFixaId: item.id, data: selectedDate });
+              Alert.alert(
+                'Registrado',
+                'Sua falta foi registrada. Você será avisado quando um substituto for definido.',
+              );
+            } catch (err) {
+              Alert.alert(
+                'Erro',
+                err instanceof ApiError ? err.message : 'Não foi possível registrar a falta.',
+              );
+            } finally {
+              setActionLoadingId(null);
+            }
+          },
+        },
+      ],
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={[styles.screen, styles.centered]} edges={['top']}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={[styles.screen, styles.centered]} edges={['top']}>
+        <Text style={styles.errorText}>{error}</Text>
+        <Button
+          title="Tentar novamente"
+          onPress={carregarDados}
+          variant="outline"
+          style={styles.retryButton}
+        />
+      </SafeAreaView>
+    );
+  }
+
+  const markedDates: Record<
+    string,
+    { marked?: boolean; dotColor?: string; selected?: boolean; selectedColor?: string }
+  > = {};
+  for (const item of escalaVocal) {
+    const day = item.data_hora.slice(0, 10);
+    markedDates[day] = { ...markedDates[day], marked: true, dotColor: colors.primary };
+  }
+  if (selectedDate) {
+    markedDates[selectedDate] = {
+      ...markedDates[selectedDate],
+      selected: true,
+      selectedColor: colors.primary,
+    };
+  }
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -57,65 +155,89 @@ export function AgendaScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Card>
-          <View style={styles.calendarHeader}>
-            <Ionicons name="chevron-back" size={20} color={colors.textSecondary} />
-            <Text style={styles.calendarTitle}>Maio 2025</Text>
-            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-          </View>
-
-          <View style={styles.weekRow}>
-            {DIAS_SEMANA.map((dia, index) => (
-              <Text key={`${dia}-${index}`} style={styles.weekDayLabel}>
-                {dia}
-              </Text>
-            ))}
-          </View>
-
-          {SEMANAS.map((semana, index) => (
-            <View key={index} style={styles.weekRow}>
-              {semana.map((dia, dayIndex) => (
-                <TouchableOpacity
-                  key={dayIndex}
-                  style={[styles.day, dia === diaSelecionado && styles.daySelected]}
-                  disabled={!dia}
-                  onPress={() => dia && setDiaSelecionado(dia)}
-                >
-                  {dia && (
-                    <Text
-                      style={[styles.dayText, dia === diaSelecionado && styles.dayTextSelected]}
-                    >
-                      {dia}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-          ))}
+        <Card style={styles.calendarCard}>
+          <Calendar
+            markedDates={markedDates}
+            onDayPress={(day: DateData) => setSelectedDate(day.dateString)}
+            theme={{
+              backgroundColor: colors.surface,
+              calendarBackground: colors.surface,
+              textSectionTitleColor: colors.textSecondary,
+              selectedDayBackgroundColor: colors.primary,
+              selectedDayTextColor: colors.textInverse,
+              todayTextColor: colors.primary,
+              dayTextColor: colors.text,
+              textDisabledColor: colors.textMuted,
+              dotColor: colors.primary,
+              monthTextColor: colors.text,
+              arrowColor: colors.primary,
+            }}
+          />
         </Card>
 
-        {COMPROMISSOS.map((item) => (
-          <Card key={item.data} style={styles.compromisso}>
-            <View style={styles.compromissoIcon}>
-              <Ionicons name="musical-notes-outline" size={18} color={colors.primary} />
-            </View>
-            <View style={styles.compromissoInfo}>
-              <Text style={styles.compromissoDia}>
-                {item.dia} · {item.data}
-              </Text>
-              <Text style={styles.compromissoHora}>
-                {item.hora} · {item.tipo}
-              </Text>
-              <Badge label={item.funcao} tone="primary" />
-            </View>
-            <Badge
-              label={item.status}
-              tone={item.status === 'Confirmado' ? 'success' : 'warning'}
-            />
-          </Card>
-        ))}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Compromissos de vocal</Text>
+        </View>
 
-        <Button title="Confirmar Presença" onPress={() => {}} style={styles.confirmButton} />
+        {escalaVocal.length === 0 ? (
+          <Card>
+            <Text style={styles.emptyText}>Você não tem compromissos de vocal registrados.</Text>
+          </Card>
+        ) : (
+          escalaVocal.map((item) => (
+            <Card key={item.id} style={styles.compromisso}>
+              <View style={styles.compromissoInfo}>
+                <Text style={styles.compromissoDia}>{formatDiaCompleto(item.data_hora)}</Text>
+                <Text style={styles.compromissoHora}>
+                  {formatHora(item.data_hora)}
+                  {item.tipo ? ` · ${item.tipo}` : ''}
+                </Text>
+                <Badge label={statusLabel[item.status]} tone={statusTone[item.status]} />
+              </View>
+              <View style={styles.acoes}>
+                <Button
+                  title="Confirmar"
+                  onPress={() => handleAtualizarStatus(item, 'confirmado')}
+                  loading={actionLoadingId === item.id}
+                  style={styles.acaoBotao}
+                />
+                <Button
+                  title="Recusar"
+                  onPress={() => handleAtualizarStatus(item, 'recusado')}
+                  loading={actionLoadingId === item.id}
+                  variant="outline"
+                  style={styles.acaoBotao}
+                />
+              </View>
+            </Card>
+          ))
+        )}
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Sua escala fixa</Text>
+        </View>
+
+        {escalaFixa.length === 0 ? (
+          <Card>
+            <Text style={styles.emptyText}>Você ainda não tem uma escala fixa cadastrada.</Text>
+          </Card>
+        ) : (
+          escalaFixa.map((item) => (
+            <Card key={item.id} style={styles.compromisso}>
+              <View style={styles.compromissoInfo}>
+                <Text style={styles.compromissoDia}>{capitalize(item.dia_semana)}</Text>
+                <Text style={styles.compromissoHora}>{item.funcao}</Text>
+              </View>
+              <Button
+                title="Recusar"
+                onPress={() => handleRecusarEscalaFixa(item)}
+                loading={actionLoadingId === item.id}
+                variant="outline"
+                style={styles.acaoBotaoUnico}
+              />
+            </Card>
+          ))
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -125,6 +247,20 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  centered: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  errorText: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  retryButton: {
+    minWidth: 200,
   },
   header: {
     paddingHorizontal: spacing.lg,
@@ -144,60 +280,25 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     gap: spacing.md,
   },
-  calendarHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
+  calendarCard: {
+    padding: 0,
+    overflow: 'hidden',
   },
-  calendarTitle: {
+  sectionHeader: {
+    marginTop: spacing.sm,
+  },
+  sectionTitle: {
     ...typography.h3,
     color: colors.text,
   },
-  weekRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: spacing.xs,
-  },
-  weekDayLabel: {
-    ...typography.caption,
-    color: colors.textMuted,
-    width: 32,
-    textAlign: 'center',
-  },
-  day: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  daySelected: {
-    backgroundColor: colors.primary,
-  },
-  dayText: {
+  emptyText: {
     ...typography.bodySmall,
-    color: colors.text,
-  },
-  dayTextSelected: {
-    color: colors.textInverse,
-    fontWeight: '700',
+    color: colors.textSecondary,
   },
   compromisso: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: spacing.sm,
   },
-  compromissoIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.surfaceElevated,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   compromissoInfo: {
-    flex: 1,
     gap: 4,
   },
   compromissoDia: {
@@ -206,10 +307,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   compromissoHora: {
-    ...typography.caption,
+    ...typography.bodySmall,
     color: colors.textSecondary,
   },
-  confirmButton: {
-    marginTop: spacing.sm,
+  acoes: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  acaoBotao: {
+    flex: 1,
+  },
+  acaoBotaoUnico: {
+    alignSelf: 'flex-start',
+    minWidth: 120,
   },
 });

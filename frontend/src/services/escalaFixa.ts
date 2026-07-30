@@ -1,5 +1,5 @@
 import { api } from './api';
-import { DiaSemana, EscalaEfetivaItem, EscalaFixaMontada } from '@/types';
+import { DiaSemana, EscalaEfetivaItem, EscalaFixaMontada, MinhaEscalaFixaItem } from '@/types';
 
 export interface CriarEscalaFixaInput {
   membroId: number;
@@ -24,10 +24,11 @@ export async function getEscalaFixaMontada(): Promise<EscalaFixaMontada[]> {
 }
 
 /**
- * Escala fixa só do usuário logado.
+ * Escala fixa só do usuário logado, já com o `id` de cada vínculo
+ * (necessário pra criar uma exceção referenciando ele).
  */
-export async function getMinhaEscalaFixa(): Promise<EscalaFixaMontada[]> {
-  const response = await api.get<EscalaFixaMontada[]>('/escala-fixa/me');
+export async function getMinhaEscalaFixa(): Promise<MinhaEscalaFixaItem[]> {
+  const response = await api.get<MinhaEscalaFixaItem[]>('/escala-fixa/me');
   return response.data;
 }
 

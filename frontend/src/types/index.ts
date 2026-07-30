@@ -56,13 +56,38 @@ export interface LoginResponse {
 }
 
 /**
- * Formato que GET /escala-fixa e GET /escala-fixa/me devolvem —
- * é um JOIN, não a entidade EscalaFixa crua (não tem id nem membro_id).
+ * Formato que GET /escala-fixa (todos os membros) devolve — é um JOIN,
+ * não a entidade EscalaFixa crua. Sem `id`: essa consulta não devolve
+ * qual linha é qual, só a visão geral pra admin/ministro.
  */
 export interface EscalaFixaMontada {
   dia_semana: DiaSemana;
   funcao: string;
   nome: string;
+}
+
+/**
+ * Formato que GET /escala-fixa/me devolve — como é "meus próprios"
+ * vínculos, essa consulta já inclui o `id`, necessário pra criar uma
+ * exceção referenciando essa linha específica.
+ */
+export interface MinhaEscalaFixaItem {
+  id: number;
+  dia_semana: DiaSemana;
+  funcao: string;
+  nome: string;
+}
+
+/**
+ * Formato de cada item de GET /escala-vocal/me — os compromissos de
+ * vocal do usuário logado, já com o culto e o status de confirmação.
+ */
+export interface MinhaEscalaVocalItem {
+  id: number;
+  status: StatusEscalaVocal;
+  culto_id: number;
+  data_hora: string;
+  tipo: string | null;
 }
 
 /**
