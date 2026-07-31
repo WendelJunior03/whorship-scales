@@ -95,6 +95,7 @@ export function MembrosScreen() {
       <Header title="Membros" showBack />
 
       <FlatList
+        style={styles.list}
         data={membrosFiltrados}
         keyExtractor={(item) => String(item.id)}
         contentContainerStyle={styles.listContent}
@@ -180,6 +181,9 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     minWidth: 200,
+  },
+  list: {
+    flex: 1,
   },
   listContent: {
     padding: spacing.lg,

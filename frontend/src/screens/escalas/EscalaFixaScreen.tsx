@@ -11,16 +11,22 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Header } from '@/components/Header';
 import { useAuth } from '@/contexts/AuthContext';
+import { MainStackParamList } from '@/navigation/MainNavigator';
+import * as cultosService from '@/services/cultos';
 import * as escalaFixaService from '@/services/escalaFixa';
 import * as membrosService from '@/services/membros';
 import { ApiError } from '@/services/api';
-import { DiaSemana, EscalaFixaMontada, Membro } from '@/types';
+import { confirmAction } from '@/utils/confirm';
+import { Culto, DiaSemana, EscalaFixaMontada, Membro } from '@/types';
 import { colors, spacing, typography } from '@/theme';
+import { formatDiaCompleto, formatHora } from '@/utils/date';
 import { papelLabel } from '@/utils/papel';
 
 const DIAS: DiaSemana[] = ['quarta', 'sabado', 'domingo'];
@@ -33,10 +39,12 @@ const diaLabel: Record<DiaSemana, string> = {
 
 export function EscalaFixaScreen() {
   const { user } = useAuth();
+  const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();
 
   const [escalaFixa, setEscalaFixa] = useState<EscalaFixaMontada[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [excluindoId, setExcluindoId] = useState<number | null>(null);
 
   const [novaEscalaAberta, setNovaEscalaAberta] = useState(false);
   const [novoDia, setNovoDia] = useState<DiaSemana>('domingo');
@@ -46,6 +54,10 @@ export function EscalaFixaScreen() {
   const [todosMembrosAtivos, setTodosMembrosAtivos] = useState<Membro[]>([]);
   const [carregandoMembros, setCarregandoMembros] = useState(false);
   const [criandoEscala, setCriandoEscala] = useState(false);
+
+  const [cultoPickerAberto, setCultoPickerAberto] = useState(false);
+  const [cultos, setCultos] = useState<Culto[]>([]);
+  const [carregandoCultos, setCarregandoCultos] = useState(false);
 
   const carregarDados = useCallback(async () => {
     setIsLoading(true);
@@ -114,6 +126,47 @@ export function EscalaFixaScreen() {
     }
   }
 
+  function handleExcluirEscalaFixa(item: EscalaFixaMontada) {
+    confirmAction(
+      {
+        title: 'Remover vínculo fixo',
+        message: `Isso remove "${item.nome}" (${item.funcao}) de toda a escala fixa de ${diaLabel[item.dia_semana]}, todas as semanas. Confirmar?`,
+        confirmLabel: 'Remover',
+      },
+      async () => {
+        setExcluindoId(item.id);
+        try {
+          await escalaFixaService.deletarEscalaFixa(item.id);
+          setEscalaFixa((prev) => prev.filter((e) => e.id !== item.id));
+        } catch (err) {
+          Alert.alert(
+            'Erro',
+            err instanceof ApiError ? err.message : 'Não foi possível remover o vínculo.',
+          );
+        } finally {
+          setExcluindoId(null);
+        }
+      },
+    );
+  }
+
+  async function abrirGerarEscala() {
+    setCultoPickerAberto(true);
+    if (cultos.length > 0) return;
+    setCarregandoCultos(true);
+    try {
+      const todos = await cultosService.getTodosCultos();
+      setCultos(todos);
+    } catch (err) {
+      Alert.alert(
+        'Erro',
+        err instanceof ApiError ? err.message : 'Não foi possível carregar os cultos.',
+      );
+    } finally {
+      setCarregandoCultos(false);
+    }
+  }
+
   if (user && user.papel !== 'admin' && user.papel !== 'ministro') {
     return (
       <SafeAreaView style={styles.screen} edges={['top']}>
@@ -149,9 +202,18 @@ export function EscalaFixaScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <Header title="Escala Fixa" showBack />
+      <Header
+        title="Escala Fixa"
+        showBack
+        rightIcon="mic-outline"
+        onRightPress={abrirGerarEscala}
+      />
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         {DIAS.map((dia) => {
           const itens = escalaFixa.filter((item) => item.dia_semana === dia);
           return (
@@ -165,11 +227,21 @@ export function EscalaFixaScreen() {
                 <Card style={styles.card}>
                   {itens.map((item, index) => (
                     <View
-                      key={`${item.funcao}-${item.nome}-${index}`}
+                      key={item.id}
                       style={[styles.itemRow, index > 0 && styles.itemRowBorda]}
                     >
-                      <Text style={styles.itemNome}>{item.nome}</Text>
-                      <Text style={styles.itemFuncao}>{item.funcao}</Text>
+                      <View style={styles.itemInfo}>
+                        <Text style={styles.itemNome}>{item.nome}</Text>
+                        <Text style={styles.itemFuncao}>{item.funcao}</Text>
+                      </View>
+                      {user?.papel === 'admin' &&
+                        (excluindoId === item.id ? (
+                          <ActivityIndicator size="small" color={colors.error} />
+                        ) : (
+                          <TouchableOpacity onPress={() => handleExcluirEscalaFixa(item)} hitSlop={8}>
+                            <Ionicons name="trash-outline" size={20} color={colors.error} />
+                          </TouchableOpacity>
+                        ))}
                     </View>
                   ))}
                 </Card>
@@ -301,6 +373,47 @@ export function EscalaFixaScreen() {
           </View>
         </View>
       </Modal>
+
+      <Modal
+        visible={cultoPickerAberto}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setCultoPickerAberto(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContentPicker}>
+            <Text style={styles.modalTitle}>Gerar escala de vocal — escolha o culto</Text>
+            {carregandoCultos ? (
+              <ActivityIndicator color={colors.primary} style={styles.modalLoading} />
+            ) : (
+              <ScrollView style={styles.modalList}>
+                {cultos.length === 0 ? (
+                  <Text style={styles.emptyText}>Nenhum culto cadastrado ainda.</Text>
+                ) : (
+                  cultos.map((culto) => (
+                    <TouchableOpacity
+                      key={culto.id}
+                      style={styles.modalItem}
+                      onPress={() => {
+                        setCultoPickerAberto(false);
+                        navigation.navigate('GerarEscala', { cultoId: culto.id });
+                      }}
+                    >
+                      <Text style={styles.modalItemText}>
+                        {culto.tipo ?? formatDiaCompleto(culto.data_hora)}
+                      </Text>
+                      <Text style={styles.modalItemSubtext}>
+                        {formatDiaCompleto(culto.data_hora)} · {formatHora(culto.data_hora)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))
+                )}
+              </ScrollView>
+            )}
+            <Button title="Cancelar" variant="outline" onPress={() => setCultoPickerAberto(false)} />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -324,6 +437,9 @@ const styles = StyleSheet.create({
   retryButton: {
     minWidth: 200,
   },
+  scroll: {
+    flex: 1,
+  },
   content: {
     padding: spacing.lg,
     paddingTop: spacing.sm,
@@ -343,12 +459,16 @@ const styles = StyleSheet.create({
   },
   itemRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: spacing.xs,
   },
   itemRowBorda: {
     borderTopWidth: 1,
     borderTopColor: colors.border,
+  },
+  itemInfo: {
+    flex: 1,
   },
   itemNome: {
     ...typography.body,

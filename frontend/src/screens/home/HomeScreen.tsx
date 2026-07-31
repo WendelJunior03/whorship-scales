@@ -10,13 +10,14 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { useAuth } from '@/contexts/AuthContext';
 import { MainTabScreenNavigationProp } from '@/navigation/types';
 import * as escalaFixaService from '@/services/escalaFixa';
+import * as notificacoesService from '@/services/notificacoes';
 import * as repertorioService from '@/services/repertorio';
 import { ApiError } from '@/services/api';
 import { EscalaFixaMontada } from '@/types';
@@ -71,6 +72,7 @@ export function HomeScreen() {
   const [minhaEscala, setMinhaEscala] = useState<EscalaFixaMontada[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [temNotificacaoNaoLida, setTemNotificacaoNaoLida] = useState(false);
 
   const carregarDados = useCallback(async () => {
     setIsLoading(true);
@@ -96,6 +98,17 @@ export function HomeScreen() {
   useEffect(() => {
     carregarDados();
   }, [carregarDados]);
+
+  useFocusEffect(
+    useCallback(() => {
+      notificacoesService
+        .getMinhasNotificacoes()
+        .then((notificacoes) => setTemNotificacaoNaoLida(notificacoes.some((n) => !n.lida)))
+        .catch(() => {
+          // o sino não é crítico pra tela funcionar, falha aqui é silenciosa
+        });
+    }, []),
+  );
 
   if (isLoading) {
     return (
@@ -128,11 +141,15 @@ export function HomeScreen() {
         </View>
         <TouchableOpacity onPress={() => navigation.navigate('Notificacoes')}>
           <Ionicons name="notifications-outline" size={24} color={colors.text} />
-          <View style={styles.badgeDot} />
+          {temNotificacaoNaoLida && <View style={styles.badgeDot} />}
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.greeting}>
           {getSaudacao()}, {user?.nome?.split(' ')[0] ?? 'membro'} 👋
         </Text>
@@ -273,6 +290,9 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: colors.error,
+  },
+  scroll: {
+    flex: 1,
   },
   content: {
     padding: spacing.lg,

@@ -278,7 +278,11 @@ export function GerarEscalaScreen() {
     <SafeAreaView style={styles.screen} edges={['top']}>
       <Header title="Gerar Escala de Vocais" showBack />
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         <Card style={styles.cultoCard}>
           <View style={styles.cultoIcon}>
             <Ionicons name="musical-notes" size={18} color={colors.primary} />
@@ -412,7 +416,7 @@ export function GerarEscalaScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentGrande}>
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
               <Text style={styles.modalTitle}>Nova escala avulsa</Text>
               <Text style={styles.modalSubtitle}>
                 Pra cultos fora da rotina fixa (ex: um culto especial numa segunda-feira). Isso
@@ -591,6 +595,9 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     minWidth: 200,
+  },
+  scroll: {
+    flex: 1,
   },
   content: {
     padding: spacing.lg,

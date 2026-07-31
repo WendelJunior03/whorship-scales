@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { createEscalaFixa, findEscalaEfetiva, findEscalaFixaMontada, findMyEscalaFixa } from '../models/escalaFixaModel';
+import { createEscalaFixa, deleteEscalaFixa, findEscalaEfetiva, findEscalaFixaById, findEscalaFixaMontada, findMyEscalaFixa } from '../models/escalaFixaModel';
 import { findById } from '../models/membroModel';
 import { enviarEmail } from '../services/emailService';
 
@@ -48,6 +48,18 @@ export async function getMyEscalaFixaController(req: Request, res: Response) {
         const membro = await findMyEscalaFixa(id)
     
         return res.status(200).json(membro)
+}
+
+export async function deleteEscalaFixaController(req: Request, res: Response) {
+    const { id } = req.params;
+
+    const escalaFixa = await findEscalaFixaById(Number(id));
+    if (!escalaFixa) {
+        return res.status(404).json({ message: 'Escala fixa não encontrada!' })
+    }
+
+    await deleteEscalaFixa(Number(id));
+    return res.status(200).json({ message: 'Escala fixa removida com sucesso!' })
 }
 
 export async function getEscalaEfetivaController(req: Request, res: Response) {

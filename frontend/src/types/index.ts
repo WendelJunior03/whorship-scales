@@ -61,6 +61,7 @@ export interface LoginResponse {
  * qual linha é qual, só a visão geral pra admin/ministro.
  */
 export interface EscalaFixaMontada {
+  id: number;
   dia_semana: DiaSemana;
   funcao: string;
   nome: string;

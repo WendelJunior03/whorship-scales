@@ -328,7 +328,11 @@ export function DetalhesCultoScreen() {
     <SafeAreaView style={styles.screen} edges={['top']}>
       <Header title="Detalhes do Culto" showBack />
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         <Card>
           <Text style={styles.data}>{formatDiaCompleto(culto.data_hora)}</Text>
           <Text style={styles.hora}>{formatHora(culto.data_hora)}</Text>
@@ -608,6 +612,9 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     minWidth: 200,
+  },
+  scroll: {
+    flex: 1,
   },
   content: {
     padding: spacing.lg,

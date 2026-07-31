@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getToken, saveToken, clearToken, setUnauthorizedHandler } from '@/services/api';
 import * as authService from '@/services/auth';
 import * as membrosService from '@/services/membros';
+import { NAVIGATION_PERSISTENCE_KEY } from '@/navigation/persistence';
 import { Membro } from '@/types';
 
 interface AuthContextData {
@@ -49,6 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUnauthorizedHandler(() => {
       setUser(null);
       setIsAuthenticated(false);
+      AsyncStorage.removeItem(NAVIGATION_PERSISTENCE_KEY);
     });
     return () => setUnauthorizedHandler(null);
   }, []);
@@ -63,6 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function signOut() {
     await clearToken();
+    await AsyncStorage.removeItem(NAVIGATION_PERSISTENCE_KEY);
     setUser(null);
     setIsAuthenticated(false);
   }

@@ -100,6 +100,7 @@ export function NotificacoesScreen() {
       </View>
 
       <SectionList
+        style={styles.list}
         sections={secoes}
         keyExtractor={(item) => String(item.id)}
         contentContainerStyle={styles.listContent}
@@ -163,6 +164,9 @@ const styles = StyleSheet.create({
   title: {
     ...typography.h1,
     color: colors.text,
+  },
+  list: {
+    flex: 1,
   },
   listContent: {
     paddingHorizontal: spacing.lg,

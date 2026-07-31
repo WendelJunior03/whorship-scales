@@ -111,6 +111,7 @@ export function ConfirmacoesScreen() {
       <Header title="Confirmações" showBack />
 
       <FlatList
+        style={styles.list}
         data={itens}
         keyExtractor={(item) => String(item.culto.id)}
         contentContainerStyle={styles.content}
@@ -169,6 +170,9 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     minWidth: 200,
+  },
+  list: {
+    flex: 1,
   },
   content: {
     padding: spacing.lg,

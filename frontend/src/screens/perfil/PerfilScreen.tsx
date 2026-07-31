@@ -103,7 +103,11 @@ export function PerfilScreen() {
         <Ionicons name="create-outline" size={22} color={colors.text} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.avatarBlock}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{user?.nome?.[0] ?? '?'}</Text>
@@ -114,7 +118,13 @@ export function PerfilScreen() {
         </View>
 
         <Text style={styles.nome}>{user?.nome ?? '—'}</Text>
-        {user && <Badge label={papelLabel[user.papel]} tone={papelTone[user.papel]} />}
+        {user && (
+          <Badge
+            label={papelLabel[user.papel]}
+            tone={papelTone[user.papel]}
+            style={styles.papelBadge}
+          />
+        )}
         <Text style={styles.igreja}>Igreja do Evangelho Quadrangular</Text>
 
         <View style={styles.menu}>
@@ -213,6 +223,9 @@ const styles = StyleSheet.create({
     ...typography.h1,
     color: colors.text,
   },
+  scroll: {
+    flex: 1,
+  },
   content: {
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
@@ -250,6 +263,9 @@ const styles = StyleSheet.create({
     ...typography.h2,
     color: colors.text,
     marginTop: spacing.xs,
+  },
+  papelBadge: {
+    alignSelf: 'center',
   },
   igreja: {
     ...typography.bodySmall,

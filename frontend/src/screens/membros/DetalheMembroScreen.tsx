@@ -23,6 +23,7 @@ import { ApiError } from '@/services/api';
 import { Papel } from '@/types';
 import { papelLabel } from '@/utils/papel';
 import { confirmAction } from '@/utils/confirm';
+import { formatTelefone } from '@/utils/telefone';
 import { colors, spacing, typography } from '@/theme';
 
 const PAPEIS: Papel[] = ['admin', 'ministro', 'vocal', 'membro'];
@@ -173,7 +174,11 @@ export function DetalheMembroScreen() {
     <SafeAreaView style={styles.screen} edges={['top']}>
       <Header title={isNovo ? 'Novo Membro' : 'Editar Membro'} showBack />
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.avatarBlock}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{nome ? nome[0] : '+'}</Text>
@@ -196,10 +201,11 @@ export function DetalheMembroScreen() {
           />
           <Input
             icon="call-outline"
-            placeholder="Telefone"
+            placeholder="(DDD) 90000-0000"
             value={telefone}
-            onChangeText={setTelefone}
+            onChangeText={(text) => setTelefone(formatTelefone(text))}
             keyboardType="phone-pad"
+            maxLength={15}
           />
           <Input
             icon="musical-notes-outline"
@@ -305,6 +311,9 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     minWidth: 200,
+  },
+  scroll: {
+    flex: 1,
   },
   content: {
     padding: spacing.lg,

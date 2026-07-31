@@ -33,6 +33,14 @@ export async function getMinhaEscalaFixa(): Promise<MinhaEscalaFixaItem[]> {
 }
 
 /**
+ * Remove um vínculo de escala fixa (a recorrência inteira, todas as
+ * semanas). Admin e ministro.
+ */
+export async function deletarEscalaFixa(id: number): Promise<void> {
+  await api.delete(`/escala-fixa/${id}`);
+}
+
+/**
  * Escala "efetiva" de uma data específica — já considera substituições
  * registradas em excecoes pra aquela data exata.
  */

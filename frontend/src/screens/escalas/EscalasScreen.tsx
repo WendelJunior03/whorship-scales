@@ -155,6 +155,7 @@ export function EscalasScreen() {
       <Header title="Escalas" showBack />
 
       <FlatList
+        style={styles.list}
         data={cultos}
         keyExtractor={(item) => String(item.id)}
         contentContainerStyle={styles.content}
@@ -293,6 +294,9 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     minWidth: 200,
+  },
+  list: {
+    flex: 1,
   },
   content: {
     padding: spacing.lg,

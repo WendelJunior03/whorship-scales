@@ -176,7 +176,11 @@ export function AgendaScreen() {
         <Text style={styles.subtitle}>Seus próximos compromissos</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         <Card style={styles.calendarCard}>
           <Calendar
             markedDates={markedDates}
@@ -337,6 +341,9 @@ const styles = StyleSheet.create({
   subtitle: {
     ...typography.bodySmall,
     color: colors.textSecondary,
+  },
+  scroll: {
+    flex: 1,
   },
   content: {
     padding: spacing.lg,
