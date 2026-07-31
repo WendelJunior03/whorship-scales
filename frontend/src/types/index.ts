@@ -147,3 +147,22 @@ export interface MinhaEscalaAvulsaItem {
   tipo: string | null;
   funcao: string;
 }
+
+/**
+ * Tipos de notificação que o back-end gera hoje. 'repertorio' e
+ * 'lembrete' ainda não têm gatilho — reservados pro futuro.
+ */
+export type TipoNotificacao = 'escala' | 'substituicao' | 'confirmacao' | 'repertorio' | 'lembrete';
+
+/**
+ * Formato de cada item de GET /notificacoes/me.
+ */
+export interface Notificacao {
+  id: number;
+  membro_id: number;
+  tipo: TipoNotificacao;
+  titulo: string;
+  descricao: string;
+  lida: boolean;
+  created_at: string;
+}

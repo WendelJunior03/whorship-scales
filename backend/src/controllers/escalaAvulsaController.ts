@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { createEscalaAvulsa, findEscalaAvulsaByCultoId, findEscalaAvulsaById, updateStatusEscalaAvulsa, findMinhaEscalaAvulsa } from '../models/escalaAvulsaModel';
-import { findById } from '../models/membroModel';
+import { findById, findAdminsAtivos } from '../models/membroModel';
 import { findCultoById } from '../models/cultoModel';
+import { createNotificacao } from '../models/notificacaoModel';
 import { enviarEmail } from '../services/emailService';
 
 export async function createEscalaAvulsaController(req: Request, res: Response) {
@@ -25,6 +26,16 @@ export async function createEscalaAvulsaController(req: Request, res: Response) 
                 );
             } catch (error) {
                 console.error('Erro ao enviar email:', error);
+            }
+            try {
+                await createNotificacao(
+                    membroId,
+                    'escala',
+                    'Nova escala publicada',
+                    `Você foi escalado como "${funcao}" para o culto do dia ${culto.data_hora}.`
+                );
+            } catch (error) {
+                console.error('Erro ao criar notificação:', error);
             }
         }
 
@@ -63,6 +74,24 @@ export async function confirmarPresencaAvulsaController(req: Request, res: Respo
     }
 
     await updateStatusEscalaAvulsa(Number(id), status);
+
+    if (status === 'confirmado') {
+        try {
+            const membro = await findById(req.user.id);
+            const admins = await findAdminsAtivos();
+            for (const admin of admins) {
+                await createNotificacao(
+                    admin.id,
+                    'confirmacao',
+                    'Confirmação recebida',
+                    `${membro?.nome ?? 'Um membro'} confirmou presença.`
+                );
+            }
+        } catch (error) {
+            console.error('Erro ao criar notificação:', error);
+        }
+    }
+
     return res.status(200).json({ message: 'Escala avulsa atualizada com sucesso!' })
 }
 

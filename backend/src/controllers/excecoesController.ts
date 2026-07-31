@@ -3,6 +3,7 @@ import { createExcecao } from '../models/excecoesModel';
 import { findEscalaFixaById } from '../models/escalaFixaModel';
 import { enviarEmail } from '../services/emailService';
 import { findById } from '../models/membroModel';
+import { createNotificacao } from '../models/notificacaoModel';
 
 export async function createExcecoesController(req: Request, res: Response) {
     const { escalaFixaId, substitutoId, data } = req.body;
@@ -36,6 +37,16 @@ export async function createExcecoesController(req: Request, res: Response) {
         );
         } catch (error) {
             console.error('Erro ao enviar email:', error);
+        }
+        try {
+            await createNotificacao(
+                substitutoId,
+                'substituicao',
+                'Substituição registrada',
+                `Você foi escalado como substituto para o culto do dia ${data}.`
+            );
+        } catch (error) {
+            console.error('Erro ao criar notificação:', error);
         }
     }
     return res.status(201).json({ message: 'Exceção cadastrada com sucesso!' })

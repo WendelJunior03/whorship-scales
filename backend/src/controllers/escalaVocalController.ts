@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { createEscalaVocal, sugerirVocais, findEscalaVocalById, updateStatusEscalaVocal, findEscalaVocalByCultoId, findMinhaEscalaVocal } from '../models/escalaVocalModel';
-import { findById } from '../models/membroModel';
+import { findById, findAdminsAtivos } from '../models/membroModel';
 import { findCultoById } from '../models/cultoModel';
+import { createNotificacao } from '../models/notificacaoModel';
 import { enviarEmail } from '../services/emailService';
 
 
@@ -25,6 +26,16 @@ export async function createEscalaVocalController(req: Request, res: Response) {
         );
         } catch (error) {
             console.error('Erro ao enviar email:', error);
+        }
+        try {
+            await createNotificacao(
+                membroId,
+                'escala',
+                'Nova escala publicada',
+                `Você foi escalado para o culto do dia ${culto.data_hora}.`
+            );
+        } catch (error) {
+            console.error('Erro ao criar notificação:', error);
         }
     }
     return res.status(201).json({ message: 'Escala vocal cadastrada com sucesso!' })
@@ -67,6 +78,24 @@ export async function confirmarPresencaController (req: Request, res: Response) 
     }
 
     await updateStatusEscalaVocal(Number(id), status);
+
+    if (status === 'confirmado') {
+        try {
+            const membro = await findById(req.user.id);
+            const admins = await findAdminsAtivos();
+            for (const admin of admins) {
+                await createNotificacao(
+                    admin.id,
+                    'confirmacao',
+                    'Confirmação recebida',
+                    `${membro?.nome ?? 'Um membro'} confirmou presença.`
+                );
+            }
+        } catch (error) {
+            console.error('Erro ao criar notificação:', error);
+        }
+    }
+
     return res.status(200).json({message: 'Escala vocal atualizada com sucesso!'})
 }
 

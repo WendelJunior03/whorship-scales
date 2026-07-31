@@ -53,3 +53,8 @@ export async function updatePassword(id: number, hashPassword: string) {
     const result = await query('UPDATE membros SET senha = $1 WHERE id = $2 RETURNING *', [hashPassword, id]);
     return result.rows[0];
 }
+
+export async function findAdminsAtivos() {
+    const result = await query("SELECT id FROM membros WHERE papel = 'admin' AND ativo = true");
+    return result.rows;
+}
