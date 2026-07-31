@@ -200,16 +200,19 @@ export function AgendaScreen() {
           />
         </Card>
 
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Compromissos de vocal</Text>
-        </View>
-
-        {escalaVocal.length === 0 ? (
+        {escalaVocal.length === 0 && escalaAvulsa.length === 0 && escalaFixa.length === 0 && (
           <Card>
-            <Text style={styles.emptyText}>Você não tem compromissos de vocal registrados.</Text>
+            <Text style={styles.emptyText}>Você não tem compromissos futuros registrados.</Text>
           </Card>
-        ) : (
-          escalaVocal.map((item) => (
+        )}
+
+        {escalaVocal.length > 0 && (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Compromissos de vocal</Text>
+            </View>
+
+            {escalaVocal.map((item) => (
             <Card key={item.id} style={styles.compromisso}>
               <View style={styles.compromissoInfo}>
                 <Text style={styles.compromissoDia}>{formatDiaCompleto(item.data_hora)}</Text>
@@ -237,19 +240,17 @@ export function AgendaScreen() {
                 </View>
               )}
             </Card>
-          ))
+            ))}
+          </>
         )}
 
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Compromissos avulsos</Text>
-        </View>
+        {escalaAvulsa.length > 0 && (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Compromissos avulsos</Text>
+            </View>
 
-        {escalaAvulsa.length === 0 ? (
-          <Card>
-            <Text style={styles.emptyText}>Você não tem compromissos avulsos registrados.</Text>
-          </Card>
-        ) : (
-          escalaAvulsa.map((item) => (
+            {escalaAvulsa.map((item) => (
             <Card key={item.id} style={styles.compromisso}>
               <View style={styles.compromissoInfo}>
                 <Text style={styles.compromissoDia}>{formatDiaCompleto(item.data_hora)}</Text>
@@ -276,33 +277,32 @@ export function AgendaScreen() {
                 </View>
               )}
             </Card>
-          ))
+            ))}
+          </>
         )}
 
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Sua escala fixa</Text>
-        </View>
+        {escalaFixa.length > 0 && (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Sua escala fixa</Text>
+            </View>
 
-        {escalaFixa.length === 0 ? (
-          <Card>
-            <Text style={styles.emptyText}>Você ainda não tem uma escala fixa cadastrada.</Text>
-          </Card>
-        ) : (
-          escalaFixa.map((item) => (
-            <Card key={item.id} style={styles.compromisso}>
-              <View style={styles.compromissoInfo}>
-                <Text style={styles.compromissoDia}>{capitalize(item.dia_semana)}</Text>
-                <Text style={styles.compromissoHora}>{item.funcao}</Text>
-              </View>
-              <Button
-                title="Recusar"
-                onPress={() => handleRecusarEscalaFixa(item)}
-                loading={actionLoadingId === item.id}
-                variant="outline"
-                style={styles.acaoBotaoUnico}
-              />
-            </Card>
-          ))
+            {escalaFixa.map((item) => (
+              <Card key={item.id} style={styles.compromisso}>
+                <View style={styles.compromissoInfo}>
+                  <Text style={styles.compromissoDia}>{capitalize(item.dia_semana)}</Text>
+                  <Text style={styles.compromissoHora}>{item.funcao}</Text>
+                </View>
+                <Button
+                  title="Recusar"
+                  onPress={() => handleRecusarEscalaFixa(item)}
+                  loading={actionLoadingId === item.id}
+                  variant="outline"
+                  style={styles.acaoBotaoUnico}
+                />
+              </Card>
+            ))}
+          </>
         )}
       </ScrollView>
     </SafeAreaView>
