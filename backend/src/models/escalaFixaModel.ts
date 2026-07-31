@@ -17,7 +17,7 @@ export async function findEscalaFixaMontada() {
 }
 
 export async function findMyEscalaFixa(membroId: number) {
-    const result = await query('SELECT escala_fixa.dia_semana, escala_fixa.funcao, membros.nome FROM escala_fixa JOIN membros ON escala_fixa.membro_id = membros.id WHERE escala_fixa.membro_id = $1', [membroId])
+    const result = await query('SELECT escala_fixa.id, escala_fixa.dia_semana, escala_fixa.funcao, membros.nome FROM escala_fixa JOIN membros ON escala_fixa.membro_id = membros.id WHERE escala_fixa.membro_id = $1', [membroId])
     return result.rows;
 }
 

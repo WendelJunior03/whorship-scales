@@ -5,7 +5,6 @@ import { findCultoById } from '../models/cultoModel';
 import { createNotificacao } from '../models/notificacaoModel';
 import { enviarEmail } from '../services/emailService';
 
-
 export async function createEscalaVocalController(req: Request, res: Response) {
     try {
         const { membroId, cultoId } = req.body;
