@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { useAuth } from '@/contexts/AuthContext';
+import { MainTabScreenNavigationProp } from '@/navigation/types';
 import * as membrosService from '@/services/membros';
 import { ApiError } from '@/services/api';
 import { papelLabel, papelTone } from '@/utils/papel';
 import { colors, spacing, typography } from '@/theme';
+import appConfig from '../../../app.json';
 
 const MENU_ITEMS = [
   { icon: 'person-outline' as const, label: 'Informações pessoais' },
@@ -21,6 +24,7 @@ const MENU_ITEMS = [
 
 export function PerfilScreen() {
   const { user, signOut } = useAuth();
+  const navigation = useNavigation<MainTabScreenNavigationProp<'Perfil'>>();
 
   const [senhaModalAberto, setSenhaModalAberto] = useState(false);
   const [senhaAtual, setSenhaAtual] = useState('');
@@ -37,6 +41,29 @@ export function PerfilScreen() {
 
   function fecharSenhaModal() {
     setSenhaModalAberto(false);
+  }
+
+  function handleMenuPress(label: (typeof MENU_ITEMS)[number]['label']) {
+    switch (label) {
+      case 'Informações pessoais':
+        if (user) navigation.navigate('DetalheMembro', { membroId: user.id });
+        return;
+      case 'Notificações':
+        navigation.navigate('Notificacoes');
+        return;
+      case 'Segurança':
+        abrirSenhaModal();
+        return;
+      case 'Ajuda e suporte':
+        Alert.alert(
+          'Ajuda e suporte',
+          'Precisa de ajuda? Fale com o admin do seu ministério — é quem consegue ajustar cadastros, escalas e permissões.',
+        );
+        return;
+      case 'Sobre o aplicativo':
+        Alert.alert('Sobre o aplicativo', `Deep Scales · versão ${appConfig.expo.version}`);
+        return;
+    }
   }
 
   async function handleAlterarSenha() {
@@ -88,14 +115,14 @@ export function PerfilScreen() {
 
         <Text style={styles.nome}>{user?.nome ?? '—'}</Text>
         {user && <Badge label={papelLabel[user.papel]} tone={papelTone[user.papel]} />}
-        <Text style={styles.igreja}>Igreja Central</Text>
+        <Text style={styles.igreja}>Igreja do Evangelho Quadrangular</Text>
 
         <View style={styles.menu}>
           {MENU_ITEMS.map((item) => (
             <TouchableOpacity
               key={item.label}
               style={styles.menuItem}
-              onPress={item.label === 'Segurança' ? abrirSenhaModal : undefined}
+              onPress={() => handleMenuPress(item.label)}
             >
               <Ionicons name={item.icon} size={20} color={colors.textSecondary} />
               <Text style={styles.menuLabel}>{item.label}</Text>

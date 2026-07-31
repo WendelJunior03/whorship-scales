@@ -17,6 +17,7 @@ import { Button } from '@/components/Button';
 import { Header } from '@/components/Header';
 import { Input } from '@/components/Input';
 import { MainStackParamList } from '@/navigation/MainNavigator';
+import { useAuth } from '@/contexts/AuthContext';
 import * as membrosService from '@/services/membros';
 import { ApiError } from '@/services/api';
 import { Papel } from '@/types';
@@ -28,8 +29,10 @@ const PAPEIS: Papel[] = ['admin', 'ministro', 'vocal', 'membro'];
 export function DetalheMembroScreen() {
   const route = useRoute<RouteProp<MainStackParamList, 'DetalheMembro'>>();
   const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();
+  const { user } = useAuth();
   const { membroId } = route.params ?? {};
   const isNovo = !membroId;
+  const isAdmin = user?.papel === 'admin';
 
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
@@ -41,6 +44,7 @@ export function DetalheMembroScreen() {
 
   const [isLoading, setIsLoading] = useState(!isNovo);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDesativando, setIsDesativando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const carregarMembro = useCallback(async () => {
@@ -97,7 +101,10 @@ export function DetalheMembroScreen() {
           phone: telefone.trim(),
           instrument: instrumento.trim(),
           email: email.trim(),
-          role: papel,
+          // só manda role se quem edita é admin — o back-end rejeita a
+          // troca de papel de qualquer outra pessoa, mesmo que seja o
+          // valor atual, então nem vale a pena mandar nesse caso.
+          ...(isAdmin ? { role: papel } : {}),
         });
         Alert.alert('Alterações salvas', 'Os dados do membro foram atualizados.');
       }
@@ -110,6 +117,37 @@ export function DetalheMembroScreen() {
     } finally {
       setIsSaving(false);
     }
+  }
+
+  function handleDesativar() {
+    if (!membroId) return;
+
+    Alert.alert(
+      'Desativar membro',
+      `Isso remove "${nome}" de todas as listas e escalas futuras. Ele deixa de conseguir entrar no app. Confirmar?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Desativar',
+          style: 'destructive',
+          onPress: async () => {
+            setIsDesativando(true);
+            try {
+              await membrosService.desativarMembro(membroId);
+              Alert.alert('Membro desativado', `${nome} foi desativado com sucesso.`);
+              navigation.goBack();
+            } catch (err) {
+              Alert.alert(
+                'Erro',
+                err instanceof ApiError ? err.message : 'Não foi possível desativar o membro.',
+              );
+            } finally {
+              setIsDesativando(false);
+            }
+          },
+        },
+      ],
+    );
   }
 
   if (isLoading) {
@@ -183,20 +221,36 @@ export function DetalheMembroScreen() {
             />
           )}
 
-          <Text style={styles.label}>Papel</Text>
-          <TouchableOpacity style={styles.selector} onPress={() => setPapelPickerAberto(true)}>
-            <Ionicons name="shield-outline" size={20} color={colors.textSecondary} />
-            <Text style={styles.selectorText}>{papelLabel[papel]}</Text>
-            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-          </TouchableOpacity>
+          {isAdmin && (
+            <>
+              <Text style={styles.label}>Papel</Text>
+              <TouchableOpacity style={styles.selector} onPress={() => setPapelPickerAberto(true)}>
+                <Ionicons name="shield-outline" size={20} color={colors.textSecondary} />
+                <Text style={styles.selectorText}>{papelLabel[papel]}</Text>
+                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
         <Button
           title="Salvar"
           onPress={handleSalvar}
           loading={isSaving}
+          disabled={isDesativando}
           style={styles.saveButton}
         />
+
+        {isAdmin && !isNovo && (
+          <Button
+            title="Desativar membro"
+            onPress={handleDesativar}
+            loading={isDesativando}
+            disabled={isSaving}
+            variant="outline"
+            style={styles.deactivateButton}
+          />
+        )}
       </ScrollView>
 
       <Modal
@@ -301,6 +355,10 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     marginTop: spacing.xl,
+  },
+  deactivateButton: {
+    marginTop: spacing.sm,
+    borderColor: colors.error,
   },
   modalOverlay: {
     flex: 1,

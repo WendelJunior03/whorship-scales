@@ -1,6 +1,9 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { MainTabs } from './MainTabs';
+import { EscalasScreen } from '@/screens/escalas/EscalasScreen';
+import { EscalaFixaScreen } from '@/screens/escalas/EscalaFixaScreen';
+import { ConfirmacoesScreen } from '@/screens/escalas/ConfirmacoesScreen';
 import { DetalhesCultoScreen } from '@/screens/escalas/DetalhesCultoScreen';
 import { GerarEscalaScreen } from '@/screens/escalas/GerarEscalaScreen';
 import { MembrosScreen } from '@/screens/membros/MembrosScreen';
@@ -8,6 +11,9 @@ import { DetalheMembroScreen } from '@/screens/membros/DetalheMembroScreen';
 
 export type MainStackParamList = {
   MainTabs: undefined;
+  Escalas: undefined;
+  EscalaFixa: undefined;
+  Confirmacoes: undefined;
   DetalhesCulto: { cultoId: number };
   GerarEscala: { cultoId: number };
   Membros: undefined;
@@ -20,6 +26,9 @@ export function MainNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MainTabs" component={MainTabs} />
+      <Stack.Screen name="Escalas" component={EscalasScreen} />
+      <Stack.Screen name="EscalaFixa" component={EscalaFixaScreen} />
+      <Stack.Screen name="Confirmacoes" component={ConfirmacoesScreen} />
       <Stack.Screen name="DetalhesCulto" component={DetalhesCultoScreen} />
       <Stack.Screen name="GerarEscala" component={GerarEscalaScreen} />
       <Stack.Screen name="Membros" component={MembrosScreen} />

@@ -26,6 +26,13 @@ export async function getEscalaAvulsaDoCulto(cultoId: number): Promise<EscalaAvu
 }
 
 /**
+ * Remove um vínculo avulso da escala de um culto. Admin e ministro.
+ */
+export async function deletarEscalaAvulsa(id: number): Promise<void> {
+  await api.delete(`/escala-avulsa/${id}`);
+}
+
+/**
  * Confirma ou recusa a própria presença numa escala avulsa. Só o dono
  * do registro.
  */

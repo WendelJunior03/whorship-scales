@@ -64,3 +64,22 @@ export function formatDataRelativa(isoDate: string): string {
 
   return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'long' }).format(data);
 }
+
+/**
+ * Combina uma data "YYYY-MM-DD" (ex: vinda do Calendar) com uma hora
+ * "HH:mm" digitada, em horário local, e devolve ISO em UTC pra mandar
+ * pro back-end. `null` se algum dos dois estiver num formato inválido.
+ */
+export function montarDataHoraISO(data: string, hora: string): string | null {
+  const partesData = data.split('-').map(Number);
+  const partesHora = hora.split(':').map(Number);
+  if (partesData.length !== 3 || partesHora.length !== 2) return null;
+  if ([...partesData, ...partesHora].some((n) => Number.isNaN(n))) return null;
+
+  const [ano, mes, dia] = partesData;
+  const [horas, minutos] = partesHora;
+  const dataHora = new Date(ano, mes - 1, dia, horas, minutos);
+  if (Number.isNaN(dataHora.getTime())) return null;
+
+  return dataHora.toISOString();
+}

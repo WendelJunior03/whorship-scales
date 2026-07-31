@@ -51,3 +51,10 @@ export async function getEscalaVocalDoCulto(cultoId: number): Promise<EscalaVoca
   const response = await api.get<EscalaVocalDoCultoItem[]>(`/escala-vocal/culto/${cultoId}`);
   return response.data;
 }
+
+/**
+ * Remove um vocal da escala de um culto. Admin e ministro.
+ */
+export async function deletarEscalaVocal(id: number): Promise<void> {
+  await api.delete(`/escala-vocal/${id}`);
+}

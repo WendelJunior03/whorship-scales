@@ -37,3 +37,8 @@ export async function findMinhaEscalaVocal(membroId: number) {
     const result = await query(`SELECT escala_vocal.id, escala_vocal.status, cultos.id AS culto_id, cultos.data_hora, cultos.tipo FROM escala_vocal JOIN cultos ON escala_vocal.culto_id = cultos.id WHERE escala_vocal.membro_id = $1 ORDER BY cultos.data_hora ASC`, [membroId]);
     return result.rows;
 }
+
+export async function deleteEscalaVocal(id: number) {
+    const result = await query('DELETE FROM escala_vocal WHERE id = $1 RETURNING *', [id]);
+    return result.rows[0];
+}

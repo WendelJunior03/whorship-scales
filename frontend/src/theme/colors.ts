@@ -1,17 +1,20 @@
 export const colors = {
   // fundo
-  background: '#0D0B16',
+  background: '#0D0210',
   surface: '#1B1729',
   surfaceElevated: '#241F35',
 
   // marca / ação
-  primary: '#8B5CF6',
-  primaryDark: '#6D28D9',
+  primary: '#6C3CE0',
+  primaryDark: '#3D1A5C',
+  primaryLight: '#A78BFA',
+  accent: '#8B5CF6',
   primaryGradient: ['#A855F7', '#7C3AED'] as const,
 
   // texto
   text: '#FFFFFF',
-  textSecondary: '#9CA3AF',
+  textPrimary: '#F5F3FF',
+  textSecondary: '#C4B5FD',
   textMuted: '#6B7280',
   textInverse: '#FFFFFF',
 

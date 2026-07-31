@@ -24,3 +24,13 @@ export async function findMinhaEscalaAvulsa(membroId: number) {
     const result = await query(`SELECT escala_avulsa.id, escala_avulsa.status, escala_avulsa.funcao, cultos.id AS culto_id, cultos.data_hora, cultos.tipo FROM escala_avulsa JOIN cultos ON escala_avulsa.culto_id = cultos.id WHERE escala_avulsa.membro_id = $1 ORDER BY cultos.data_hora ASC`, [membroId]);
     return result.rows;
 }
+
+export async function deleteEscalaAvulsa(id: number) {
+    const result = await query('DELETE FROM escala_avulsa WHERE id = $1 RETURNING *', [id]);
+    return result.rows[0];
+}
+
+export async function findProximoCultoAvulsaDoMembro(membroId: number) {
+    const result = await query(`SELECT cultos.id, cultos.data_hora, cultos.tipo FROM escala_avulsa JOIN cultos ON escala_avulsa.culto_id = cultos.id WHERE escala_avulsa.membro_id = $1 AND cultos.data_hora >= NOW() ORDER BY cultos.data_hora ASC LIMIT 1`, [membroId]);
+    return result.rows[0];
+}

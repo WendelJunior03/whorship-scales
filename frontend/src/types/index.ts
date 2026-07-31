@@ -96,6 +96,7 @@ export interface MinhaEscalaVocalItem {
  * ou o substituto.
  */
 export interface EscalaEfetivaItem {
+  escala_fixa_id: number;
   dia_semana: DiaSemana;
   funcao: string;
   quem_toca: string;

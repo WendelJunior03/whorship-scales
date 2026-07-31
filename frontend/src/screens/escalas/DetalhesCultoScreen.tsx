@@ -1,10 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Linking,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -22,17 +25,21 @@ import * as cultosService from '@/services/cultos';
 import * as escalaAvulsaService from '@/services/escalaAvulsa';
 import * as escalaFixaService from '@/services/escalaFixa';
 import * as escalaVocalService from '@/services/escalaVocal';
+import * as excecoesService from '@/services/excecoes';
+import * as membrosService from '@/services/membros';
 import * as repertorioService from '@/services/repertorio';
 import { ApiError } from '@/services/api';
 import {
   Culto,
   EscalaAvulsaDoCultoItem,
   EscalaVocalDoCultoItem,
+  Membro,
   Repertorio,
   StatusEscalaVocal,
 } from '@/types';
 import { colors, spacing, typography } from '@/theme';
 import { formatDiaCompleto, formatDiaSemana, formatHora } from '@/utils/date';
+import { isGestor, papelLabel } from '@/utils/papel';
 
 const statusLabel: Record<StatusEscalaVocal, string> = {
   pendente: 'Pendente',
@@ -51,6 +58,8 @@ interface EquipeItem {
   nome: string;
   funcao: string;
   status?: StatusEscalaVocal;
+  origem: 'fixa' | 'vocal' | 'avulsa';
+  origemId: number;
 }
 
 export function DetalhesCultoScreen() {
@@ -65,6 +74,22 @@ export function DetalhesCultoScreen() {
   const [suaFuncao, setSuaFuncao] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [repertorioModalAberto, setRepertorioModalAberto] = useState(false);
+  const [novoNomeMusica, setNovoNomeMusica] = useState('');
+  const [novoTom, setNovoTom] = useState('');
+  const [novoLink, setNovoLink] = useState('');
+  const [salvandoMusica, setSalvandoMusica] = useState(false);
+  const [excluindoMusicaId, setExcluindoMusicaId] = useState<number | null>(null);
+
+  const [equipeModalAberto, setEquipeModalAberto] = useState(false);
+  const [novoMembroEquipe, setNovoMembroEquipe] = useState<Membro | null>(null);
+  const [novaFuncaoEquipe, setNovaFuncaoEquipe] = useState('');
+  const [membroPickerAberto, setMembroPickerAberto] = useState(false);
+  const [todosMembrosAtivos, setTodosMembrosAtivos] = useState<Membro[]>([]);
+  const [carregandoMembros, setCarregandoMembros] = useState(false);
+  const [salvandoEquipe, setSalvandoEquipe] = useState(false);
+  const [excluindoEquipeChave, setExcluindoEquipeChave] = useState<string | null>(null);
 
   const carregarDados = useCallback(async () => {
     setIsLoading(true);
@@ -85,18 +110,24 @@ export function DetalhesCultoScreen() {
         chave: `fixa-${item.funcao}-${item.quem_toca}`,
         nome: item.quem_toca,
         funcao: item.funcao,
+        origem: 'fixa',
+        origemId: item.escala_fixa_id,
       }));
       const equipeVocal: EquipeItem[] = escalaVocalDoCulto.map((item) => ({
         chave: `vocal-${item.id}`,
         nome: item.nome,
         funcao: 'Vocal',
         status: item.status,
+        origem: 'vocal',
+        origemId: item.id,
       }));
       const equipeAvulsa: EquipeItem[] = escalaAvulsaDoCulto.map((item) => ({
         chave: `avulsa-${item.id}`,
         nome: item.nome,
         funcao: item.funcao,
         status: item.status,
+        origem: 'avulsa',
+        origemId: item.id,
       }));
 
       const minhaFuncaoFixa = equipeFixa.find((item) => item.nome === user?.nome);
@@ -126,6 +157,148 @@ export function DetalhesCultoScreen() {
 
   function handleAbrirMusica(link: string) {
     Linking.openURL(link).catch(() => {});
+  }
+
+  function abrirRepertorioModal() {
+    setNovoNomeMusica('');
+    setNovoTom('');
+    setNovoLink('');
+    setRepertorioModalAberto(true);
+  }
+
+  async function handleAdicionarMusica() {
+    if (!novoNomeMusica.trim() || !novoTom.trim() || !novoLink.trim()) {
+      Alert.alert('Preencha tudo', 'Nome, tom e link da música são obrigatórios.');
+      return;
+    }
+
+    setSalvandoMusica(true);
+    try {
+      await repertorioService.criarRepertorio({
+        cultoId,
+        nome: novoNomeMusica.trim(),
+        tom: novoTom.trim(),
+        linkMusica: novoLink.trim(),
+      });
+      setRepertorioModalAberto(false);
+      await carregarDados();
+    } catch (err) {
+      Alert.alert(
+        'Erro',
+        err instanceof ApiError ? err.message : 'Não foi possível adicionar a música.',
+      );
+    } finally {
+      setSalvandoMusica(false);
+    }
+  }
+
+  function handleExcluirMusica(musica: Repertorio) {
+    Alert.alert('Excluir música', `Remover "${musica.nome}" do repertório?`, [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Excluir',
+        style: 'destructive',
+        onPress: async () => {
+          setExcluindoMusicaId(musica.id);
+          try {
+            await repertorioService.deletarRepertorio(musica.id);
+            setRepertorios((prev) => prev.filter((r) => r.id !== musica.id));
+          } catch (err) {
+            Alert.alert(
+              'Erro',
+              err instanceof ApiError ? err.message : 'Não foi possível excluir a música.',
+            );
+          } finally {
+            setExcluindoMusicaId(null);
+          }
+        },
+      },
+    ]);
+  }
+
+  async function abrirEquipeModal() {
+    setNovoMembroEquipe(null);
+    setNovaFuncaoEquipe('');
+    setEquipeModalAberto(true);
+
+    if (todosMembrosAtivos.length > 0) return;
+    setCarregandoMembros(true);
+    try {
+      const todos = await membrosService.getTodosMembros();
+      setTodosMembrosAtivos(todos.filter((m) => m.ativo !== false));
+    } catch (err) {
+      Alert.alert(
+        'Erro',
+        err instanceof ApiError ? err.message : 'Não foi possível carregar os membros.',
+      );
+    } finally {
+      setCarregandoMembros(false);
+    }
+  }
+
+  async function handleAdicionarNaEquipe() {
+    if (!novoMembroEquipe || !novaFuncaoEquipe.trim()) {
+      Alert.alert('Preencha tudo', 'Selecione o membro e informe a função antes de adicionar.');
+      return;
+    }
+
+    setSalvandoEquipe(true);
+    try {
+      await escalaAvulsaService.criarEscalaAvulsa({
+        membroId: novoMembroEquipe.id,
+        cultoId,
+        funcao: novaFuncaoEquipe.trim(),
+      });
+      setEquipeModalAberto(false);
+      await carregarDados();
+    } catch (err) {
+      Alert.alert(
+        'Erro',
+        err instanceof ApiError ? err.message : 'Não foi possível adicionar à equipe.',
+      );
+    } finally {
+      setSalvandoEquipe(false);
+    }
+  }
+
+  function handleExcluirDaEquipe(item: EquipeItem) {
+    if (!culto) return;
+
+    const mensagem =
+      item.origem === 'fixa'
+        ? `Isso marca a falta de "${item.nome}" só neste culto (${item.funcao}) — a escala fixa semanal dele não é alterada. Confirmar?`
+        : `Remover "${item.nome}" (${item.funcao}) da equipe deste culto?`;
+
+    Alert.alert('Remover da equipe', mensagem, [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Remover',
+        style: 'destructive',
+        onPress: async () => {
+          setExcluindoEquipeChave(item.chave);
+          try {
+            if (item.origem === 'vocal') {
+              await escalaVocalService.deletarEscalaVocal(item.origemId);
+            } else if (item.origem === 'avulsa') {
+              await escalaAvulsaService.deletarEscalaAvulsa(item.origemId);
+            } else {
+              await excecoesService.criarExcecao({
+                escalaFixaId: item.origemId,
+                data: culto.data_hora.slice(0, 10),
+              });
+            }
+            await carregarDados();
+          } catch (err) {
+            Alert.alert(
+              'Erro',
+              err instanceof ApiError ? err.message : 'Não foi possível remover da equipe.',
+            );
+          } finally {
+            setExcluindoEquipeChave(null);
+          }
+        },
+      },
+    ]);
   }
 
   if (isLoading) {
@@ -166,6 +339,11 @@ export function DetalhesCultoScreen() {
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Repertório</Text>
+          {user && isGestor(user.papel) && (
+            <TouchableOpacity onPress={abrirRepertorioModal}>
+              <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
+            </TouchableOpacity>
+          )}
         </View>
         {repertorios.length === 0 ? (
           <Card>
@@ -184,6 +362,15 @@ export function DetalhesCultoScreen() {
                 <Text style={styles.musicaNumero}>{String(index + 1).padStart(2, '0')}</Text>
                 <Text style={styles.musicaNome}>{musica.nome}</Text>
                 <Badge label={musica.tom} tone="neutral" />
+                {user &&
+                  isGestor(user.papel) &&
+                  (excluindoMusicaId === musica.id ? (
+                    <ActivityIndicator size="small" color={colors.error} />
+                  ) : (
+                    <TouchableOpacity onPress={() => handleExcluirMusica(musica)} hitSlop={8}>
+                      <Ionicons name="trash-outline" size={18} color={colors.error} />
+                    </TouchableOpacity>
+                  ))}
               </TouchableOpacity>
             ))}
           </Card>
@@ -191,6 +378,11 @@ export function DetalhesCultoScreen() {
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Equipe</Text>
+          {user && isGestor(user.papel) && (
+            <TouchableOpacity onPress={abrirEquipeModal}>
+              <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
+            </TouchableOpacity>
+          )}
         </View>
         {equipe.length === 0 ? (
           <Card>
@@ -202,22 +394,37 @@ export function DetalhesCultoScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.equipeRow}
           >
-            {equipe.map((membro) => (
-              <View key={membro.chave} style={styles.membroAvatarBlock}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{membro.nome[0]}</Text>
+            {equipe.map((membro) => {
+              const podeExcluir =
+                membro.origem === 'fixa'
+                  ? user?.papel === 'admin'
+                  : Boolean(user && isGestor(user.papel));
+
+              return (
+                <View key={membro.chave} style={styles.membroAvatarBlock}>
+                  <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>{membro.nome[0]}</Text>
+                  </View>
+                  <Text style={styles.membroNome} numberOfLines={1}>
+                    {membro.nome}
+                  </Text>
+                  <Text style={styles.membroFuncao} numberOfLines={1}>
+                    {membro.funcao}
+                  </Text>
+                  {membro.status && (
+                    <Badge label={statusLabel[membro.status]} tone={statusTone[membro.status]} />
+                  )}
+                  {podeExcluir &&
+                    (excluindoEquipeChave === membro.chave ? (
+                      <ActivityIndicator size="small" color={colors.error} />
+                    ) : (
+                      <TouchableOpacity onPress={() => handleExcluirDaEquipe(membro)} hitSlop={8}>
+                        <Ionicons name="trash-outline" size={16} color={colors.error} />
+                      </TouchableOpacity>
+                    ))}
                 </View>
-                <Text style={styles.membroNome} numberOfLines={1}>
-                  {membro.nome}
-                </Text>
-                <Text style={styles.membroFuncao} numberOfLines={1}>
-                  {membro.funcao}
-                </Text>
-                {membro.status && (
-                  <Badge label={statusLabel[membro.status]} tone={statusTone[membro.status]} />
-                )}
-              </View>
-            ))}
+              );
+            })}
           </ScrollView>
         )}
 
@@ -239,6 +446,145 @@ export function DetalhesCultoScreen() {
           </Card>
         )}
       </ScrollView>
+
+      <Modal
+        visible={repertorioModalAberto}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setRepertorioModalAberto(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Adicionar música</Text>
+
+            <View style={styles.modalInput}>
+              <TextInput
+                style={styles.modalTextInput}
+                placeholder="Nome da música"
+                placeholderTextColor={colors.textMuted}
+                value={novoNomeMusica}
+                onChangeText={setNovoNomeMusica}
+              />
+            </View>
+            <View style={styles.modalInput}>
+              <TextInput
+                style={styles.modalTextInput}
+                placeholder="Tom (ex: G, Em)"
+                placeholderTextColor={colors.textMuted}
+                value={novoTom}
+                onChangeText={setNovoTom}
+              />
+            </View>
+            <View style={styles.modalInput}>
+              <TextInput
+                style={styles.modalTextInput}
+                placeholder="Link de referência"
+                placeholderTextColor={colors.textMuted}
+                value={novoLink}
+                onChangeText={setNovoLink}
+                autoCapitalize="none"
+                keyboardType="url"
+              />
+            </View>
+
+            <Button
+              title="Adicionar"
+              onPress={handleAdicionarMusica}
+              loading={salvandoMusica}
+              style={styles.modalButton}
+            />
+            <Button
+              title="Cancelar"
+              variant="outline"
+              onPress={() => setRepertorioModalAberto(false)}
+              disabled={salvandoMusica}
+              style={styles.modalButton}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={equipeModalAberto}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setEquipeModalAberto(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Adicionar à equipe</Text>
+
+            <TouchableOpacity
+              style={styles.modalInput}
+              onPress={() => setMembroPickerAberto(true)}
+            >
+              <Text style={novoMembroEquipe ? styles.modalTextInput : styles.modalPlaceholder}>
+                {novoMembroEquipe ? novoMembroEquipe.nome : 'Selecionar membro'}
+              </Text>
+            </TouchableOpacity>
+            <View style={styles.modalInput}>
+              <TextInput
+                style={styles.modalTextInput}
+                placeholder="Função (ex: Baixo, Ministro)"
+                placeholderTextColor={colors.textMuted}
+                value={novaFuncaoEquipe}
+                onChangeText={setNovaFuncaoEquipe}
+              />
+            </View>
+
+            <Button
+              title="Adicionar"
+              onPress={handleAdicionarNaEquipe}
+              loading={salvandoEquipe}
+              style={styles.modalButton}
+            />
+            <Button
+              title="Cancelar"
+              variant="outline"
+              onPress={() => setEquipeModalAberto(false)}
+              disabled={salvandoEquipe}
+              style={styles.modalButton}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={membroPickerAberto}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setMembroPickerAberto(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContentPicker}>
+            <Text style={styles.modalTitle}>Escolher membro</Text>
+            {carregandoMembros ? (
+              <ActivityIndicator color={colors.primary} style={styles.modalLoading} />
+            ) : (
+              <ScrollView style={styles.modalList}>
+                {todosMembrosAtivos.length === 0 ? (
+                  <Text style={styles.emptyText}>Nenhum membro disponível.</Text>
+                ) : (
+                  todosMembrosAtivos.map((membro) => (
+                    <TouchableOpacity
+                      key={membro.id}
+                      style={styles.modalItem}
+                      onPress={() => {
+                        setNovoMembroEquipe(membro);
+                        setMembroPickerAberto(false);
+                      }}
+                    >
+                      <Text style={styles.modalItemText}>{membro.nome}</Text>
+                      <Text style={styles.modalItemSubtext}>{papelLabel[membro.papel]}</Text>
+                    </TouchableOpacity>
+                  ))
+                )}
+              </ScrollView>
+            )}
+            <Button title="Cancelar" variant="outline" onPress={() => setMembroPickerAberto(false)} />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -362,5 +708,71 @@ const styles = StyleSheet.create({
   suaFuncaoValor: {
     ...typography.h3,
     color: colors.text,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  modalTitle: {
+    ...typography.h3,
+    color: colors.text,
+  },
+  modalInput: {
+    backgroundColor: colors.background,
+    borderRadius: 14,
+    paddingHorizontal: spacing.md,
+    height: 56,
+    borderWidth: 1,
+    borderColor: colors.border,
+    justifyContent: 'center',
+  },
+  modalTextInput: {
+    ...typography.body,
+    color: colors.text,
+  },
+  modalPlaceholder: {
+    ...typography.body,
+    color: colors.textMuted,
+  },
+  modalButton: {
+    marginTop: spacing.xs,
+  },
+  modalContentPicker: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: spacing.lg,
+    gap: spacing.md,
+    maxHeight: '70%',
+  },
+  modalLoading: {
+    marginVertical: spacing.lg,
+  },
+  modalList: {
+    maxHeight: 320,
+  },
+  modalItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  modalItemText: {
+    ...typography.body,
+    color: colors.text,
+  },
+  modalItemSubtext: {
+    ...typography.caption,
+    color: colors.textMuted,
   },
 });

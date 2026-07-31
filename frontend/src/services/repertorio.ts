@@ -41,3 +41,10 @@ export async function getRepertorioDoCulto(cultoId: number): Promise<Repertorio[
   const response = await api.get<Repertorio[]>(`/repertorio/${cultoId}`);
   return response.data;
 }
+
+/**
+ * Remove uma música do repertório. Admin e ministro.
+ */
+export async function deletarRepertorio(id: number): Promise<void> {
+  await api.delete(`/repertorio/${id}`);
+}

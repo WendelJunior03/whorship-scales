@@ -27,22 +27,14 @@ import * as membrosService from '@/services/membros';
 import { ApiError } from '@/services/api';
 import { Culto, Membro, SugestaoVocal } from '@/types';
 import { colors, spacing, typography } from '@/theme';
-import { formatDiaCompleto, formatDiaCurto, formatDiaSemana, formatHora } from '@/utils/date';
+import {
+  formatDiaCompleto,
+  formatDiaCurto,
+  formatDiaSemana,
+  formatHora,
+  montarDataHoraISO,
+} from '@/utils/date';
 import { papelLabel } from '@/utils/papel';
-
-function montarDataHoraISO(data: string, hora: string): string | null {
-  const partesData = data.split('-').map(Number);
-  const partesHora = hora.split(':').map(Number);
-  if (partesData.length !== 3 || partesHora.length !== 2) return null;
-  if ([...partesData, ...partesHora].some((n) => Number.isNaN(n))) return null;
-
-  const [ano, mes, dia] = partesData;
-  const [horas, minutos] = partesHora;
-  const dataHora = new Date(ano, mes - 1, dia, horas, minutos);
-  if (Number.isNaN(dataHora.getTime())) return null;
-
-  return dataHora.toISOString();
-}
 
 export function GerarEscalaScreen() {
   const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();

@@ -26,15 +26,30 @@ import { getSaudacao } from '@/utils/greeting';
 import { isGestor } from '@/utils/papel';
 
 const ATALHOS_GESTAO = [
-  { icon: 'calendar-outline' as const, label: 'Escalas', sublabel: 'Ver escalas' },
+  {
+    icon: 'calendar-outline' as const,
+    label: 'Escalas',
+    sublabel: 'Ver escalas',
+    route: 'Escalas' as const,
+  },
   {
     icon: 'people-outline' as const,
     label: 'Membros',
     sublabel: 'Gerenciar',
     route: 'Membros' as const,
   },
-  { icon: 'musical-notes-outline' as const, label: 'Repertórios', sublabel: 'Ver repertórios' },
-  { icon: 'checkmark-done-outline' as const, label: 'Confirmações', sublabel: 'Acompanhar' },
+  {
+    icon: 'repeat-outline' as const,
+    label: 'Escala Fixa',
+    sublabel: 'Configurar',
+    route: 'EscalaFixa' as const,
+  },
+  {
+    icon: 'checkmark-done-outline' as const,
+    label: 'Confirmações',
+    sublabel: 'Acompanhar',
+    route: 'Confirmacoes' as const,
+  },
 ];
 
 export function HomeScreen() {
@@ -138,9 +153,7 @@ export function HomeScreen() {
           </TouchableOpacity>
         ) : (
           <Card>
-            <Text style={styles.semCultoTexto}>
-              Você não está escalado como vocal em nenhum culto futuro no momento.
-            </Text>
+            <Text style={styles.semCultoTexto}>Nenhum culto agendado pra você no momento.</Text>
           </Card>
         )}
 

@@ -22,3 +22,19 @@ export async function criarCulto(input: CriarCultoInput): Promise<Culto> {
   const response = await api.post<Culto>('/cultos', input);
   return response.data;
 }
+
+/**
+ * Lista todos os cultos cadastrados. Admin e ministro.
+ */
+export async function getTodosCultos(): Promise<Culto[]> {
+  const response = await api.get<Culto[]>('/cultos');
+  return response.data;
+}
+
+/**
+ * Apaga um culto e tudo que depende dele (repertório, escala de vocal e
+ * avulsa vinculados). Só admin. Sem volta.
+ */
+export async function deletarCulto(id: number): Promise<void> {
+  await api.delete(`/cultos/${id}`);
+}

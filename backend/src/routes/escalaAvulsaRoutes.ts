@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middlewares/authMiddleware';
 import { autorizator } from '../middlewares/roleMiddleware';
-import { createEscalaAvulsaController, getEscalaAvulsaDoCultoController, confirmarPresencaAvulsaController, getMinhaEscalaAvulsaController } from '../controllers/escalaAvulsaController';
+import { createEscalaAvulsaController, getEscalaAvulsaDoCultoController, confirmarPresencaAvulsaController, getMinhaEscalaAvulsaController, deleteEscalaAvulsaController } from '../controllers/escalaAvulsaController';
 
 const router = Router();
 
@@ -9,4 +9,5 @@ router.post('/', authMiddleware, autorizator(['admin', 'ministro']), createEscal
 router.get('/culto/:cultoId', authMiddleware, getEscalaAvulsaDoCultoController)
 router.put('/:id/status', authMiddleware, confirmarPresencaAvulsaController)
 router.get('/me', authMiddleware, getMinhaEscalaAvulsaController)
+router.delete('/:id', authMiddleware, autorizator(['admin', 'ministro']), deleteEscalaAvulsaController)
 export default router;

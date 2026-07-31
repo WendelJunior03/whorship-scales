@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { createEscalaAvulsa, findEscalaAvulsaByCultoId, findEscalaAvulsaById, updateStatusEscalaAvulsa, findMinhaEscalaAvulsa } from '../models/escalaAvulsaModel';
+import { createEscalaAvulsa, findEscalaAvulsaByCultoId, findEscalaAvulsaById, updateStatusEscalaAvulsa, findMinhaEscalaAvulsa, deleteEscalaAvulsa } from '../models/escalaAvulsaModel';
 import { findById, findAdminsAtivos } from '../models/membroModel';
 import { findCultoById } from '../models/cultoModel';
 import { createNotificacao } from '../models/notificacaoModel';
@@ -101,4 +101,16 @@ export async function getMinhaEscalaAvulsaController(req: Request, res: Response
     }
     const escalaAvulsa = await findMinhaEscalaAvulsa(req.user.id);
     return res.status(200).json(escalaAvulsa);
+}
+
+export async function deleteEscalaAvulsaController(req: Request, res: Response) {
+    const { id } = req.params;
+
+    const escalaAvulsa = await findEscalaAvulsaById(Number(id));
+    if (!escalaAvulsa) {
+        return res.status(404).json({ message: 'Escala avulsa não encontrada!' })
+    }
+
+    await deleteEscalaAvulsa(Number(id));
+    return res.status(200).json({ message: 'Escala avulsa removida com sucesso!' })
 }

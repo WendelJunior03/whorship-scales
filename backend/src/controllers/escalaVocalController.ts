@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { createEscalaVocal, sugerirVocais, findEscalaVocalById, updateStatusEscalaVocal, findEscalaVocalByCultoId, findMinhaEscalaVocal } from '../models/escalaVocalModel';
+import { createEscalaVocal, sugerirVocais, findEscalaVocalById, updateStatusEscalaVocal, findEscalaVocalByCultoId, findMinhaEscalaVocal, deleteEscalaVocal } from '../models/escalaVocalModel';
 import { findById, findAdminsAtivos } from '../models/membroModel';
 import { findCultoById } from '../models/cultoModel';
 import { createNotificacao } from '../models/notificacaoModel';
@@ -113,4 +113,16 @@ export async function getMinhaEscalaVocalController(req: Request, res: Response)
     }
     const escalaVocal = await findMinhaEscalaVocal(req.user.id);
     return res.status(200).json(escalaVocal);
+}
+
+export async function deleteEscalaVocalController(req: Request, res: Response) {
+    const { id } = req.params;
+
+    const escalaVocal = await findEscalaVocalById(Number(id));
+    if (!escalaVocal) {
+        return res.status(404).json({ message: 'Escala vocal não encontrada!' })
+    }
+
+    await deleteEscalaVocal(Number(id));
+    return res.status(200).json({ message: 'Escala vocal removida com sucesso!' })
 }
