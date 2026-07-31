@@ -13,6 +13,7 @@ const tags = `
 `;
 
 html = html.replace('</head>', `${tags}</head>`);
+html = html.replace('<html lang="en">', '<html lang="pt-BR">');
 
 fs.writeFileSync(indexPath, html);
-console.log('Tags do PWA injetadas em dist/index.html');
+console.log('Tags do PWA injetadas e idioma corrigido em dist/index.html');
