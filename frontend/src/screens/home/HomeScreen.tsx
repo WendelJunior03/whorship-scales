@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -24,6 +25,16 @@ import { colors, spacing, typography } from '@/theme';
 import { formatDiaCompleto, formatHora } from '@/utils/date';
 import { getSaudacao } from '@/utils/greeting';
 import { isGestor } from '@/utils/papel';
+import logo from '../../../assets/logo.png';
+
+// A imagem original (1092x1092) tem o emblema circular em cima e o texto
+// "Deep Scales" embaixo. Essas constantes recortam só o círculo (região
+// x: 210-876, y: 140-802 medida na imagem original), escalado pro
+// tamanho do header.
+const LOGO_MARK_SIZE = 32;
+const LOGO_MARK_SCALE = 1092 / (876 - 210);
+const LOGO_MARK_OFFSET_X = -(210 / (876 - 210)) * LOGO_MARK_SIZE;
+const LOGO_MARK_OFFSET_Y = -(140 / (802 - 140)) * LOGO_MARK_SIZE;
 
 const ATALHOS_GESTAO = [
   {
@@ -112,7 +123,9 @@ export function HomeScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={styles.header}>
-        <Ionicons name="menu" size={26} color={colors.text} />
+        <View style={styles.headerLogoCrop}>
+          <Image source={logo} style={styles.headerLogo} />
+        </View>
         <TouchableOpacity onPress={() => navigation.navigate('Notificacoes')}>
           <Ionicons name="notifications-outline" size={24} color={colors.text} />
           <View style={styles.badgeDot} />
@@ -238,6 +251,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
+  },
+  headerLogoCrop: {
+    width: LOGO_MARK_SIZE,
+    height: LOGO_MARK_SIZE,
+    overflow: 'hidden',
+    borderRadius: LOGO_MARK_SIZE / 2,
+  },
+  headerLogo: {
+    position: 'absolute',
+    width: LOGO_MARK_SIZE * LOGO_MARK_SCALE,
+    height: LOGO_MARK_SIZE * LOGO_MARK_SCALE,
+    left: LOGO_MARK_OFFSET_X,
+    top: LOGO_MARK_OFFSET_Y,
   },
   badgeDot: {
     position: 'absolute',

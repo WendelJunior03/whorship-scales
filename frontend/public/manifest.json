@@ -1,0 +1,14 @@
+{
+  "name": "Deep Scales",
+  "short_name": "Deep Scales",
+  "description": "Organize seu ministério com excelência",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0D0210",
+  "theme_color": "#6C3CE0",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

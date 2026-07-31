@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "frontend",
+    "name": "Deep Scales",
     "slug": "frontend",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -19,7 +19,9 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "themeColor": "#6C3CE0",
+      "backgroundColor": "#0D0210"
     },
     "plugins": [
       "expo-secure-store"

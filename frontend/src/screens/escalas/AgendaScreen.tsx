@@ -219,21 +219,23 @@ export function AgendaScreen() {
                 </Text>
                 <Badge label={statusLabel[item.status]} tone={statusTone[item.status]} />
               </View>
-              <View style={styles.acoes}>
-                <Button
-                  title="Confirmar"
-                  onPress={() => handleAtualizarStatus(item, 'confirmado')}
-                  loading={actionLoadingId === item.id}
-                  style={styles.acaoBotao}
-                />
-                <Button
-                  title="Recusar"
-                  onPress={() => handleAtualizarStatus(item, 'recusado')}
-                  loading={actionLoadingId === item.id}
-                  variant="outline"
-                  style={styles.acaoBotao}
-                />
-              </View>
+              {item.status === 'pendente' && (
+                <View style={styles.acoes}>
+                  <Button
+                    title="Confirmar"
+                    onPress={() => handleAtualizarStatus(item, 'confirmado')}
+                    loading={actionLoadingId === item.id}
+                    style={styles.acaoBotao}
+                  />
+                  <Button
+                    title="Recusar"
+                    onPress={() => handleAtualizarStatus(item, 'recusado')}
+                    loading={actionLoadingId === item.id}
+                    variant="outline"
+                    style={styles.acaoBotao}
+                  />
+                </View>
+              )}
             </Card>
           ))
         )}
@@ -256,21 +258,23 @@ export function AgendaScreen() {
                 </Text>
                 <Badge label={statusLabel[item.status]} tone={statusTone[item.status]} />
               </View>
-              <View style={styles.acoes}>
-                <Button
-                  title="Confirmar"
-                  onPress={() => handleAtualizarStatusAvulsa(item, 'confirmado')}
-                  loading={actionLoadingId === item.id}
-                  style={styles.acaoBotao}
-                />
-                <Button
-                  title="Recusar"
-                  onPress={() => handleAtualizarStatusAvulsa(item, 'recusado')}
-                  loading={actionLoadingId === item.id}
-                  variant="outline"
-                  style={styles.acaoBotao}
-                />
-              </View>
+              {item.status === 'pendente' && (
+                <View style={styles.acoes}>
+                  <Button
+                    title="Confirmar"
+                    onPress={() => handleAtualizarStatusAvulsa(item, 'confirmado')}
+                    loading={actionLoadingId === item.id}
+                    style={styles.acaoBotao}
+                  />
+                  <Button
+                    title="Recusar"
+                    onPress={() => handleAtualizarStatusAvulsa(item, 'recusado')}
+                    loading={actionLoadingId === item.id}
+                    variant="outline"
+                    style={styles.acaoBotao}
+                  />
+                </View>
+              )}
             </Card>
           ))
         )}

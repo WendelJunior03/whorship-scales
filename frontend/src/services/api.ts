@@ -1,21 +1,34 @@
+import { Platform } from 'react-native';
 import axios, { AxiosError } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
 const TOKEN_KEY = 'auth_token';
+const isWeb = Platform.OS === 'web';
 
 export const api = axios.create({
   baseURL: process.env.EXPO_PUBLIC_API_URL,
 });
 
 export async function saveToken(token: string) {
+  if (isWeb) {
+    localStorage.setItem(TOKEN_KEY, token);
+    return;
+  }
   await SecureStore.setItemAsync(TOKEN_KEY, token);
 }
 
 export async function getToken() {
+  if (isWeb) {
+    return localStorage.getItem(TOKEN_KEY);
+  }
   return SecureStore.getItemAsync(TOKEN_KEY);
 }
 
 export async function clearToken() {
+  if (isWeb) {
+    localStorage.removeItem(TOKEN_KEY);
+    return;
+  }
   await SecureStore.deleteItemAsync(TOKEN_KEY);
 }
 

@@ -1,5 +1,6 @@
 import express from 'express'
 import "dotenv/config"
+import cors from 'cors'
 import membroRoutes from './routes/membroRoutes';
 import escalaFixaRoutes from './routes/escalaFixaRoutes'
 import excecoesRoutes from './routes/excecoesRoutes'
@@ -10,6 +11,7 @@ import escalaAvulsaRoutes from './routes/escalaAvulsaRoutes'
 import notificacaoRoutes from './routes/notificacaoRoutes'
 
 const app = express()
+app.use(cors())
 app.use(express.json());
 
 app.use('/membros', membroRoutes)

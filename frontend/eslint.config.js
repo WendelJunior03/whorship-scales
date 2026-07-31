@@ -17,6 +17,7 @@ module.exports = [
       globals: {
         __DEV__: 'readonly',
         process: 'readonly',
+        localStorage: 'readonly',
       },
     },
     plugins: {
@@ -34,6 +35,19 @@ module.exports = [
       'react-native/no-unused-styles': 'warn',
       '@typescript-eslint/no-unused-vars': 'warn',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
+    },
+  },
+  {
+    files: ['scripts/**/*.js', '*.config.js'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: {
+        require: 'readonly',
+        module: 'readonly',
+        __dirname: 'readonly',
+        console: 'readonly',
+        process: 'readonly',
+      },
     },
   },
   prettierConfig,
