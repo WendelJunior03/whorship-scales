@@ -11,7 +11,15 @@ import escalaAvulsaRoutes from './routes/escalaAvulsaRoutes'
 import notificacaoRoutes from './routes/notificacaoRoutes'
 
 const app = express()
-app.use(cors())
+
+const allowedOrigins = [
+    'https://deep-scales.vercel.app',
+    'http://localhost:8081',
+    'http://localhost:19006',
+]
+app.use(cors({
+    origin: allowedOrigins,
+}))
 app.use(express.json());
 
 app.use('/membros', membroRoutes)
