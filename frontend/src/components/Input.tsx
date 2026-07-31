@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  Platform,
   StyleSheet,
   TextInput,
   TextInputProps,
@@ -16,11 +17,12 @@ interface InputProps extends TextInputProps {
   containerStyle?: ViewStyle;
 }
 
-export function Input({ icon, isPassword, containerStyle, style, ...rest }: InputProps) {
+export function Input({ icon, isPassword, containerStyle, style, onFocus, onBlur, ...rest }: InputProps) {
   const [hidden, setHidden] = useState(isPassword);
+  const [isFocused, setIsFocused] = useState(false);
 
   return (
-    <View style={[styles.container, containerStyle]}>
+    <View style={[styles.container, isFocused && styles.containerFocused, containerStyle]}>
       <Ionicons name={icon} size={20} color={colors.textSecondary} style={styles.icon} />
       <TextInput
         style={[styles.input, style]}
@@ -28,6 +30,14 @@ export function Input({ icon, isPassword, containerStyle, style, ...rest }: Inpu
         secureTextEntry={hidden}
         autoCapitalize="none"
         {...rest}
+        onFocus={(e) => {
+          setIsFocused(true);
+          onFocus?.(e);
+        }}
+        onBlur={(e) => {
+          setIsFocused(false);
+          onBlur?.(e);
+        }}
       />
       {isPassword && (
         <TouchableOpacity onPress={() => setHidden((prev) => !prev)} hitSlop={10}>
@@ -53,6 +63,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  containerFocused: {
+    borderColor: colors.primary,
+  },
   icon: {
     marginRight: spacing.sm,
   },
@@ -60,5 +73,6 @@ const styles = StyleSheet.create({
     flex: 1,
     ...typography.body,
     color: colors.text,
+    ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null),
   },
 });

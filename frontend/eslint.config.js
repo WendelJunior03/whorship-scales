@@ -18,6 +18,7 @@ module.exports = [
         __DEV__: 'readonly',
         process: 'readonly',
         localStorage: 'readonly',
+        window: 'readonly',
       },
     },
     plugins: {

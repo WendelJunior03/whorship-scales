@@ -25,6 +25,7 @@ import { ApiError } from '@/services/api';
 import { Culto } from '@/types';
 import { colors, spacing, typography } from '@/theme';
 import { formatDiaCompleto, formatDiaSemana, formatHora, montarDataHoraISO } from '@/utils/date';
+import { confirmAction } from '@/utils/confirm';
 
 export function EscalasScreen() {
   const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();
@@ -93,30 +94,26 @@ export function EscalasScreen() {
   }
 
   function handleExcluirCulto(culto: Culto) {
-    Alert.alert(
-      'Excluir culto',
-      `Isso apaga "${culto.tipo ?? formatDiaCompleto(culto.data_hora)}" e tudo vinculado a ele (repertório, escala de vocal e avulsa). Não tem como desfazer. Confirmar?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: async () => {
-            setExcluindoId(culto.id);
-            try {
-              await cultosService.deletarCulto(culto.id);
-              setCultos((prev) => prev.filter((c) => c.id !== culto.id));
-            } catch (err) {
-              Alert.alert(
-                'Erro',
-                err instanceof ApiError ? err.message : 'Não foi possível excluir o culto.',
-              );
-            } finally {
-              setExcluindoId(null);
-            }
-          },
-        },
-      ],
+    confirmAction(
+      {
+        title: 'Excluir culto',
+        message: `Isso apaga "${culto.tipo ?? formatDiaCompleto(culto.data_hora)}" e tudo vinculado a ele (repertório, escala de vocal e avulsa). Não tem como desfazer. Confirmar?`,
+        confirmLabel: 'Excluir',
+      },
+      async () => {
+        setExcluindoId(culto.id);
+        try {
+          await cultosService.deletarCulto(culto.id);
+          setCultos((prev) => prev.filter((c) => c.id !== culto.id));
+        } catch (err) {
+          Alert.alert(
+            'Erro',
+            err instanceof ApiError ? err.message : 'Não foi possível excluir o culto.',
+          );
+        } finally {
+          setExcluindoId(null);
+        }
+      },
     );
   }
 

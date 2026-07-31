@@ -22,6 +22,7 @@ import * as membrosService from '@/services/membros';
 import { ApiError } from '@/services/api';
 import { Papel } from '@/types';
 import { papelLabel } from '@/utils/papel';
+import { confirmAction } from '@/utils/confirm';
 import { colors, spacing, typography } from '@/theme';
 
 const PAPEIS: Papel[] = ['admin', 'ministro', 'vocal', 'membro'];
@@ -122,31 +123,27 @@ export function DetalheMembroScreen() {
   function handleDesativar() {
     if (!membroId) return;
 
-    Alert.alert(
-      'Desativar membro',
-      `Isso remove "${nome}" de todas as listas e escalas futuras. Ele deixa de conseguir entrar no app. Confirmar?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Desativar',
-          style: 'destructive',
-          onPress: async () => {
-            setIsDesativando(true);
-            try {
-              await membrosService.desativarMembro(membroId);
-              Alert.alert('Membro desativado', `${nome} foi desativado com sucesso.`);
-              navigation.goBack();
-            } catch (err) {
-              Alert.alert(
-                'Erro',
-                err instanceof ApiError ? err.message : 'Não foi possível desativar o membro.',
-              );
-            } finally {
-              setIsDesativando(false);
-            }
-          },
-        },
-      ],
+    confirmAction(
+      {
+        title: 'Desativar membro',
+        message: `Isso remove "${nome}" de todas as listas e escalas futuras. Ele deixa de conseguir entrar no app. Confirmar?`,
+        confirmLabel: 'Desativar',
+      },
+      async () => {
+        setIsDesativando(true);
+        try {
+          await membrosService.desativarMembro(membroId);
+          Alert.alert('Membro desativado', `${nome} foi desativado com sucesso.`);
+          navigation.goBack();
+        } catch (err) {
+          Alert.alert(
+            'Erro',
+            err instanceof ApiError ? err.message : 'Não foi possível desativar o membro.',
+          );
+        } finally {
+          setIsDesativando(false);
+        }
+      },
     );
   }
 

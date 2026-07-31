@@ -18,6 +18,7 @@ import {
 } from '@/types';
 import { colors, spacing, typography } from '@/theme';
 import { formatDiaCompleto, formatHora } from '@/utils/date';
+import { confirmAction } from '@/utils/confirm';
 
 const statusLabel: Record<StatusEscalaVocal, string> = {
   pendente: 'Pendente',
@@ -100,33 +101,29 @@ export function AgendaScreen() {
       return;
     }
 
-    Alert.alert(
-      'Recusar presença',
-      `Isso registra uma falta para "${item.funcao}" (${item.dia_semana}) no dia ${selectedDate}. O ministério vai precisar definir um substituto pra essa data. Confirmar?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Recusar',
-          style: 'destructive',
-          onPress: async () => {
-            setActionLoadingId(item.id);
-            try {
-              await excecoesService.criarExcecao({ escalaFixaId: item.id, data: selectedDate });
-              Alert.alert(
-                'Registrado',
-                'Sua falta foi registrada. Você será avisado quando um substituto for definido.',
-              );
-            } catch (err) {
-              Alert.alert(
-                'Erro',
-                err instanceof ApiError ? err.message : 'Não foi possível registrar a falta.',
-              );
-            } finally {
-              setActionLoadingId(null);
-            }
-          },
-        },
-      ],
+    confirmAction(
+      {
+        title: 'Recusar presença',
+        message: `Isso registra uma falta para "${item.funcao}" (${item.dia_semana}) no dia ${selectedDate}. O ministério vai precisar definir um substituto pra essa data. Confirmar?`,
+        confirmLabel: 'Recusar',
+      },
+      async () => {
+        setActionLoadingId(item.id);
+        try {
+          await excecoesService.criarExcecao({ escalaFixaId: item.id, data: selectedDate });
+          Alert.alert(
+            'Registrado',
+            'Sua falta foi registrada. Você será avisado quando um substituto for definido.',
+          );
+        } catch (err) {
+          Alert.alert(
+            'Erro',
+            err instanceof ApiError ? err.message : 'Não foi possível registrar a falta.',
+          );
+        } finally {
+          setActionLoadingId(null);
+        }
+      },
     );
   }
 

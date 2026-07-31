@@ -40,6 +40,7 @@ import {
 import { colors, spacing, typography } from '@/theme';
 import { formatDiaCompleto, formatDiaSemana, formatHora } from '@/utils/date';
 import { isGestor, papelLabel } from '@/utils/papel';
+import { confirmAction } from '@/utils/confirm';
 
 const statusLabel: Record<StatusEscalaVocal, string> = {
   pendente: 'Pendente',
@@ -193,27 +194,27 @@ export function DetalhesCultoScreen() {
   }
 
   function handleExcluirMusica(musica: Repertorio) {
-    Alert.alert('Excluir música', `Remover "${musica.nome}" do repertório?`, [
-      { text: 'Cancelar', style: 'cancel' },
+    confirmAction(
       {
-        text: 'Excluir',
-        style: 'destructive',
-        onPress: async () => {
-          setExcluindoMusicaId(musica.id);
-          try {
-            await repertorioService.deletarRepertorio(musica.id);
-            setRepertorios((prev) => prev.filter((r) => r.id !== musica.id));
-          } catch (err) {
-            Alert.alert(
-              'Erro',
-              err instanceof ApiError ? err.message : 'Não foi possível excluir a música.',
-            );
-          } finally {
-            setExcluindoMusicaId(null);
-          }
-        },
+        title: 'Excluir música',
+        message: `Remover "${musica.nome}" do repertório?`,
+        confirmLabel: 'Excluir',
       },
-    ]);
+      async () => {
+        setExcluindoMusicaId(musica.id);
+        try {
+          await repertorioService.deletarRepertorio(musica.id);
+          setRepertorios((prev) => prev.filter((r) => r.id !== musica.id));
+        } catch (err) {
+          Alert.alert(
+            'Erro',
+            err instanceof ApiError ? err.message : 'Não foi possível excluir a música.',
+          );
+        } finally {
+          setExcluindoMusicaId(null);
+        }
+      },
+    );
   }
 
   async function abrirEquipeModal() {
@@ -269,36 +270,36 @@ export function DetalhesCultoScreen() {
         ? `Isso marca a falta de "${item.nome}" só neste culto (${item.funcao}) — a escala fixa semanal dele não é alterada. Confirmar?`
         : `Remover "${item.nome}" (${item.funcao}) da equipe deste culto?`;
 
-    Alert.alert('Remover da equipe', mensagem, [
-      { text: 'Cancelar', style: 'cancel' },
+    confirmAction(
       {
-        text: 'Remover',
-        style: 'destructive',
-        onPress: async () => {
-          setExcluindoEquipeChave(item.chave);
-          try {
-            if (item.origem === 'vocal') {
-              await escalaVocalService.deletarEscalaVocal(item.origemId);
-            } else if (item.origem === 'avulsa') {
-              await escalaAvulsaService.deletarEscalaAvulsa(item.origemId);
-            } else {
-              await excecoesService.criarExcecao({
-                escalaFixaId: item.origemId,
-                data: culto.data_hora.slice(0, 10),
-              });
-            }
-            await carregarDados();
-          } catch (err) {
-            Alert.alert(
-              'Erro',
-              err instanceof ApiError ? err.message : 'Não foi possível remover da equipe.',
-            );
-          } finally {
-            setExcluindoEquipeChave(null);
-          }
-        },
+        title: 'Remover da equipe',
+        message: mensagem,
+        confirmLabel: 'Remover',
       },
-    ]);
+      async () => {
+        setExcluindoEquipeChave(item.chave);
+        try {
+          if (item.origem === 'vocal') {
+            await escalaVocalService.deletarEscalaVocal(item.origemId);
+          } else if (item.origem === 'avulsa') {
+            await escalaAvulsaService.deletarEscalaAvulsa(item.origemId);
+          } else {
+            await excecoesService.criarExcecao({
+              escalaFixaId: item.origemId,
+              data: culto.data_hora.slice(0, 10),
+            });
+          }
+          await carregarDados();
+        } catch (err) {
+          Alert.alert(
+            'Erro',
+            err instanceof ApiError ? err.message : 'Não foi possível remover da equipe.',
+          );
+        } finally {
+          setExcluindoEquipeChave(null);
+        }
+      },
+    );
   }
 
   if (isLoading) {
