@@ -1,16 +1,27 @@
 import { api } from './api';
-import { Membro } from '@/types';
+import { Membro, Papel } from '@/types';
 
 export interface AtualizarMembroInput {
   name: string;
   phone: string;
   instrument: string;
   email: string;
+  /** Só é aplicado de fato pelo back-end se quem chama for admin. */
+  role?: Papel;
 }
 
 export interface AlterarSenhaInput {
   senhaAtual: string;
   novaSenha: string;
+}
+
+export interface CadastrarMembroInput {
+  name: string;
+  email: string;
+  passwordUser: string;
+  role: Papel;
+  instrument: string;
+  phone: string;
 }
 
 /**
@@ -58,4 +69,13 @@ export async function desativarMembro(id: number): Promise<void> {
  */
 export async function alterarSenha(id: number, input: AlterarSenhaInput): Promise<void> {
   await api.put(`/membros/${id}/senha`, input);
+}
+
+/**
+ * Cadastra um membro novo com uma senha inicial (definida por quem
+ * cadastra). O próprio membro pode trocá-la depois em "Segurança". Só
+ * admin.
+ */
+export async function cadastrarMembro(input: CadastrarMembroInput): Promise<void> {
+  await api.post('/membros/cadastro', input);
 }

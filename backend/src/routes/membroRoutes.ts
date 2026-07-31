@@ -1,10 +1,9 @@
 import { Router } from 'express';
-import { cadastrarUser, myProfile, getMemberById } from '../controllers/membroController';
+import { cadastrarUser, myProfile, getMemberById, updateMemberController, deactivateMemberController, updatePasswordController } from '../controllers/membroController';
 import { loginUser } from '../controllers/membroController';
 import { authMiddleware } from '../middlewares/authMiddleware';
 import { autorizator } from '../middlewares/roleMiddleware';
 import { listAllMembers } from '../controllers/membroController';
-import { updateMemberController, deactivateMemberController, updatePasswordController } from '../controllers/membroController';
 
 const router = Router();
 

@@ -146,7 +146,9 @@ export function HomeScreen() {
 
         {user && isGestor(user.papel) ? (
           <View style={styles.grid}>
-            {ATALHOS_GESTAO.map((atalho) => (
+            {ATALHOS_GESTAO.filter(
+              (atalho) => atalho.label !== 'Membros' || user.papel === 'admin',
+            ).map((atalho) => (
               <Card
                 key={atalho.label}
                 style={styles.gridCard}

@@ -21,18 +21,20 @@ export async function findByEmail(email: string) {
 }
 
 export async function findById(id: number) {
-    const membro = await query('SELECT nome, telefone, instrumento, email, papel FROM membros WHERE ativo = true AND id = $1', [id])
-
+    const membro = await query('SELECT id, nome, telefone, instrumento, email, papel FROM membros WHERE ativo = true AND id = $1', [id])
     return membro.rows[0];
 }
 
 export async function findAllMembers() {
-    const membros = await query('SELECT nome, telefone, instrumento, email, papel FROM membros WHERE ativo = true');
-    
+    const membros = await query('SELECT id, nome, telefone, instrumento, email, papel FROM membros WHERE ativo = true');
     return membros.rows;
 }
 
-export async function updateMember(id: number, name: string, phone: string, instrument: string, email: string) {
+export async function updateMember(id: number, name: string, phone: string, instrument: string, email: string, role?: string) {
+    if (role) {
+        const alteracoes = await query('UPDATE membros SET nome = $1, telefone = $2, instrumento = $3, email = $4, papel = $5 WHERE id = $6 RETURNING *', [name, phone, instrument, email, role, id]);
+        return alteracoes.rows[0];
+    }
     const alteracoes = await query('UPDATE membros SET nome = $1, telefone = $2, instrumento = $3, email = $4 WHERE id = $5 RETURNING *', [name, phone, instrument, email, id]);
     return alteracoes.rows[0];
 }

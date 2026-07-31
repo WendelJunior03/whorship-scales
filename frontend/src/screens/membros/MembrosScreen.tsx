@@ -1,14 +1,19 @@
-import React, { useState } from 'react';
-import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Badge } from '@/components/Badge';
+import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Header } from '@/components/Header';
+import { Input } from '@/components/Input';
+import { useAuth } from '@/contexts/AuthContext';
 import { MainStackParamList } from '@/navigation/MainNavigator';
-import { Papel } from '@/types';
+import * as membrosService from '@/services/membros';
+import { ApiError } from '@/services/api';
+import { Membro, Papel } from '@/types';
 import { papelLabel, papelTone } from '@/utils/papel';
 import { colors, spacing, typography } from '@/theme';
 
@@ -20,51 +25,114 @@ const FILTROS: Array<{ label: string; papel?: Papel }> = [
   { label: 'Membro', papel: 'membro' },
 ];
 
-const MEMBROS_MOCK = [
-  { id: 1, nome: 'João Victor', papel: 'admin' as Papel },
-  { id: 2, nome: 'Pr. Marcos Lima', papel: 'ministro' as Papel },
-  { id: 3, nome: 'Juliana Fernandes', papel: 'vocal' as Papel },
-  { id: 4, nome: 'Beatriz Lima', papel: 'vocal' as Papel },
-  { id: 5, nome: 'Pedro Henrique', papel: 'membro' as Papel },
-  { id: 6, nome: 'Lucas Gabriel', papel: 'membro' as Papel },
-  { id: 7, nome: 'Ana Clara', papel: 'membro' as Papel },
-];
-
 export function MembrosScreen() {
   const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();
-  const [filtro, setFiltro] = useState<Papel | undefined>(undefined);
+  const { user } = useAuth();
 
-  const membrosFiltrados = filtro ? MEMBROS_MOCK.filter((m) => m.papel === filtro) : MEMBROS_MOCK;
+  const [membros, setMembros] = useState<Membro[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [filtro, setFiltro] = useState<Papel | undefined>(undefined);
+  const [busca, setBusca] = useState('');
+
+  const carregarDados = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const todos = await membrosService.getTodosMembros();
+      setMembros(todos);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Não foi possível carregar os membros.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    carregarDados();
+  }, [carregarDados]);
+
+  if (user && user.papel !== 'admin') {
+    return (
+      <SafeAreaView style={styles.screen} edges={['top']}>
+        <Header title="Membros" showBack />
+        <View style={[styles.listContent, styles.centered]}>
+          <Text style={styles.errorText}>Essa tela é exclusiva para administradores.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={[styles.screen, styles.centered]} edges={['top']}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={[styles.screen, styles.centered]} edges={['top']}>
+        <Text style={styles.errorText}>{error}</Text>
+        <Button
+          title="Tentar novamente"
+          onPress={carregarDados}
+          variant="outline"
+          style={styles.retryButton}
+        />
+      </SafeAreaView>
+    );
+  }
+
+  const buscaNormalizada = busca.trim().toLowerCase();
+  const membrosFiltrados = membros
+    .filter((m) => !filtro || m.papel === filtro)
+    .filter((m) => !buscaNormalizada || m.nome.toLowerCase().includes(buscaNormalizada));
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <Header title="Membros" showBack rightIcon="search-outline" onRightPress={() => {}} />
+      <Header title="Membros" showBack />
 
       <FlatList
         data={membrosFiltrados}
         keyExtractor={(item) => String(item.id)}
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={
-          <FlatList
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            data={FILTROS}
-            keyExtractor={(item) => item.label}
-            contentContainerStyle={styles.filtros}
-            renderItem={({ item }) => {
-              const ativo = filtro === item.papel;
-              return (
-                <TouchableOpacity
-                  style={[styles.filtroChip, ativo && styles.filtroChipAtivo]}
-                  onPress={() => setFiltro(item.papel)}
-                >
-                  <Text style={[styles.filtroText, ativo && styles.filtroTextAtivo]}>
-                    {item.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            }}
-          />
+          <View style={styles.listHeader}>
+            <Input
+              icon="search-outline"
+              placeholder="Buscar por nome"
+              value={busca}
+              onChangeText={setBusca}
+              containerStyle={styles.buscaInput}
+            />
+            <FlatList
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              data={FILTROS}
+              keyExtractor={(item) => item.label}
+              contentContainerStyle={styles.filtros}
+              renderItem={({ item }) => {
+                const ativo = filtro === item.papel;
+                return (
+                  <TouchableOpacity
+                    style={[styles.filtroChip, ativo && styles.filtroChipAtivo]}
+                    onPress={() => setFiltro(item.papel)}
+                  >
+                    <Text style={[styles.filtroText, ativo && styles.filtroTextAtivo]}>
+                      {item.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          </View>
+        }
+        ListEmptyComponent={
+          <Card>
+            <Text style={styles.emptyText}>Nenhum membro encontrado.</Text>
+          </Card>
         }
         renderItem={({ item }) => (
           <Card
@@ -79,7 +147,7 @@ export function MembrosScreen() {
               <Text style={styles.membroPapel}>{papelLabel[item.papel]}</Text>
             </View>
             <Badge label={papelLabel[item.papel]} tone={papelTone[item.papel]} />
-            <Ionicons name="ellipsis-vertical" size={18} color={colors.textMuted} />
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </Card>
         )}
       />
@@ -99,14 +167,40 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  centered: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  errorText: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  retryButton: {
+    minWidth: 200,
+  },
   listContent: {
     padding: spacing.lg,
     paddingTop: spacing.sm,
     gap: spacing.sm,
+    flexGrow: 1,
+  },
+  listHeader: {
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  buscaInput: {
+    marginBottom: 0,
+  },
+  emptyText: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
   },
   filtros: {
     gap: spacing.sm,
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.xs,
   },
   filtroChip: {
     paddingHorizontal: spacing.md,

@@ -2,9 +2,9 @@ import bcrypt from 'bcrypt';
 import { query } from '../config/database';
 import { Request, Response } from 'express';
 import { createMembers, deactivateMember } from '../models/membroModel';
-import { findByEmail, findById, findAllMembers, updateMember } from '../models/membroModel';
+import { findByEmail, findById, findAllMembers, updateMember, findByIdComSenha, updatePassword } from '../models/membroModel';
 import jwt from 'jsonwebtoken';
-import { findByIdComSenha, updatePassword } from '../models/membroModel';
+
 
 export async function cadastrarUser(req: Request, res: Response) {
     const {name, email, passwordUser, role, instrument, phone} = req.body
@@ -78,7 +78,7 @@ export async function getMemberById(req: Request, res: Response) {
 
 export async function updateMemberController (req: Request, res: Response) {
     const id = Number(req.params.id);
-    const {name, phone, instrument, email} = req.body;
+    const {name, phone, instrument, email, role} = req.body;
 
     if ( !req.user ) {
         return res.status(401).json({message: 'Não autenticado!'})
@@ -86,6 +86,10 @@ export async function updateMemberController (req: Request, res: Response) {
 
     if ( req.user.papel !== 'admin' && req.user.id !== id ) {
         return res.status(403).json({message: 'Não autorizado!'})
+    }
+
+    if (role && req.user.papel !== 'admin') {
+        return res.status(403).json({message: 'Só admin pode alterar o papel!'})
     }
 
     if (email) {
@@ -99,7 +103,7 @@ export async function updateMemberController (req: Request, res: Response) {
         return res.status(400).json({message: 'Todos os campos devem ser preechidos!'})
     }
 
-    await updateMember(id, name, phone, instrument, email);
+    await updateMember(id, name, phone, instrument, email, role);
 
     return res.status(200).json({message: 'Alterações realizadas com sucesso!'})
 }

@@ -1,24 +1,138 @@
-import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRoute } from '@react-navigation/native';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { Header } from '@/components/Header';
 import { Input } from '@/components/Input';
+import { MainStackParamList } from '@/navigation/MainNavigator';
+import * as membrosService from '@/services/membros';
+import { ApiError } from '@/services/api';
+import { Papel } from '@/types';
+import { papelLabel } from '@/utils/papel';
 import { colors, spacing, typography } from '@/theme';
 
+const PAPEIS: Papel[] = ['admin', 'ministro', 'vocal', 'membro'];
+
 export function DetalheMembroScreen() {
-  const route = useRoute();
-  const { membroId } = (route.params ?? {}) as { membroId?: number };
+  const route = useRoute<RouteProp<MainStackParamList, 'DetalheMembro'>>();
+  const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();
+  const { membroId } = route.params ?? {};
   const isNovo = !membroId;
 
-  // Dados de exemplo, so pra mostrar a estrutura — a busca/gravacao real
-  // do membro entra num proximo prompt.
-  const [nome, setNome] = useState(isNovo ? '' : 'Pedro Henrique');
-  const [email, setEmail] = useState(isNovo ? '' : 'pedro.henrique@example.com');
-  const [telefone, setTelefone] = useState(isNovo ? '' : '34999999999');
-  const [instrumento, setInstrumento] = useState(isNovo ? '' : 'Guitarra');
+  const [nome, setNome] = useState('');
+  const [email, setEmail] = useState('');
+  const [telefone, setTelefone] = useState('');
+  const [instrumento, setInstrumento] = useState('');
+  const [senha, setSenha] = useState('');
+  const [papel, setPapel] = useState<Papel>('membro');
+  const [papelPickerAberto, setPapelPickerAberto] = useState(false);
+
+  const [isLoading, setIsLoading] = useState(!isNovo);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const carregarMembro = useCallback(async () => {
+    if (!membroId) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const membro = await membrosService.getMembroPorId(membroId);
+      setNome(membro.nome);
+      setEmail(membro.email);
+      setTelefone(membro.telefone ?? '');
+      setInstrumento(membro.instrumento ?? '');
+      setPapel(membro.papel);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Não foi possível carregar o membro.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [membroId]);
+
+  useEffect(() => {
+    carregarMembro();
+  }, [carregarMembro]);
+
+  async function handleSalvar() {
+    if (!nome.trim() || !email.trim() || !telefone.trim() || !instrumento.trim()) {
+      Alert.alert('Preencha tudo', 'Nome, e-mail, telefone e instrumento são obrigatórios.');
+      return;
+    }
+
+    if (isNovo && senha.trim().length < 6) {
+      Alert.alert('Senha muito curta', 'A senha inicial precisa ter pelo menos 6 caracteres.');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      if (isNovo) {
+        await membrosService.cadastrarMembro({
+          name: nome.trim(),
+          email: email.trim(),
+          passwordUser: senha.trim(),
+          role: papel,
+          instrument: instrumento.trim(),
+          phone: telefone.trim(),
+        });
+        Alert.alert(
+          'Membro cadastrado',
+          'O membro foi cadastrado. Ele pode trocar essa senha inicial em Perfil > Segurança.',
+        );
+      } else {
+        await membrosService.atualizarMembro(membroId, {
+          name: nome.trim(),
+          phone: telefone.trim(),
+          instrument: instrumento.trim(),
+          email: email.trim(),
+          role: papel,
+        });
+        Alert.alert('Alterações salvas', 'Os dados do membro foram atualizados.');
+      }
+      navigation.goBack();
+    } catch (err) {
+      Alert.alert(
+        'Erro',
+        err instanceof ApiError ? err.message : 'Não foi possível salvar as alterações.',
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={[styles.screen, styles.centered]} edges={['top']}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={[styles.screen, styles.centered]} edges={['top']}>
+        <Text style={styles.errorText}>{error}</Text>
+        <Button
+          title="Tentar novamente"
+          onPress={carregarMembro}
+          variant="outline"
+          style={styles.retryButton}
+        />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -29,9 +143,6 @@ export function DetalheMembroScreen() {
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{nome ? nome[0] : '+'}</Text>
           </View>
-          <TouchableOpacity style={styles.cameraButton}>
-            <Ionicons name="camera" size={16} color={colors.textInverse} />
-          </TouchableOpacity>
         </View>
 
         <View style={styles.form}>
@@ -61,10 +172,66 @@ export function DetalheMembroScreen() {
             value={instrumento}
             onChangeText={setInstrumento}
           />
+
+          {isNovo && (
+            <Input
+              icon="lock-closed-outline"
+              placeholder="Senha inicial"
+              value={senha}
+              onChangeText={setSenha}
+              isPassword
+            />
+          )}
+
+          <Text style={styles.label}>Papel</Text>
+          <TouchableOpacity style={styles.selector} onPress={() => setPapelPickerAberto(true)}>
+            <Ionicons name="shield-outline" size={20} color={colors.textSecondary} />
+            <Text style={styles.selectorText}>{papelLabel[papel]}</Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          </TouchableOpacity>
         </View>
 
-        <Button title="Salvar" onPress={() => {}} style={styles.saveButton} />
+        <Button
+          title="Salvar"
+          onPress={handleSalvar}
+          loading={isSaving}
+          style={styles.saveButton}
+        />
       </ScrollView>
+
+      <Modal
+        visible={papelPickerAberto}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setPapelPickerAberto(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Escolher papel</Text>
+            {PAPEIS.map((item) => (
+              <TouchableOpacity
+                key={item}
+                style={styles.modalItem}
+                onPress={() => {
+                  setPapel(item);
+                  setPapelPickerAberto(false);
+                }}
+              >
+                <Text style={styles.modalItemText}>{papelLabel[item]}</Text>
+                {papel === item && (
+                  <Ionicons name="checkmark" size={20} color={colors.primary} />
+                )}
+              </TouchableOpacity>
+            ))}
+            <Button
+              title="Cancelar"
+              variant="outline"
+              onPress={() => setPapelPickerAberto(false)}
+              style={styles.modalCancelButton}
+            />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -73,6 +240,20 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  centered: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  errorText: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  retryButton: {
+    minWidth: 200,
   },
   content: {
     padding: spacing.lg,
@@ -94,23 +275,63 @@ const styles = StyleSheet.create({
     ...typography.h1,
     color: colors.primary,
   },
-  cameraButton: {
-    position: 'absolute',
-    right: 0,
-    bottom: 0,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: colors.background,
-  },
   form: {
     gap: spacing.md,
   },
+  label: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: -spacing.xs,
+  },
+  selector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    paddingHorizontal: spacing.md,
+    height: 56,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  selectorText: {
+    flex: 1,
+    ...typography.body,
+    color: colors.text,
+  },
   saveButton: {
     marginTop: spacing.xl,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  modalTitle: {
+    ...typography.h3,
+    color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  modalItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  modalItemText: {
+    ...typography.body,
+    color: colors.text,
+  },
+  modalCancelButton: {
+    marginTop: spacing.sm,
   },
 });
