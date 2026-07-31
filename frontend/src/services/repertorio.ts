@@ -32,3 +32,12 @@ export async function getMeuProximoCulto(): Promise<MeuProximoCulto> {
   );
   return { culto: response.data.culto, repertorios: response.data.repertorios };
 }
+
+/**
+ * Repertório cadastrado para um culto específico. Pode vir vazio —
+ * culto sem repertório definido ainda é normal, não é erro.
+ */
+export async function getRepertorioDoCulto(cultoId: number): Promise<Repertorio[]> {
+  const response = await api.get<Repertorio[]>(`/repertorio/${cultoId}`);
+  return response.data;
+}

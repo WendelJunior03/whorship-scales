@@ -34,3 +34,12 @@ export function formatDiaCurto(isoDate: string): string {
     month: '2-digit',
   }).format(date);
 }
+
+/**
+ * Nome do dia da semana de uma data ISO, ex: "Domingo".
+ */
+export function formatDiaSemana(isoDate: string): string {
+  const date = new Date(isoDate);
+  const dia = new Intl.DateTimeFormat('pt-BR', { weekday: 'long' }).format(date);
+  return dia.charAt(0).toUpperCase() + dia.slice(1);
+}

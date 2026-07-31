@@ -110,3 +110,40 @@ export interface SugestaoVocal {
   nome: string;
   ultima_vez: string | null;
 }
+
+/**
+ * Formato de cada item de GET /escala-vocal/culto/:cultoId — quem está
+ * escalado como vocal num culto específico, com nome já resolvido via JOIN.
+ */
+export interface EscalaVocalDoCultoItem {
+  id: number;
+  membro_id: number;
+  nome: string;
+  status: StatusEscalaVocal;
+}
+
+/**
+ * Escala "avulsa": vínculo pontual membro + culto + função, pra cobrir
+ * cultos fora da rotina fixa (ex: um culto especial numa segunda-feira),
+ * já que escala_fixa só existe por dia da semana (quarta/sábado/domingo).
+ */
+export interface EscalaAvulsaDoCultoItem {
+  id: number;
+  membro_id: number;
+  nome: string;
+  funcao: string;
+  status: StatusEscalaVocal;
+}
+
+/**
+ * Formato de cada item de GET /escala-avulsa/me — os compromissos
+ * avulsos do usuário logado, já com o culto e a função.
+ */
+export interface MinhaEscalaAvulsaItem {
+  id: number;
+  status: StatusEscalaVocal;
+  culto_id: number;
+  data_hora: string;
+  tipo: string | null;
+  funcao: string;
+}

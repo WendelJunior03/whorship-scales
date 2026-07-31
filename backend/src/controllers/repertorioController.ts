@@ -36,3 +36,11 @@ export async function meuProximoCultoController(req: Request, res: Response) {
 
     return res.status(200).json({ message: 'Repertório encontrado com sucesso!', culto, repertorios})
 }
+
+export async function getRepertorioDoCultoController(req: Request, res: Response) {
+    const { cultoId } = req.params;
+
+    const repertorios = await findAllRepertorios(Number(cultoId));
+
+    return res.status(200).json(repertorios);
+}

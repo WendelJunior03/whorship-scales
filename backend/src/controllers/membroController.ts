@@ -4,6 +4,7 @@ import { Request, Response } from 'express';
 import { createMembers, deactivateMember } from '../models/membroModel';
 import { findByEmail, findById, findAllMembers, updateMember } from '../models/membroModel';
 import jwt from 'jsonwebtoken';
+import { findByIdComSenha, updatePassword } from '../models/membroModel';
 
 export async function cadastrarUser(req: Request, res: Response) {
     const {name, email, passwordUser, role, instrument, phone} = req.body
@@ -107,4 +108,40 @@ export async function deactivateMemberController(req: Request, res: Response) {
     const id = Number(req.params.id);
     await deactivateMember(id, false)
     return res.status(200).json({message: 'Membro desativado com sucesso!'})
+}
+
+export async function updatePasswordController(req: Request, res: Response) {
+    const id = Number(req.params.id);
+    const { senhaAtual, novaSenha } = req.body;
+
+    if (!req.user) {
+        return res.status(401).json({ message: 'Não autenticado!' })
+    }
+
+    if (req.user.id !== id) {
+        return res.status(403).json({ message: 'Não autorizado!' })
+    }
+
+    if (!senhaAtual || !novaSenha) {
+        return res.status(400).json({ message: 'Informe a senha atual e a nova senha!' })
+    }
+
+    if (novaSenha.length < 6) {
+        return res.status(400).json({ message: 'A nova senha deve ter pelo menos 6 caracteres!' })
+    }
+
+    const membro = await findByIdComSenha(id);
+    if (!membro) {
+        return res.status(404).json({ message: 'Membro não encontrado!' })
+    }
+
+    const senhaCorreta = await bcrypt.compare(senhaAtual, membro.senha);
+    if (!senhaCorreta) {
+        return res.status(400).json({ message: 'Senha atual incorreta!' })
+    }
+
+    const hashPassword = await bcrypt.hash(novaSenha, 10);
+    await updatePassword(id, hashPassword);
+
+    return res.status(200).json({ message: 'Senha alterada com sucesso!' })
 }

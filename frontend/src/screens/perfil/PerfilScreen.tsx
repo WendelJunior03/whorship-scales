@@ -1,10 +1,13 @@
-import React from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
+import { Input } from '@/components/Input';
 import { useAuth } from '@/contexts/AuthContext';
+import * as membrosService from '@/services/membros';
+import { ApiError } from '@/services/api';
 import { papelLabel, papelTone } from '@/utils/papel';
 import { colors, spacing, typography } from '@/theme';
 
@@ -18,6 +21,53 @@ const MENU_ITEMS = [
 
 export function PerfilScreen() {
   const { user, signOut } = useAuth();
+
+  const [senhaModalAberto, setSenhaModalAberto] = useState(false);
+  const [senhaAtual, setSenhaAtual] = useState('');
+  const [novaSenha, setNovaSenha] = useState('');
+  const [confirmarNovaSenha, setConfirmarNovaSenha] = useState('');
+  const [alterandoSenha, setAlterandoSenha] = useState(false);
+
+  function abrirSenhaModal() {
+    setSenhaAtual('');
+    setNovaSenha('');
+    setConfirmarNovaSenha('');
+    setSenhaModalAberto(true);
+  }
+
+  function fecharSenhaModal() {
+    setSenhaModalAberto(false);
+  }
+
+  async function handleAlterarSenha() {
+    if (!user) return;
+
+    if (!senhaAtual || !novaSenha || !confirmarNovaSenha) {
+      Alert.alert('Preencha tudo', 'Informe a senha atual e a nova senha duas vezes.');
+      return;
+    }
+
+    if (novaSenha.length < 6) {
+      Alert.alert('Senha muito curta', 'A nova senha precisa ter pelo menos 6 caracteres.');
+      return;
+    }
+
+    if (novaSenha !== confirmarNovaSenha) {
+      Alert.alert('Senhas diferentes', 'A confirmação não bate com a nova senha.');
+      return;
+    }
+
+    setAlterandoSenha(true);
+    try {
+      await membrosService.alterarSenha(user.id, { senhaAtual, novaSenha });
+      Alert.alert('Senha alterada', 'Sua senha foi atualizada com sucesso.');
+      fecharSenhaModal();
+    } catch (err) {
+      Alert.alert('Erro', err instanceof ApiError ? err.message : 'Não foi possível trocar a senha.');
+    } finally {
+      setAlterandoSenha(false);
+    }
+  }
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -42,7 +92,11 @@ export function PerfilScreen() {
 
         <View style={styles.menu}>
           {MENU_ITEMS.map((item) => (
-            <TouchableOpacity key={item.label} style={styles.menuItem}>
+            <TouchableOpacity
+              key={item.label}
+              style={styles.menuItem}
+              onPress={item.label === 'Segurança' ? abrirSenhaModal : undefined}
+            >
               <Ionicons name={item.icon} size={20} color={colors.textSecondary} />
               <Text style={styles.menuLabel}>{item.label}</Text>
               <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
@@ -57,6 +111,60 @@ export function PerfilScreen() {
           style={styles.logoutButton}
         />
       </ScrollView>
+
+      <Modal
+        visible={senhaModalAberto}
+        animationType="slide"
+        transparent
+        onRequestClose={fecharSenhaModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Alterar senha</Text>
+            <Text style={styles.modalSubtitle}>
+              Se você entrou com uma senha criada pelo admin, aproveite pra trocar por uma só sua.
+            </Text>
+
+            <Input
+              icon="lock-closed-outline"
+              placeholder="Senha atual"
+              value={senhaAtual}
+              onChangeText={setSenhaAtual}
+              isPassword
+            />
+            <Input
+              icon="lock-closed-outline"
+              placeholder="Nova senha"
+              value={novaSenha}
+              onChangeText={setNovaSenha}
+              isPassword
+              containerStyle={styles.modalInput}
+            />
+            <Input
+              icon="lock-closed-outline"
+              placeholder="Confirmar nova senha"
+              value={confirmarNovaSenha}
+              onChangeText={setConfirmarNovaSenha}
+              isPassword
+              containerStyle={styles.modalInput}
+            />
+
+            <Button
+              title="Salvar nova senha"
+              onPress={handleAlterarSenha}
+              loading={alterandoSenha}
+              style={styles.modalButton}
+            />
+            <Button
+              title="Cancelar"
+              variant="outline"
+              onPress={fecharSenhaModal}
+              disabled={alterandoSenha}
+              style={styles.modalButton}
+            />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -142,5 +250,32 @@ const styles = StyleSheet.create({
     width: '100%',
     marginTop: spacing.xl,
     marginBottom: spacing.xl,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  modalTitle: {
+    ...typography.h3,
+    color: colors.text,
+  },
+  modalSubtitle: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    marginTop: -spacing.sm,
+  },
+  modalInput: {
+    marginTop: 0,
+  },
+  modalButton: {
+    marginTop: spacing.xs,
   },
 });

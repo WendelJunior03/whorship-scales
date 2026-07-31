@@ -41,3 +41,13 @@ export async function deactivateMember(id: number, ative: boolean) {
     const alteracoes = await query('UPDATE membros SET ativo = $1 WHERE id = $2 RETURNING *', [ative, id]);
     return alteracoes.rows[0]
 }
+
+export async function findByIdComSenha(id: number) {
+    const result = await query('SELECT * FROM membros WHERE ativo = true AND id = $1', [id]);
+    return result.rows[0];
+}
+
+export async function updatePassword(id: number, hashPassword: string) {
+    const result = await query('UPDATE membros SET senha = $1 WHERE id = $2 RETURNING *', [hashPassword, id]);
+    return result.rows[0];
+}

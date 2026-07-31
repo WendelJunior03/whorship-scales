@@ -1,5 +1,9 @@
 import { Request, Response } from 'express';
-import { createEscalaVocal, sugerirVocais, findEscalaVocalById, updateStatusEscalaVocal } from '../models/escalaVocalModel';
+import { createEscalaVocal, sugerirVocais, findEscalaVocalById, updateStatusEscalaVocal, findEscalaVocalByCultoId, findMinhaEscalaVocal } from '../models/escalaVocalModel';
+import { findById } from '../models/membroModel';
+import { findCultoById } from '../models/cultoModel';
+import { enviarEmail } from '../services/emailService';
+
 
 export async function createEscalaVocalController(req: Request, res: Response) {
     try {
@@ -10,7 +14,21 @@ export async function createEscalaVocalController(req: Request, res: Response) {
     }
 
     await createEscalaVocal(membroId, cultoId);
+    const membro = await findById(membroId)
+    const culto = await findCultoById(cultoId)
+    if (membro && culto) {
+        try {
+            await enviarEmail(
+            membro.email,
+            'Você foi escalado para um culto!',
+            `Olá ${membro.nome}, você foi escalado para um culto no dia ${culto.data_hora}.`
+        );
+        } catch (error) {
+            console.error('Erro ao enviar email:', error);
+        }
+    }
     return res.status(201).json({ message: 'Escala vocal cadastrada com sucesso!' })
+
     } catch (error) {
         return res.status(500).json({ message: 'Erro localizado no servidor!'})
     }
@@ -50,4 +68,20 @@ export async function confirmarPresencaController (req: Request, res: Response) 
 
     await updateStatusEscalaVocal(Number(id), status);
     return res.status(200).json({message: 'Escala vocal atualizada com sucesso!'})
+}
+
+export async function getEscalaVocalDoCultoController(req: Request, res: Response) {
+    const { cultoId } = req.params;
+
+    const escalaVocal = await findEscalaVocalByCultoId(Number(cultoId));
+
+    return res.status(200).json(escalaVocal);
+}
+
+export async function getMinhaEscalaVocalController(req: Request, res: Response) {
+    if (!req.user) {
+        return res.status(401).json({ message: 'Não autorizado!' })
+    }
+    const escalaVocal = await findMinhaEscalaVocal(req.user.id);
+    return res.status(200).json(escalaVocal);
 }

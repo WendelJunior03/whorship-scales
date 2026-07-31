@@ -8,6 +8,11 @@ export interface AtualizarMembroInput {
   email: string;
 }
 
+export interface AlterarSenhaInput {
+  senhaAtual: string;
+  novaSenha: string;
+}
+
 /**
  * Dados do próprio usuário logado.
  */
@@ -45,4 +50,12 @@ export async function atualizarMembro(id: number, input: AtualizarMembroInput): 
  */
 export async function desativarMembro(id: number): Promise<void> {
   await api.delete(`/membros/${id}`);
+}
+
+/**
+ * Troca a própria senha. Exige a senha atual pra confirmar — nem admin
+ * consegue trocar a senha de outra pessoa por aqui, só o dono da conta.
+ */
+export async function alterarSenha(id: number, input: AlterarSenhaInput): Promise<void> {
+  await api.put(`/membros/${id}/senha`, input);
 }

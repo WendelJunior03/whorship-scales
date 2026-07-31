@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { createEscalaFixa, findEscalaEfetiva, findEscalaFixaMontada, findMyEscalaFixa } from '../models/escalaFixaModel';
+import { findById } from '../models/membroModel';
+import { enviarEmail } from '../services/emailService';
 
 export async function createEscalaFixaController(req: Request, res: Response) {
     try {
@@ -10,6 +12,19 @@ export async function createEscalaFixaController(req: Request, res: Response) {
     }
 
     await createEscalaFixa(membroId, diaSemana, funcao);
+
+    const membro = await findById(membroId)
+    if (membro) {
+        try {
+            await enviarEmail(
+                membro.email,
+                'Você foi escalado na escala fixa!',
+                `Olá ${membro.nome}, você foi cadastrado na escala fixa como "${funcao}" toda ${diaSemana}.`
+            );
+        } catch (error) {
+            console.error('Erro ao enviar email:', error);
+        }
+    }
 
     return res.status(201).json({message: 'Escala fixa cadastrada com sucesso!'})
     } catch (error) {

@@ -5,11 +5,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import * as escalaAvulsaService from '@/services/escalaAvulsa';
 import * as escalaFixaService from '@/services/escalaFixa';
 import * as escalaVocalService from '@/services/escalaVocal';
 import * as excecoesService from '@/services/excecoes';
 import { ApiError } from '@/services/api';
-import { MinhaEscalaFixaItem, MinhaEscalaVocalItem, StatusEscalaVocal } from '@/types';
+import {
+  MinhaEscalaAvulsaItem,
+  MinhaEscalaFixaItem,
+  MinhaEscalaVocalItem,
+  StatusEscalaVocal,
+} from '@/types';
 import { colors, spacing, typography } from '@/theme';
 import { formatDiaCompleto, formatHora } from '@/utils/date';
 
@@ -31,6 +37,7 @@ function capitalize(text: string): string {
 
 export function AgendaScreen() {
   const [escalaVocal, setEscalaVocal] = useState<MinhaEscalaVocalItem[]>([]);
+  const [escalaAvulsa, setEscalaAvulsa] = useState<MinhaEscalaAvulsaItem[]>([]);
   const [escalaFixa, setEscalaFixa] = useState<MinhaEscalaFixaItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,11 +48,13 @@ export function AgendaScreen() {
     setIsLoading(true);
     setError(null);
     try {
-      const [vocal, fixa] = await Promise.all([
+      const [vocal, avulsa, fixa] = await Promise.all([
         escalaVocalService.getMinhaEscalaVocal(),
+        escalaAvulsaService.getMinhaEscalaAvulsa(),
         escalaFixaService.getMinhaEscalaFixa(),
       ]);
       setEscalaVocal(vocal);
+      setEscalaAvulsa(avulsa);
       setEscalaFixa(fixa);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Não foi possível carregar sua agenda.');
@@ -63,6 +72,18 @@ export function AgendaScreen() {
     try {
       await escalaVocalService.confirmarPresenca(item.id, status);
       setEscalaVocal((prev) => prev.map((e) => (e.id === item.id ? { ...e, status } : e)));
+    } catch (err) {
+      Alert.alert('Erro', err instanceof ApiError ? err.message : 'Não foi possível atualizar.');
+    } finally {
+      setActionLoadingId(null);
+    }
+  }
+
+  async function handleAtualizarStatusAvulsa(item: MinhaEscalaAvulsaItem, status: StatusEscalaVocal) {
+    setActionLoadingId(item.id);
+    try {
+      await escalaAvulsaService.confirmarPresencaAvulsa(item.id, status);
+      setEscalaAvulsa((prev) => prev.map((e) => (e.id === item.id ? { ...e, status } : e)));
     } catch (err) {
       Alert.alert('Erro', err instanceof ApiError ? err.message : 'Não foi possível atualizar.');
     } finally {
@@ -139,6 +160,10 @@ export function AgendaScreen() {
     const day = item.data_hora.slice(0, 10);
     markedDates[day] = { ...markedDates[day], marked: true, dotColor: colors.primary };
   }
+  for (const item of escalaAvulsa) {
+    const day = item.data_hora.slice(0, 10);
+    markedDates[day] = { ...markedDates[day], marked: true, dotColor: colors.primary };
+  }
   if (selectedDate) {
     markedDates[selectedDate] = {
       ...markedDates[selectedDate],
@@ -204,6 +229,43 @@ export function AgendaScreen() {
                 <Button
                   title="Recusar"
                   onPress={() => handleAtualizarStatus(item, 'recusado')}
+                  loading={actionLoadingId === item.id}
+                  variant="outline"
+                  style={styles.acaoBotao}
+                />
+              </View>
+            </Card>
+          ))
+        )}
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Compromissos avulsos</Text>
+        </View>
+
+        {escalaAvulsa.length === 0 ? (
+          <Card>
+            <Text style={styles.emptyText}>Você não tem compromissos avulsos registrados.</Text>
+          </Card>
+        ) : (
+          escalaAvulsa.map((item) => (
+            <Card key={item.id} style={styles.compromisso}>
+              <View style={styles.compromissoInfo}>
+                <Text style={styles.compromissoDia}>{formatDiaCompleto(item.data_hora)}</Text>
+                <Text style={styles.compromissoHora}>
+                  {formatHora(item.data_hora)} · {item.funcao}
+                </Text>
+                <Badge label={statusLabel[item.status]} tone={statusTone[item.status]} />
+              </View>
+              <View style={styles.acoes}>
+                <Button
+                  title="Confirmar"
+                  onPress={() => handleAtualizarStatusAvulsa(item, 'confirmado')}
+                  loading={actionLoadingId === item.id}
+                  style={styles.acaoBotao}
+                />
+                <Button
+                  title="Recusar"
+                  onPress={() => handleAtualizarStatusAvulsa(item, 'recusado')}
                   loading={actionLoadingId === item.id}
                   variant="outline"
                   style={styles.acaoBotao}

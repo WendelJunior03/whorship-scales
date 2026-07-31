@@ -26,7 +26,19 @@ export async function findEscalaFixaById(id: number) {
     return result.rows[0];
 }
 
+const diaSemanaPorIndice: Record<number, string> = {
+    0: 'domingo',
+    3: 'quarta',
+    6: 'sabado',
+};
+
 export async function findEscalaEfetiva(data: string) {
-    const result = await query(`SELECT escala_fixa.dia_semana, escala_fixa.funcao, COALESCE(membro_substituto.nome, membro_original.nome) AS quem_toca FROM escala_fixa LEFT JOIN excecoes ON escala_fixa.id = excecoes.escala_fixa_id AND excecoes.data = $1 LEFT JOIN membros AS membro_original ON escala_fixa.membro_id = membro_original.id LEFT JOIN membros AS membro_substituto ON excecoes.substituto_id = membro_substituto.id`, [data])
+    const diaSemana = diaSemanaPorIndice[new Date(data).getUTCDay()];
+
+    if (!diaSemana) {
+        return [];
+    }
+
+    const result = await query(`SELECT escala_fixa.dia_semana, escala_fixa.funcao, COALESCE(membro_substituto.nome, membro_original.nome) AS quem_toca FROM escala_fixa LEFT JOIN excecoes ON escala_fixa.id = excecoes.escala_fixa_id AND excecoes.data = $1 LEFT JOIN membros AS membro_original ON escala_fixa.membro_id = membro_original.id LEFT JOIN membros AS membro_substituto ON excecoes.substituto_id = membro_substituto.id WHERE escala_fixa.dia_semana = $2`, [data, diaSemana])
     return result.rows;
 }

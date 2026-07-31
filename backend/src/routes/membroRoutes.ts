@@ -4,7 +4,7 @@ import { loginUser } from '../controllers/membroController';
 import { authMiddleware } from '../middlewares/authMiddleware';
 import { autorizator } from '../middlewares/roleMiddleware';
 import { listAllMembers } from '../controllers/membroController';
-import { updateMemberController, deactivateMemberController } from '../controllers/membroController';
+import { updateMemberController, deactivateMemberController, updatePasswordController } from '../controllers/membroController';
 
 const router = Router();
 
@@ -15,5 +15,6 @@ router.get('/', authMiddleware, autorizator(['admin']), listAllMembers);
 router.get('/:id', authMiddleware, autorizator(['admin', 'ministro']), getMemberById)
 router.put('/:id', authMiddleware, updateMemberController)
 router.delete('/:id', authMiddleware, autorizator(['admin']), deactivateMemberController)
+router.put('/:id/senha', authMiddleware, updatePasswordController)
 
 export default router;
