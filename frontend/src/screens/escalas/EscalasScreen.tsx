@@ -119,17 +119,6 @@ export function EscalasScreen() {
     );
   }
 
-  if (user && user.papel !== 'admin' && user.papel !== 'ministro') {
-    return (
-      <SafeAreaView style={styles.screen} edges={['top']}>
-        <Header title="Escalas" showBack />
-        <View style={[styles.content, styles.centered]}>
-          <Text style={styles.errorText}>Essa tela é exclusiva para admin e ministro.</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   if (isLoading) {
     return (
       <SafeAreaView style={[styles.screen, styles.centered]} edges={['top']}>

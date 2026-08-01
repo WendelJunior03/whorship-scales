@@ -204,18 +204,18 @@ export function HomeScreen() {
             ))}
           </View>
         ) : (
-          <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('Agenda')}>
-            <Card style={styles.confirmarCard}>
-              <View style={styles.confirmarIcon}>
-                <Ionicons name="checkmark-done" size={20} color={colors.primary} />
-              </View>
-              <View style={styles.confirmarInfo}>
-                <Text style={styles.gridLabel}>Confirmar Presença</Text>
-                <Text style={styles.gridSublabel}>Ver e confirmar seus próximos compromissos</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+          <View style={styles.grid}>
+            <Card style={styles.gridCard} onPress={() => navigation.navigate('Escalas')}>
+              <Ionicons name="calendar-outline" size={22} color={colors.primary} />
+              <Text style={styles.gridLabel}>Escalas</Text>
+              <Text style={styles.gridSublabel}>Ver cultos</Text>
             </Card>
-          </TouchableOpacity>
+            <Card style={styles.gridCard} onPress={() => navigation.navigate('Agenda')}>
+              <Ionicons name="checkmark-done-outline" size={22} color={colors.primary} />
+              <Text style={styles.gridLabel}>Confirmar Presença</Text>
+              <Text style={styles.gridSublabel}>Seus compromissos</Text>
+            </Card>
+          </View>
         )}
 
         <View style={styles.sectionHeader}>
@@ -362,23 +362,6 @@ const styles = StyleSheet.create({
   gridSublabel: {
     ...typography.caption,
     color: colors.textSecondary,
-  },
-  confirmarCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  confirmarIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.surfaceElevated,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  confirmarInfo: {
-    flex: 1,
-    gap: 2,
   },
   sectionHeader: {
     flexDirection: 'row',
