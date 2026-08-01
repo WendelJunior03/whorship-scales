@@ -108,7 +108,9 @@ export function LoginScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
+    width: '100%',
     backgroundColor: colors.background,
+    overflow: 'hidden',
   },
   flex: {
     flex: 1,
