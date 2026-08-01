@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
 import { colors, spacing, typography } from '@/theme';
 
 type BadgeTone = 'primary' | 'success' | 'warning' | 'error' | 'neutral';
@@ -8,6 +8,7 @@ interface BadgeProps {
   label: string;
   tone?: BadgeTone;
   style?: ViewStyle;
+  textStyle?: TextStyle;
 }
 
 const toneColors: Record<BadgeTone, { bg: string; text: string }> = {
@@ -18,12 +19,12 @@ const toneColors: Record<BadgeTone, { bg: string; text: string }> = {
   neutral: { bg: colors.surfaceElevated, text: colors.textSecondary },
 };
 
-export function Badge({ label, tone = 'neutral', style }: BadgeProps) {
+export function Badge({ label, tone = 'neutral', style, textStyle }: BadgeProps) {
   const { bg, text } = toneColors[tone];
 
   return (
     <View style={[styles.badge, { backgroundColor: bg }, style]}>
-      <Text style={[styles.text, { color: text }]}>{label}</Text>
+      <Text style={[styles.text, { color: text }, textStyle]}>{label}</Text>
     </View>
   );
 }

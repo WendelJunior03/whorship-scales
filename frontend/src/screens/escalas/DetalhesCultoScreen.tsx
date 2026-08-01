@@ -467,7 +467,12 @@ export function DetalhesCultoScreen() {
               >
                 <Text style={styles.musicaNumero}>{String(index + 1).padStart(2, '0')}</Text>
                 <Text style={styles.musicaNome}>{musica.nome}</Text>
-                <Badge label={musica.tom} tone="neutral" />
+                <Badge
+                  label={musica.tom}
+                  tone="neutral"
+                  style={styles.tomBadge}
+                  textStyle={styles.tomBadgeText}
+                />
                 {user && isGestor(user.papel) && (
                   <OptionsMenu
                     loading={excluindoMusicaId === musica.id}
@@ -939,6 +944,18 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.text,
     flex: 1,
+  },
+  tomBadge: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tomBadgeText: {
+    fontSize: 14,
   },
   equipeRow: {
     gap: spacing.md,
