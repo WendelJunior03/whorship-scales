@@ -11,7 +11,7 @@ router.post('/cadastro', authMiddleware, autorizator(['admin']),cadastrarUser);
 router.post('/login', loginUser);
 router.get('/me', authMiddleware, myProfile);
 router.get('/', authMiddleware, autorizator(['admin']), listAllMembers);
-router.get('/:id', authMiddleware, autorizator(['admin', 'ministro']), getMemberById)
+router.get('/:id', authMiddleware, getMemberById)
 router.put('/:id', authMiddleware, updateMemberController)
 router.delete('/:id', authMiddleware, autorizator(['admin']), deactivateMemberController)
 router.put('/:id/senha', authMiddleware, updatePasswordController)

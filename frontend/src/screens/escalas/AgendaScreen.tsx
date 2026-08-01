@@ -8,12 +8,15 @@ import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { MainStackParamList } from '@/navigation/MainNavigator';
+import * as cultosService from '@/services/cultos';
 import * as escalaAvulsaService from '@/services/escalaAvulsa';
 import * as escalaFixaService from '@/services/escalaFixa';
 import * as escalaVocalService from '@/services/escalaVocal';
 import * as excecoesService from '@/services/excecoes';
 import { ApiError } from '@/services/api';
 import {
+  Culto,
+  DiaSemana,
   MinhaEscalaAvulsaItem,
   MinhaEscalaFixaItem,
   MinhaEscalaVocalItem,
@@ -35,6 +38,12 @@ const statusTone: Record<StatusEscalaVocal, 'warning' | 'success' | 'error'> = {
   recusado: 'error',
 };
 
+const diaSemanaPorIndice: Record<number, DiaSemana> = {
+  0: 'domingo',
+  3: 'quarta',
+  6: 'sabado',
+};
+
 function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
@@ -48,19 +57,37 @@ export function AgendaScreen() {
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
+  const [proximoCultoPorDia, setProximoCultoPorDia] = useState<Partial<Record<DiaSemana, Culto>>>(
+    {},
+  );
 
   const carregarDados = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const [vocal, avulsa, fixa] = await Promise.all([
+      const [vocal, avulsa, fixa, todosCultos] = await Promise.all([
         escalaVocalService.getMinhaEscalaVocal(),
         escalaAvulsaService.getMinhaEscalaAvulsa(),
         escalaFixaService.getMinhaEscalaFixa(),
+        cultosService.getTodosCultos(),
       ]);
       setEscalaVocal(vocal);
       setEscalaAvulsa(avulsa);
       setEscalaFixa(fixa);
+
+      const agora = new Date();
+      const proximoPorDia: Partial<Record<DiaSemana, Culto>> = {};
+      for (const culto of todosCultos) {
+        const dataCulto = new Date(culto.data_hora);
+        if (dataCulto < agora) continue;
+        const dia = diaSemanaPorIndice[dataCulto.getDay()];
+        if (!dia) continue;
+        const atual = proximoPorDia[dia];
+        if (!atual || dataCulto < new Date(atual.data_hora)) {
+          proximoPorDia[dia] = culto;
+        }
+      }
+      setProximoCultoPorDia(proximoPorDia);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Não foi possível carregar sua agenda.');
     } finally {
@@ -300,11 +327,26 @@ export function AgendaScreen() {
               <Text style={styles.sectionTitle}>Sua escala fixa</Text>
             </View>
 
-            {escalaFixa.map((item) => (
-              <Card key={item.id} style={styles.compromisso}>
+            {escalaFixa.map((item) => {
+              const proximoCulto = proximoCultoPorDia[item.dia_semana];
+              return (
+              <Card
+                key={item.id}
+                style={styles.compromisso}
+                onPress={
+                  proximoCulto
+                    ? () => navigation.navigate('DetalhesCulto', { cultoId: proximoCulto.id })
+                    : undefined
+                }
+              >
                 <View style={styles.compromissoInfo}>
                   <Text style={styles.compromissoDia}>{capitalize(item.dia_semana)}</Text>
                   <Text style={styles.compromissoHora}>{item.funcao}</Text>
+                  {!proximoCulto && (
+                    <Text style={styles.semCultoTexto}>
+                      Nenhum culto futuro criado ainda pra esse dia
+                    </Text>
+                  )}
                 </View>
                 <Button
                   title="Recusar"
@@ -314,7 +356,8 @@ export function AgendaScreen() {
                   style={styles.acaoBotaoUnico}
                 />
               </Card>
-            ))}
+              );
+            })}
           </>
         )}
       </ScrollView>
@@ -391,6 +434,11 @@ const styles = StyleSheet.create({
   compromissoHora: {
     ...typography.bodySmall,
     color: colors.textSecondary,
+  },
+  semCultoTexto: {
+    ...typography.caption,
+    color: colors.textMuted,
+    marginTop: 2,
   },
   acoes: {
     flexDirection: 'row',

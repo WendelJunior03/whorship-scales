@@ -72,6 +72,14 @@ export async function getMemberById(req: Request, res: Response) {
         return res.status(400).json({message: 'Id inválido!'})
     }
 
+    if (!req.user) {
+        return res.status(401).json({message: 'Não autenticado!'})
+    }
+
+    if (req.user.papel !== 'admin' && req.user.papel !== 'ministro' && req.user.id !== id) {
+        return res.status(403).json({message: 'Não autorizado!'})
+    }
+
     const membro = await findById(id)
     return res.status(200).json(membro);
 }
