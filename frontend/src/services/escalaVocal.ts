@@ -15,13 +15,15 @@ export async function criarEscalaVocal(input: CriarEscalaVocalInput): Promise<vo
 }
 
 /**
- * Sugestão de rodízio: os 2 vocais que cantaram há mais tempo (ou nunca
- * cantaram). É só sugestão — quem decide/grava é o admin/ministro, via
+ * Sugestão de rodízio pra um culto específico: os 2 vocais que cantaram há
+ * mais tempo (ou nunca cantaram), excluindo quem já está escalado nesse
+ * culto. É só sugestão — quem decide/grava é o admin/ministro, via
  * criarEscalaVocal. Admin e ministro.
  */
-export async function getSugestaoVocais(): Promise<SugestaoVocal[]> {
+export async function getSugestaoVocais(cultoId: number): Promise<SugestaoVocal[]> {
   const response = await api.get<{ message: string; vocais: SugestaoVocal[] }>(
     '/escala-vocal/sugestao',
+    { params: { cultoId } },
   );
   return response.data.vocais;
 }

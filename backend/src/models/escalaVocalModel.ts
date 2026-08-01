@@ -7,8 +7,8 @@ export async function createEscalaVocal(
         return result.rows[0];
     }
 
-export async function sugerirVocais(quantidade: number) {
-    const result = await query(`SELECT membros.id, membros.nome, MAX(cultos.data_hora) AS ultima_vez FROM membros LEFT JOIN escala_vocal ON membros.id = escala_vocal.membro_id LEFT JOIN cultos ON escala_vocal.culto_id = cultos.id WHERE membros.papel = 'vocal' AND membros.ativo = true GROUP BY membros.id, membros.nome ORDER BY ultima_vez ASC NULLS FIRST LIMIT $1`, [quantidade])
+export async function sugerirVocais(quantidade: number, cultoId: number) {
+    const result = await query(`SELECT membros.id, membros.nome, MAX(cultos.data_hora) AS ultima_vez FROM membros LEFT JOIN escala_vocal ON membros.id = escala_vocal.membro_id LEFT JOIN cultos ON escala_vocal.culto_id = cultos.id WHERE membros.papel = 'vocal' AND membros.ativo = true AND membros.id NOT IN (SELECT membro_id FROM escala_vocal WHERE culto_id = $2) GROUP BY membros.id, membros.nome ORDER BY ultima_vez ASC NULLS FIRST LIMIT $1`, [quantidade, cultoId])
 
     return result.rows
 }

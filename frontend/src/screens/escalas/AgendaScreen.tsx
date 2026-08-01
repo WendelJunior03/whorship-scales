@@ -1,10 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Calendar, DateData } from 'react-native-calendars';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { MainStackParamList } from '@/navigation/MainNavigator';
 import * as escalaAvulsaService from '@/services/escalaAvulsa';
 import * as escalaFixaService from '@/services/escalaFixa';
 import * as escalaVocalService from '@/services/escalaVocal';
@@ -37,6 +40,7 @@ function capitalize(text: string): string {
 }
 
 export function AgendaScreen() {
+  const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();
   const [escalaVocal, setEscalaVocal] = useState<MinhaEscalaVocalItem[]>([]);
   const [escalaAvulsa, setEscalaAvulsa] = useState<MinhaEscalaAvulsaItem[]>([]);
   const [escalaFixa, setEscalaFixa] = useState<MinhaEscalaFixaItem[]>([]);
@@ -214,7 +218,11 @@ export function AgendaScreen() {
             </View>
 
             {escalaVocal.map((item) => (
-            <Card key={item.id} style={styles.compromisso}>
+            <Card
+              key={item.id}
+              style={styles.compromisso}
+              onPress={() => navigation.navigate('DetalhesCulto', { cultoId: item.culto_id })}
+            >
               <View style={styles.compromissoInfo}>
                 <Text style={styles.compromissoDia}>{formatDiaCompleto(item.data_hora)}</Text>
                 <Text style={styles.compromissoHora}>
@@ -252,7 +260,11 @@ export function AgendaScreen() {
             </View>
 
             {escalaAvulsa.map((item) => (
-            <Card key={item.id} style={styles.compromisso}>
+            <Card
+              key={item.id}
+              style={styles.compromisso}
+              onPress={() => navigation.navigate('DetalhesCulto', { cultoId: item.culto_id })}
+            >
               <View style={styles.compromissoInfo}>
                 <Text style={styles.compromissoDia}>{formatDiaCompleto(item.data_hora)}</Text>
                 <Text style={styles.compromissoHora}>

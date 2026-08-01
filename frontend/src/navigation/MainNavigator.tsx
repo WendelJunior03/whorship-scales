@@ -22,7 +22,7 @@ const Stack = createStackNavigator<MainStackParamList>();
 
 export function MainNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator screenOptions={{ headerShown: false, cardStyle: { flex: 1 } }}>
       <Stack.Screen name="MainTabs" component={MainTabs} />
       <Stack.Screen name="Escalas" component={EscalasScreen} />
       <Stack.Screen name="EscalaFixa" component={EscalaFixaScreen} />

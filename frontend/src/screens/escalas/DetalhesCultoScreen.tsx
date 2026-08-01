@@ -118,7 +118,7 @@ export function DetalhesCultoScreen() {
         escalaVocalService.getEscalaVocalDoCulto(cultoId),
         escalaFixaService.getEscalaEfetiva(dataDoCulto),
         escalaAvulsaService.getEscalaAvulsaDoCulto(cultoId),
-        escalaVocalService.getSugestaoVocais(),
+        escalaVocalService.getSugestaoVocais(cultoId),
       ]);
 
       const equipeFixa: EquipeItem[] = escalaFixaEfetiva.map((item) => ({
