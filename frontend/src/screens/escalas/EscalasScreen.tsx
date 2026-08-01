@@ -4,6 +4,7 @@ import {
   Alert,
   FlatList,
   Modal,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -18,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Header } from '@/components/Header';
+import { OptionsMenu } from '@/components/OptionsMenu';
 import { useAuth } from '@/contexts/AuthContext';
 import { MainStackParamList } from '@/navigation/MainNavigator';
 import * as cultosService from '@/services/cultos';
@@ -182,14 +184,19 @@ export function EscalasScreen() {
                 {formatDiaCompleto(item.data_hora)} · {formatHora(item.data_hora)}
               </Text>
             </View>
-            {user?.papel === 'admin' &&
-              (excluindoId === item.id ? (
-                <ActivityIndicator size="small" color={colors.error} />
-              ) : (
-                <TouchableOpacity onPress={() => handleExcluirCulto(item)} hitSlop={8}>
-                  <Ionicons name="trash-outline" size={20} color={colors.error} />
-                </TouchableOpacity>
-              ))}
+            {user?.papel === 'admin' && (
+              <OptionsMenu
+                loading={excluindoId === item.id}
+                actions={[
+                  {
+                    label: 'Excluir culto',
+                    icon: 'trash-outline',
+                    destructive: true,
+                    onPress: () => handleExcluirCulto(item),
+                  },
+                ]}
+              />
+            )}
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </Card>
         )}
@@ -385,6 +392,7 @@ const styles = StyleSheet.create({
   modalTextInput: {
     ...typography.body,
     color: colors.text,
+    ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null),
   },
   modalButton: {
     marginTop: spacing.md,

@@ -4,6 +4,7 @@ import {
   Alert,
   Linking,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -19,6 +20,7 @@ import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Header } from '@/components/Header';
+import { OptionsMenu } from '@/components/OptionsMenu';
 import { useAuth } from '@/contexts/AuthContext';
 import { MainStackParamList } from '@/navigation/types';
 import * as cultosService from '@/services/cultos';
@@ -118,7 +120,9 @@ export function DetalhesCultoScreen() {
         escalaVocalService.getEscalaVocalDoCulto(cultoId),
         escalaFixaService.getEscalaEfetiva(dataDoCulto),
         escalaAvulsaService.getEscalaAvulsaDoCulto(cultoId),
-        escalaVocalService.getSugestaoVocais(cultoId),
+        user?.papel === 'admin'
+          ? escalaVocalService.getSugestaoVocais(cultoId)
+          : Promise.resolve([]),
       ]);
 
       const equipeFixa: EquipeItem[] = escalaFixaEfetiva.map((item) => ({
@@ -464,15 +468,19 @@ export function DetalhesCultoScreen() {
                 <Text style={styles.musicaNumero}>{String(index + 1).padStart(2, '0')}</Text>
                 <Text style={styles.musicaNome}>{musica.nome}</Text>
                 <Badge label={musica.tom} tone="neutral" />
-                {user &&
-                  isGestor(user.papel) &&
-                  (excluindoMusicaId === musica.id ? (
-                    <ActivityIndicator size="small" color={colors.error} />
-                  ) : (
-                    <TouchableOpacity onPress={() => handleExcluirMusica(musica)} hitSlop={8}>
-                      <Ionicons name="trash-outline" size={18} color={colors.error} />
-                    </TouchableOpacity>
-                  ))}
+                {user && isGestor(user.papel) && (
+                  <OptionsMenu
+                    loading={excluindoMusicaId === musica.id}
+                    actions={[
+                      {
+                        label: 'Excluir música',
+                        icon: 'trash-outline',
+                        destructive: true,
+                        onPress: () => handleExcluirMusica(musica),
+                      },
+                    ]}
+                  />
+                )}
               </TouchableOpacity>
             ))}
           </Card>
@@ -516,14 +524,19 @@ export function DetalhesCultoScreen() {
                   {membro.status && (
                     <Badge label={statusLabel[membro.status]} tone={statusTone[membro.status]} />
                   )}
-                  {podeExcluir &&
-                    (excluindoEquipeChave === membro.chave ? (
-                      <ActivityIndicator size="small" color={colors.error} />
-                    ) : (
-                      <TouchableOpacity onPress={() => handleExcluirDaEquipe(membro)} hitSlop={8}>
-                        <Ionicons name="trash-outline" size={16} color={colors.error} />
-                      </TouchableOpacity>
-                    ))}
+                  {podeExcluir && (
+                    <OptionsMenu
+                      loading={excluindoEquipeChave === membro.chave}
+                      actions={[
+                        {
+                          label: 'Remover da equipe',
+                          icon: 'trash-outline',
+                          destructive: true,
+                          onPress: () => handleExcluirDaEquipe(membro),
+                        },
+                      ]}
+                    />
+                  )}
                 </View>
               );
             })}
@@ -1001,6 +1014,7 @@ const styles = StyleSheet.create({
   modalTextInput: {
     ...typography.body,
     color: colors.text,
+    ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null),
   },
   modalPlaceholder: {
     ...typography.body,
