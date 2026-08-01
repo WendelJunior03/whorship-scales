@@ -6,7 +6,7 @@ import { autorizator } from '../middlewares/roleMiddleware';
 const router = Router();
 
 router.post('/', authMiddleware, autorizator(['admin']), createCultoController)
-router.get('/', authMiddleware, autorizator(['admin', 'ministro']), getAllCultosController)
+router.get('/', authMiddleware, getAllCultosController)
 router.get('/:id', authMiddleware, getCultoByIdController)
 router.delete('/:id', authMiddleware, autorizator(['admin']), deleteCultoController)
 
