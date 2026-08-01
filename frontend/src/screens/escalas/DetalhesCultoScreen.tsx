@@ -36,9 +36,10 @@ import {
   Membro,
   Repertorio,
   StatusEscalaVocal,
+  SugestaoVocal,
 } from '@/types';
 import { colors, spacing, typography } from '@/theme';
-import { formatDiaCompleto, formatDiaSemana, formatHora } from '@/utils/date';
+import { formatDiaCompleto, formatDiaCurto, formatDiaSemana, formatHora } from '@/utils/date';
 import { isGestor, papelLabel } from '@/utils/papel';
 import { confirmAction } from '@/utils/confirm';
 
@@ -92,6 +93,13 @@ export function DetalhesCultoScreen() {
   const [salvandoEquipe, setSalvandoEquipe] = useState(false);
   const [excluindoEquipeChave, setExcluindoEquipeChave] = useState<string | null>(null);
 
+  const [sugestaoVocal, setSugestaoVocal] = useState<SugestaoVocal[]>([]);
+  const [selecionadosVocal, setSelecionadosVocal] = useState<SugestaoVocal[]>([]);
+  const [modoEdicaoVocal, setModoEdicaoVocal] = useState(false);
+  const [pickerVocalAberto, setPickerVocalAberto] = useState(false);
+  const [indiceVocalEmEdicao, setIndiceVocalEmEdicao] = useState<number | null>(null);
+  const [isPublicandoVocal, setIsPublicandoVocal] = useState(false);
+
   const carregarDados = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -99,13 +107,19 @@ export function DetalhesCultoScreen() {
       const cultoEncontrado = await cultosService.getCultoById(cultoId);
       const dataDoCulto = cultoEncontrado.data_hora.slice(0, 10);
 
-      const [repertoriosEncontrados, escalaVocalDoCulto, escalaFixaEfetiva, escalaAvulsaDoCulto] =
-        await Promise.all([
-          repertorioService.getRepertorioDoCulto(cultoId),
-          escalaVocalService.getEscalaVocalDoCulto(cultoId),
-          escalaFixaService.getEscalaEfetiva(dataDoCulto),
-          escalaAvulsaService.getEscalaAvulsaDoCulto(cultoId),
-        ]);
+      const [
+        repertoriosEncontrados,
+        escalaVocalDoCulto,
+        escalaFixaEfetiva,
+        escalaAvulsaDoCulto,
+        vocaisSugeridos,
+      ] = await Promise.all([
+        repertorioService.getRepertorioDoCulto(cultoId),
+        escalaVocalService.getEscalaVocalDoCulto(cultoId),
+        escalaFixaService.getEscalaEfetiva(dataDoCulto),
+        escalaAvulsaService.getEscalaAvulsaDoCulto(cultoId),
+        escalaVocalService.getSugestaoVocais(),
+      ]);
 
       const equipeFixa: EquipeItem[] = escalaFixaEfetiva.map((item) => ({
         chave: `fixa-${item.funcao}-${item.quem_toca}`,
@@ -145,6 +159,9 @@ export function DetalhesCultoScreen() {
       setSuaFuncao(
         minhaFuncaoFixa?.funcao ?? minhaEscalaAvulsa?.funcao ?? (minhaEscalaVocal ? 'Vocal' : null),
       );
+      setSugestaoVocal(vocaisSugeridos);
+      setSelecionadosVocal(vocaisSugeridos);
+      setModoEdicaoVocal(false);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Não foi possível carregar o culto.');
     } finally {
@@ -217,11 +234,7 @@ export function DetalhesCultoScreen() {
     );
   }
 
-  async function abrirEquipeModal() {
-    setNovoMembroEquipe(null);
-    setNovaFuncaoEquipe('');
-    setEquipeModalAberto(true);
-
+  async function garantirMembrosCarregados() {
     if (todosMembrosAtivos.length > 0) return;
     setCarregandoMembros(true);
     try {
@@ -235,6 +248,13 @@ export function DetalhesCultoScreen() {
     } finally {
       setCarregandoMembros(false);
     }
+  }
+
+  function abrirEquipeModal() {
+    setNovoMembroEquipe(null);
+    setNovaFuncaoEquipe('');
+    setEquipeModalAberto(true);
+    garantirMembrosCarregados();
   }
 
   async function handleAdicionarNaEquipe() {
@@ -302,6 +322,79 @@ export function DetalhesCultoScreen() {
     );
   }
 
+  function ativarModoEdicaoVocal() {
+    setModoEdicaoVocal(true);
+    garantirMembrosCarregados();
+  }
+
+  function cancelarEdicaoVocal() {
+    setModoEdicaoVocal(false);
+    setSelecionadosVocal(sugestaoVocal);
+    fecharPickerVocal();
+  }
+
+  function abrirPickerVocalParaTrocar(indice: number) {
+    setIndiceVocalEmEdicao(indice);
+    setPickerVocalAberto(true);
+  }
+
+  function abrirPickerVocalParaAdicionar() {
+    setIndiceVocalEmEdicao(null);
+    setPickerVocalAberto(true);
+  }
+
+  function fecharPickerVocal() {
+    setPickerVocalAberto(false);
+    setIndiceVocalEmEdicao(null);
+  }
+
+  function selecionarVocal(membro: Membro) {
+    const novoItem: SugestaoVocal = { id: membro.id, nome: membro.nome, ultima_vez: null };
+    setSelecionadosVocal((prev) => {
+      if (indiceVocalEmEdicao !== null) {
+        const copia = [...prev];
+        copia[indiceVocalEmEdicao] = novoItem;
+        return copia;
+      }
+      return [...prev, novoItem];
+    });
+    fecharPickerVocal();
+  }
+
+  function removerVocal(indice: number) {
+    setSelecionadosVocal((prev) => prev.filter((_, i) => i !== indice));
+  }
+
+  async function publicarEscalaVocal() {
+    if (selecionadosVocal.length === 0) {
+      Alert.alert('Nada para publicar', 'Adicione ao menos um vocal antes de publicar.');
+      return;
+    }
+
+    setIsPublicandoVocal(true);
+    const resultados = await Promise.allSettled(
+      selecionadosVocal.map((vocal) =>
+        escalaVocalService.criarEscalaVocal({ membroId: vocal.id, cultoId }),
+      ),
+    );
+    setIsPublicandoVocal(false);
+
+    const falhas = resultados.filter((r) => r.status === 'rejected').length;
+    if (falhas === 0) {
+      Alert.alert(
+        'Escala publicada',
+        'A escala de vocais foi publicada. Cada vocal escalado recebe uma notificação por e-mail.',
+      );
+    } else {
+      Alert.alert(
+        'Publicado com ressalvas',
+        `${selecionadosVocal.length - falhas} de ${selecionadosVocal.length} vocais foram escalados. Os demais podem já estar nessa escala.`,
+      );
+    }
+    setModoEdicaoVocal(false);
+    await carregarDados();
+  }
+
   if (isLoading) {
     return (
       <SafeAreaView style={[styles.screen, styles.centered]} edges={['top']}>
@@ -323,6 +416,10 @@ export function DetalhesCultoScreen() {
       </SafeAreaView>
     );
   }
+
+  const vocaisParaEscolher = todosMembrosAtivos.filter(
+    (m) => m.papel === 'vocal' && !selecionadosVocal.some((s) => s.id === m.id),
+  );
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -434,11 +531,85 @@ export function DetalhesCultoScreen() {
         )}
 
         {user?.papel === 'admin' && (
-          <Button
-            title="Gerar escala de vocais"
-            onPress={() => navigation.navigate('GerarEscala', { cultoId })}
-            variant="outline"
-          />
+          <View>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>
+                {modoEdicaoVocal ? 'Escala de vocais em edição' : 'Escala de vocais — sugestão'}
+              </Text>
+            </View>
+            <Text style={styles.sectionSubtitle}>Baseado em menor participação recente</Text>
+
+            {selecionadosVocal.length === 0 ? (
+              <Card>
+                <Text style={styles.emptyText}>Nenhum vocal na escala ainda.</Text>
+              </Card>
+            ) : (
+              <Card style={styles.listCard}>
+                {selecionadosVocal.map((vocal, index) => (
+                  <View key={`${vocal.id}-${index}`} style={styles.vocalRow}>
+                    <View style={styles.vocalNumero}>
+                      <Text style={styles.vocalNumeroText}>{index + 1}</Text>
+                    </View>
+                    <Text style={styles.vocalNome}>{vocal.nome}</Text>
+                    <Text style={styles.vocalData}>
+                      {vocal.ultima_vez ? formatDiaCurto(vocal.ultima_vez) : '—'}
+                    </Text>
+                    {modoEdicaoVocal && (
+                      <View style={styles.vocalAcoes}>
+                        <TouchableOpacity
+                          onPress={() => abrirPickerVocalParaTrocar(index)}
+                          hitSlop={8}
+                        >
+                          <Ionicons name="swap-horizontal" size={20} color={colors.primary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => removerVocal(index)} hitSlop={8}>
+                          <Ionicons name="close-circle" size={20} color={colors.error} />
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
+                ))}
+                {modoEdicaoVocal && (
+                  <TouchableOpacity
+                    style={styles.adicionarRow}
+                    onPress={abrirPickerVocalParaAdicionar}
+                  >
+                    <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
+                    <Text style={styles.adicionarTexto}>Adicionar vocal</Text>
+                  </TouchableOpacity>
+                )}
+              </Card>
+            )}
+
+            {!modoEdicaoVocal ? (
+              <View style={styles.vocalBotoes}>
+                <Button
+                  title="Aceitar Sugestão"
+                  onPress={publicarEscalaVocal}
+                  loading={isPublicandoVocal}
+                />
+                <Button
+                  title="Editar Manualmente"
+                  onPress={ativarModoEdicaoVocal}
+                  variant="outline"
+                />
+              </View>
+            ) : (
+              <View style={styles.vocalBotoes}>
+                <Button
+                  title="Publicar Escala"
+                  onPress={publicarEscalaVocal}
+                  loading={isPublicandoVocal}
+                />
+                <Button
+                  title="Cancelar edição"
+                  onPress={cancelarEdicaoVocal}
+                  variant="outline"
+                  disabled={isPublicandoVocal}
+                />
+              </View>
+            )}
+          </View>
         )}
 
         {suaFuncao && (
@@ -590,6 +761,40 @@ export function DetalhesCultoScreen() {
           </View>
         </View>
       </Modal>
+
+      <Modal
+        visible={pickerVocalAberto}
+        animationType="slide"
+        transparent
+        onRequestClose={fecharPickerVocal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContentPicker}>
+            <Text style={styles.modalTitle}>Escolher vocal</Text>
+            {carregandoMembros ? (
+              <ActivityIndicator color={colors.primary} style={styles.modalLoading} />
+            ) : (
+              <ScrollView style={styles.modalList}>
+                {vocaisParaEscolher.length === 0 ? (
+                  <Text style={styles.emptyText}>Nenhum vocal disponível.</Text>
+                ) : (
+                  vocaisParaEscolher.map((membro) => (
+                    <TouchableOpacity
+                      key={membro.id}
+                      style={styles.modalItem}
+                      onPress={() => selecionarVocal(membro)}
+                    >
+                      <Text style={styles.modalItemText}>{membro.nome}</Text>
+                      <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                    </TouchableOpacity>
+                  ))
+                )}
+              </ScrollView>
+            )}
+            <Button title="Cancelar" variant="outline" onPress={fecharPickerVocal} />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -648,6 +853,57 @@ const styles = StyleSheet.create({
   sectionTitle: {
     ...typography.h3,
     color: colors.text,
+  },
+  sectionSubtitle: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
+  },
+  vocalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  vocalNumero: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  vocalNumeroText: {
+    ...typography.caption,
+    color: colors.textInverse,
+    fontWeight: '700',
+  },
+  vocalNome: {
+    ...typography.body,
+    color: colors.text,
+    flex: 1,
+  },
+  vocalData: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+  },
+  vocalAcoes: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  adicionarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingTop: spacing.xs,
+  },
+  adicionarTexto: {
+    ...typography.bodySmall,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  vocalBotoes: {
+    gap: spacing.sm,
+    marginTop: spacing.sm,
   },
   emptyText: {
     ...typography.bodySmall,

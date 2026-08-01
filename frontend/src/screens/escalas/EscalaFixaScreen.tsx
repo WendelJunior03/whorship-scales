@@ -21,12 +21,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { MainStackParamList } from '@/navigation/MainNavigator';
 import * as cultosService from '@/services/cultos';
 import * as escalaFixaService from '@/services/escalaFixa';
+import * as escalaVocalService from '@/services/escalaVocal';
 import * as membrosService from '@/services/membros';
 import { ApiError } from '@/services/api';
 import { confirmAction } from '@/utils/confirm';
-import { Culto, DiaSemana, EscalaFixaMontada, Membro } from '@/types';
+import { Culto, DiaSemana, EscalaFixaMontada, EscalaVocalDoCultoItem, Membro } from '@/types';
 import { colors, spacing, typography } from '@/theme';
-import { formatDiaCompleto, formatHora } from '@/utils/date';
+import { formatDiaCompleto, formatDiaCurto, formatHora } from '@/utils/date';
 import { papelLabel } from '@/utils/papel';
 
 const DIAS: DiaSemana[] = ['quarta', 'sabado', 'domingo'];
@@ -35,6 +36,12 @@ const diaLabel: Record<DiaSemana, string> = {
   quarta: 'Quarta-feira',
   sabado: 'Sábado',
   domingo: 'Domingo',
+};
+
+const diaSemanaPorIndice: Record<number, DiaSemana> = {
+  0: 'domingo',
+  3: 'quarta',
+  6: 'sabado',
 };
 
 export function EscalaFixaScreen() {
@@ -57,14 +64,56 @@ export function EscalaFixaScreen() {
 
   const [cultoPickerAberto, setCultoPickerAberto] = useState(false);
   const [cultos, setCultos] = useState<Culto[]>([]);
-  const [carregandoCultos, setCarregandoCultos] = useState(false);
+
+  const [proximoCultoPorDia, setProximoCultoPorDia] = useState<Partial<Record<DiaSemana, Culto>>>(
+    {},
+  );
+  const [vozesPorDia, setVozesPorDia] = useState<Record<DiaSemana, EscalaVocalDoCultoItem[]>>({
+    quarta: [],
+    sabado: [],
+    domingo: [],
+  });
 
   const carregarDados = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const dados = await escalaFixaService.getEscalaFixaMontada();
+      const [dados, todosCultos] = await Promise.all([
+        escalaFixaService.getEscalaFixaMontada(),
+        cultosService.getTodosCultos(),
+      ]);
       setEscalaFixa(dados);
+      setCultos(todosCultos);
+
+      const agora = new Date();
+      const proximoPorDia: Partial<Record<DiaSemana, Culto>> = {};
+      for (const culto of todosCultos) {
+        const dataCulto = new Date(culto.data_hora);
+        if (dataCulto < agora) continue;
+        const dia = diaSemanaPorIndice[dataCulto.getDay()];
+        if (!dia) continue;
+        const atual = proximoPorDia[dia];
+        if (!atual || dataCulto < new Date(atual.data_hora)) {
+          proximoPorDia[dia] = culto;
+        }
+      }
+      setProximoCultoPorDia(proximoPorDia);
+
+      const vozesEntries = await Promise.all(
+        DIAS.map(async (dia) => {
+          const cultoDoDia = proximoPorDia[dia];
+          if (!cultoDoDia) return [dia, []] as const;
+          try {
+            const vozes = await escalaVocalService.getEscalaVocalDoCulto(cultoDoDia.id);
+            return [dia, vozes] as const;
+          } catch {
+            return [dia, []] as const;
+          }
+        }),
+      );
+      setVozesPorDia(
+        Object.fromEntries(vozesEntries) as Record<DiaSemana, EscalaVocalDoCultoItem[]>,
+      );
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Não foi possível carregar a escala fixa.');
     } finally {
@@ -150,21 +199,8 @@ export function EscalaFixaScreen() {
     );
   }
 
-  async function abrirGerarEscala() {
+  function abrirGerarEscala() {
     setCultoPickerAberto(true);
-    if (cultos.length > 0) return;
-    setCarregandoCultos(true);
-    try {
-      const todos = await cultosService.getTodosCultos();
-      setCultos(todos);
-    } catch (err) {
-      Alert.alert(
-        'Erro',
-        err instanceof ApiError ? err.message : 'Não foi possível carregar os cultos.',
-      );
-    } finally {
-      setCarregandoCultos(false);
-    }
   }
 
   if (user && user.papel !== 'admin' && user.papel !== 'ministro') {
@@ -215,17 +251,24 @@ export function EscalaFixaScreen() {
         showsVerticalScrollIndicator={false}
       >
         {DIAS.map((dia) => {
-          const itens = escalaFixa.filter((item) => item.dia_semana === dia);
+          const instrumentos = escalaFixa.filter(
+            (item) => item.dia_semana === dia && (item.papel === 'membro' || item.papel === 'admin'),
+          );
+          const vozes = vozesPorDia[dia];
+          const proximoCulto = proximoCultoPorDia[dia];
+
           return (
             <View key={dia}>
               <Text style={styles.sectionTitle}>{diaLabel[dia]}</Text>
-              {itens.length === 0 ? (
+
+              <Text style={styles.subsectionTitle}>Instrumentos</Text>
+              {instrumentos.length === 0 ? (
                 <Card style={styles.card}>
                   <Text style={styles.emptyText}>Ninguém vinculado ainda.</Text>
                 </Card>
               ) : (
                 <Card style={styles.card}>
-                  {itens.map((item, index) => (
+                  {instrumentos.map((item, index) => (
                     <View
                       key={item.id}
                       style={[styles.itemRow, index > 0 && styles.itemRowBorda]}
@@ -242,6 +285,37 @@ export function EscalaFixaScreen() {
                             <Ionicons name="trash-outline" size={20} color={colors.error} />
                           </TouchableOpacity>
                         ))}
+                    </View>
+                  ))}
+                </Card>
+              )}
+
+              <Text style={styles.subsectionTitle}>
+                Vozes{proximoCulto ? ` · próximo dia ${formatDiaCurto(proximoCulto.data_hora)}` : ''}
+              </Text>
+              {!proximoCulto ? (
+                <Card style={styles.card}>
+                  <Text style={styles.emptyText}>
+                    Nenhum culto futuro de {diaLabel[dia].toLowerCase()} cadastrado ainda.
+                  </Text>
+                </Card>
+              ) : vozes.length === 0 ? (
+                <Card style={styles.card}>
+                  <Text style={styles.emptyText}>
+                    A escala de vocais desse culto ainda não foi publicada.
+                  </Text>
+                </Card>
+              ) : (
+                <Card style={styles.card}>
+                  {vozes.map((item, index) => (
+                    <View
+                      key={item.id}
+                      style={[styles.itemRow, index > 0 && styles.itemRowBorda]}
+                    >
+                      <View style={styles.itemInfo}>
+                        <Text style={styles.itemNome}>{item.nome}</Text>
+                        <Text style={styles.itemFuncao}>Vocal</Text>
+                      </View>
                     </View>
                   ))}
                 </Card>
@@ -383,33 +457,29 @@ export function EscalaFixaScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentPicker}>
             <Text style={styles.modalTitle}>Gerar escala de vocal — escolha o culto</Text>
-            {carregandoCultos ? (
-              <ActivityIndicator color={colors.primary} style={styles.modalLoading} />
-            ) : (
-              <ScrollView style={styles.modalList}>
-                {cultos.length === 0 ? (
-                  <Text style={styles.emptyText}>Nenhum culto cadastrado ainda.</Text>
-                ) : (
-                  cultos.map((culto) => (
-                    <TouchableOpacity
-                      key={culto.id}
-                      style={styles.modalItem}
-                      onPress={() => {
-                        setCultoPickerAberto(false);
-                        navigation.navigate('GerarEscala', { cultoId: culto.id });
-                      }}
-                    >
-                      <Text style={styles.modalItemText}>
-                        {culto.tipo ?? formatDiaCompleto(culto.data_hora)}
-                      </Text>
-                      <Text style={styles.modalItemSubtext}>
-                        {formatDiaCompleto(culto.data_hora)} · {formatHora(culto.data_hora)}
-                      </Text>
-                    </TouchableOpacity>
-                  ))
-                )}
-              </ScrollView>
-            )}
+            <ScrollView style={styles.modalList}>
+              {cultos.length === 0 ? (
+                <Text style={styles.emptyText}>Nenhum culto cadastrado ainda.</Text>
+              ) : (
+                cultos.map((culto) => (
+                  <TouchableOpacity
+                    key={culto.id}
+                    style={styles.modalItem}
+                    onPress={() => {
+                      setCultoPickerAberto(false);
+                      navigation.navigate('DetalhesCulto', { cultoId: culto.id });
+                    }}
+                  >
+                    <Text style={styles.modalItemText}>
+                      {culto.tipo ?? formatDiaCompleto(culto.data_hora)}
+                    </Text>
+                    <Text style={styles.modalItemSubtext}>
+                      {formatDiaCompleto(culto.data_hora)} · {formatHora(culto.data_hora)}
+                    </Text>
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
             <Button title="Cancelar" variant="outline" onPress={() => setCultoPickerAberto(false)} />
           </View>
         </View>
@@ -450,8 +520,15 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: spacing.xs,
   },
+  subsectionTitle: {
+    ...typography.caption,
+    color: colors.textMuted,
+    marginBottom: spacing.xs,
+    marginTop: spacing.xs,
+  },
   card: {
     gap: spacing.sm,
+    marginBottom: spacing.sm,
   },
   emptyText: {
     ...typography.bodySmall,

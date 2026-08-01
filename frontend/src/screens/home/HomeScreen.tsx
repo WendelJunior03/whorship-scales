@@ -20,7 +20,7 @@ import * as escalaFixaService from '@/services/escalaFixa';
 import * as notificacoesService from '@/services/notificacoes';
 import * as repertorioService from '@/services/repertorio';
 import { ApiError } from '@/services/api';
-import { EscalaFixaMontada } from '@/types';
+import { MinhaEscalaFixaItem } from '@/types';
 import { MeuProximoCulto } from '@/services/repertorio';
 import { colors, spacing, typography } from '@/theme';
 import { formatDiaCompleto, formatHora } from '@/utils/date';
@@ -69,7 +69,7 @@ export function HomeScreen() {
   const navigation = useNavigation<MainTabScreenNavigationProp<'Home'>>();
 
   const [proximoCulto, setProximoCulto] = useState<MeuProximoCulto | null>(null);
-  const [minhaEscala, setMinhaEscala] = useState<EscalaFixaMontada[]>([]);
+  const [minhaEscala, setMinhaEscala] = useState<MinhaEscalaFixaItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [temNotificacaoNaoLida, setTemNotificacaoNaoLida] = useState(false);

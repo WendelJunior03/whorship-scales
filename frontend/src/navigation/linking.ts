@@ -28,7 +28,6 @@ export const linking: LinkingOptions<LinkingParamList> = {
       EscalaFixa: 'escala-fixa',
       Confirmacoes: 'confirmacoes',
       DetalhesCulto: 'cultos/:cultoId',
-      GerarEscala: 'cultos/:cultoId/gerar-escala',
       Membros: 'membros',
       DetalheMembro: 'membros/:membroId?',
     },

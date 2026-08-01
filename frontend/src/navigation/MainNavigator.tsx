@@ -5,7 +5,6 @@ import { EscalasScreen } from '@/screens/escalas/EscalasScreen';
 import { EscalaFixaScreen } from '@/screens/escalas/EscalaFixaScreen';
 import { ConfirmacoesScreen } from '@/screens/escalas/ConfirmacoesScreen';
 import { DetalhesCultoScreen } from '@/screens/escalas/DetalhesCultoScreen';
-import { GerarEscalaScreen } from '@/screens/escalas/GerarEscalaScreen';
 import { MembrosScreen } from '@/screens/membros/MembrosScreen';
 import { DetalheMembroScreen } from '@/screens/membros/DetalheMembroScreen';
 
@@ -15,7 +14,6 @@ export type MainStackParamList = {
   EscalaFixa: undefined;
   Confirmacoes: undefined;
   DetalhesCulto: { cultoId: number };
-  GerarEscala: { cultoId: number };
   Membros: undefined;
   DetalheMembro: { membroId?: number };
 };
@@ -30,7 +28,6 @@ export function MainNavigator() {
       <Stack.Screen name="EscalaFixa" component={EscalaFixaScreen} />
       <Stack.Screen name="Confirmacoes" component={ConfirmacoesScreen} />
       <Stack.Screen name="DetalhesCulto" component={DetalhesCultoScreen} />
-      <Stack.Screen name="GerarEscala" component={GerarEscalaScreen} />
       <Stack.Screen name="Membros" component={MembrosScreen} />
       <Stack.Screen name="DetalheMembro" component={DetalheMembroScreen} />
     </Stack.Navigator>

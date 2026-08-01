@@ -65,6 +65,7 @@ export interface EscalaFixaMontada {
   dia_semana: DiaSemana;
   funcao: string;
   nome: string;
+  papel: Papel;
 }
 
 /**
