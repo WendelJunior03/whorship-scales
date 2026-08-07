@@ -51,6 +51,7 @@ isolamento por igreja e o plano PRO entrarem.
 | 09 | [Afinador de Instrumentos](./09-afinador.md) | Média — áudio via microfone (Web Audio) |
 | 05 | [Octapad](./05-octapad.md) | Média/Alta — latência de áudio |
 | 06 | [Banco de Pads Musicais](./06-banco-pads.md) | Média — reaproveita infra de áudio do Octapad + storage |
+| 10 | [Metrônomo Inteligente (BPM)](./10-metronomo.md) | Média — timing preciso (Web Audio) + BPM por música; **depende da spec 08** |
 
 ### Fase D — Comunicação (mais pesada)
 | # | Spec | Observação |
@@ -74,6 +75,8 @@ Consolidação das decisões que travam a implementação (detalhe em cada spec)
 | 06 | Onde hospedar os samples de áudio (storage) | ✅ Cloudflare R2 (CDN); online-only na v1 |
 | 07 | Solução de vídeo (LiveKit vs. Jitsi vs. mediasoup vs. ...) | ✅ Jitsi atrás de camada abstrata ProvedorDeReuniao |
 | 09 | Biblioteca de detecção de pitch | ✅ pitchy (McLeod) |
+| 10 | Estratégia de descoberta automática de BPM | ✅ Manual + tap tempo (base); API GetSongBPM como sugestão; sem extrair áudio do YouTube |
+| 10 | Engine de timing do metrônomo + segundo plano | ✅ Web Audio lookahead; best-effort + Screen Wake Lock |
 
 ---
 
