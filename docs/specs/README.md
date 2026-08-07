@@ -31,6 +31,8 @@ A sequência foi pensada pra **evitar retrabalho**: a base multi-tenant e de per
 precisa existir antes dos módulos, senão todo módulo teria que ser reescrito quando o
 isolamento por igreja e o plano PRO entrarem.
 
+> 📋 Plano de execução detalhado da Fase A: [`FASE-A-plano-implementacao.md`](./FASE-A-plano-implementacao.md)
+
 ### Fase A — Fundação (base de tudo)
 | # | Spec | Por que primeiro |
 |---|------|------------------|
