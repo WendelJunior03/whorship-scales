@@ -1,0 +1,29 @@
+# Banco de desenvolvimento local do Deep Scales.
+# Uso:
+#   docker compose up -d      # sobe o Postgres em localhost:5432
+#   npm run migrate:up        # cria o schema (baseline)
+#   npm run seed              # popula dados de exemplo
+#   docker compose down       # para (mantém os dados no volume)
+#   docker compose down -v    # para e APAGA os dados
+services:
+  db:
+    image: postgres:17
+    container_name: deep-scales-db-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: escalas_louvor
+    # Porta 5433 no host para não conflitar com um Postgres local (Homebrew) na 5432.
+    ports:
+      - "5433:5432"
+    volumes:
+      - deep-scales-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d escalas_louvor"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  deep-scales-pgdata:
