@@ -32,6 +32,7 @@ precisa existir antes dos módulos, senão todo módulo teria que ser reescrito 
 isolamento por igreja e o plano PRO entrarem.
 
 > 📋 Plano de execução detalhado da Fase A: [`FASE-A-plano-implementacao.md`](./FASE-A-plano-implementacao.md)
+> 👥 Divisão de tarefas entre 2 pessoas (sem conflito): [`FASE-A-divisao-tarefas.md`](./FASE-A-divisao-tarefas.md)
 
 ### Fase A — Fundação (base de tudo)
 | # | Spec | Por que primeiro |
