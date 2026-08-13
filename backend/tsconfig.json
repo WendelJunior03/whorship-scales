@@ -39,5 +39,9 @@
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
     "skipLibCheck": true,
-  }
+  },
+
+  // Compila só a aplicação (src). scripts/ (seed) roda via tsx e migrations/ é SQL.
+  "include": ["src"],
+  "exclude": ["node_modules", "build", "scripts", "migrations"]
 }
