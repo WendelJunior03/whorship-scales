@@ -7,6 +7,18 @@ definição de "pronto". A ideia é você programar tudo, e usar isso como mapa.
 Regra de ouro: **não avance de fase sem conseguir explicar em voz alta o que a fase
 anterior faz e por quê.** Se não conseguir explicar, ainda não aprendeu — só copiou.
 
+> ## ✅ Status (atualizado)
+> Este roteiro (Fases 0–13) está **concluído e em produção** (`deep-scales.vercel.app`),
+> com uma única dívida real em aberto: **Fase 12 (testes automatizados)**, que nunca foi
+> executada. As demais fases marcadas `[x]` foram conferidas contra o código atual do
+> repositório, não só contra o plano original.
+>
+> O roadmap **não termina aqui** — a evolução do projeto continua em
+> [`docs/specs/`](./docs/specs/README.md) (multi-tenant, RBAC, plano PRO, novos módulos),
+> com plano de execução próprio em [`docs/specs/FASE-A-plano-implementacao.md`](./docs/specs/FASE-A-plano-implementacao.md)
+> e divisão de tarefas em [`docs/specs/FASE-A-divisao-tarefas.md`](./docs/specs/FASE-A-divisao-tarefas.md).
+> Este arquivo (`TASKS.md`) fica como **registro histórico** da v1 (single-tenant).
+
 ---
 
 ## Fase 0 — Planejamento e ambiente
@@ -321,11 +333,13 @@ CREATE TABLE repertorio (
 - [x] Tipos das entidades da API (`Membro`, `EscalaFixa`, `Culto`, `EscalaVocal`, `Excecao`, `Repertorio`) em `src/types`, espelhando o formato real das respostas do back-end (`snake_case`, já que os models não fazem alias pra camelCase)
 - [x] `AuthContext` com armazenamento de token via `SecureStore` e checagem de sessão ao abrir o app
 - [x] Esqueleto rodando: `App.tsx` com `NavigationContainer` + `SafeAreaProvider` + tema aplicado, build validado (`expo export`, sem telas de conteúdo ainda)
-- [ ] Tela de login
-- [ ] Tela "minha agenda" consumindo os endpoints das Fases 5–9
-- [ ] Fluxo de confirmação de presença na UI
-- [ ] Telas de admin: CRUD de membros, escala fixa, geração/ajuste da escala de vocais
-- [ ] Tratamento de estados de carregamento e erro na UI (loading, erro de rede, sem permissão)
+- [x] Tela de login — `screens/auth/LoginScreen.tsx`
+- [x] Tela "minha agenda" consumindo os endpoints das Fases 5–9 — `screens/escalas/AgendaScreen.tsx`
+- [x] Fluxo de confirmação de presença na UI — `screens/escalas/ConfirmacoesScreen.tsx`
+- [x] Telas de admin: CRUD de membros, escala fixa, geração/ajuste da escala de vocais — `screens/membros/MembrosScreen.tsx`, `screens/escalas/EscalaFixaScreen.tsx`, `screens/escalas/DetalhesCultoScreen.tsx` (sugestão + edição da escala vocal do culto)
+- [x] Tratamento de estados de carregamento e erro na UI (loading, erro de rede, sem permissão) — `isLoading`/`ActivityIndicator`/`catch` consistentes nas telas (ex.: `AgendaScreen.tsx`, `MembrosScreen.tsx`)
+
+**Pendência que sobrou fora do escopo original desta fase:** fluxo de "esqueci minha senha" tem só um botão placeholder (`LoginScreen.tsx`, `handleEsqueciSenha`) que manda o usuário falar com o admin — não há reset de senha de verdade. Rastreado no README (seção Roadmap) como item em aberto.
 
 **Conceitos:** hooks do React tipados, `Context` API para estado global de autenticação, armazenamento seguro de token em app nativo (`SecureStore` em vez de `localStorage`), proteção de rotas/telas baseada no papel do usuário, path aliases em projetos Metro/Babel (diferente de projetos Vite/webpack).
 
@@ -337,6 +351,11 @@ CREATE TABLE repertorio (
 
 **Objetivo:** confiar que o sistema funciona sem testar tudo manualmente sempre.
 
+> **Status real (revisado):** esta fase **não foi executada** — não há `jest`/`vitest` no
+> `backend/package.json`, nem arquivos `*.test.*`/`*.spec.*` no projeto. O projeto foi para
+> produção sem suíte automatizada (validação sempre foi manual, via Insomnia). Fica como
+> **dívida técnica em aberto**, não como concluída — diferente das demais fases desta lista.
+
 - [ ] Escolher uma ferramenta de teste (ex: Jest ou Vitest) e escrever testes para o algoritmo de rodízio (Fase 7) — é a lógica mais arriscada
 - [ ] Testes de integração básicos para autenticação (login válido/inválido, acesso negado)
 - [ ] Revisar tratamento de erros em toda a API (respostas consistentes)
@@ -347,19 +366,29 @@ CREATE TABLE repertorio (
 
 ---
 
-## Fase 13 — Deploy (Neon + Render + EAS)
+## Fase 13 — Deploy (Neon + Render + Vercel PWA)
 
 **Objetivo:** sistema acessível fora da sua máquina.
 
-> **Nota (revisada):** o front-end virou app nativo (React Native + Expo, Fase 11), não um site — Vercel não se aplica mais a ele. Deploy do front-end vira "gerar um build instalável" via EAS Build, não "hospedar num domínio".
+> **Nota (revisada 2x):** a primeira revisão desta fase previa EAS Build (app nativo,
+> Android/iOS) porque a Fase 11 tinha virado React Native + Expo nativo. Na prática, o
+> caminho de deploy que foi pra produção foi outro: **PWA web** (`expo export -p web`),
+> hospedado na Vercel — igual o README descreve hoje (`deep-scales.vercel.app`). EAS
+> Build/lojas de app **não foi usado**; instalação é via navegador (PWA instalável), não
+> app store.
+>
+> **Schema em produção:** não há sistema de migrations neste projeto ainda (`node-pg-migrate`
+> só entra agora, na Fase A do roadmap de evolução — ver `docs/specs/FASE-A-plano-implementacao.md`,
+> Passo 0). O schema em produção foi aplicado manualmente (os mesmos `CREATE TABLE` da Fase 1),
+> não via migration versionada — por isso o schema real do banco não está no repositório hoje.
 
-- [ ] Criar projeto no [Neon](https://neon.tech/) e provisionar um Postgres serverless
-- [ ] Criar serviço web no [Render](https://render.com/) pro back-end
-- [ ] Configurar variáveis de ambiente de produção (nunca reaproveitar segredo local)
-- [ ] Rodar as migrations em produção (contra o banco do Neon)
-- [ ] Deploy do back-end no Render
-- [ ] Gerar build do app com [EAS Build](https://docs.expo.dev/build/introduction/) (Android/iOS), apontando `EXPO_PUBLIC_API_URL` pro back-end em produção — decidir se distribui via Expo Go, build interno (sem lojas) ou publicação nas lojas de verdade
-- [ ] Testar o fluxo completo em produção com um usuário de teste real
+- [x] Criar projeto no [Neon](https://neon.tech/) e provisionar um Postgres serverless
+- [x] Criar serviço web no [Render](https://render.com/) pro back-end
+- [x] Configurar variáveis de ambiente de produção (nunca reaproveitar segredo local)
+- [ ] ~~Rodar as migrations em produção~~ — não se aplica: schema aplicado manualmente (ver nota acima); vira pendência formal só quando a Fase A introduzir migrations
+- [x] Deploy do back-end no Render
+- [x] Build do front-end como PWA (`expo export -p web`) e deploy na Vercel — instalável direto do navegador, sem EAS Build/lojas
+- [x] Testar o fluxo completo em produção com um usuário de teste real — app em uso real pelo ministério (`deep-scales.vercel.app`)
 
 **Conceitos para pesquisar:** diferença entre ambiente local/produção, migrations vs. rodar SQL manualmente em prod, CORS entre front e back em domínios diferentes, diferença entre build de desenvolvimento (Expo Go) e build nativo standalone (EAS).
 
