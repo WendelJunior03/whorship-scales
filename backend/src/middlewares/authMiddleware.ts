@@ -19,7 +19,9 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
             throw new Error('authToken não configurado')
         }
         
-        req.user = jwt.verify(authToken, process.env.JWT_SECRET) as JwtPayload
+        const payload = jwt.verify(authToken, process.env.JWT_SECRET) as JwtPayload
+        req.user = payload
+        req.orgId = payload.org_id
 
         next();
     } catch {

@@ -6,9 +6,10 @@ export async function createMembers(
     instrument: string,
     email: string,
     role: string,
-    password: string) {
+    password: string,
+    orgId: number) {
 
-    const result = await query('INSERT INTO membros (nome, telefone, instrumento, email, papel, senha) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [name, phone, instrument, email, role, password]);
+    const result = await query('INSERT INTO membros (nome, telefone, instrumento, email, papel, senha, org_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *', [name, phone, instrument, email, role, password, orgId]);
 
     return result.rows[0];
 
