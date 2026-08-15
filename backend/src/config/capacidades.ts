@@ -189,8 +189,8 @@ export function podeAcessar(usuario: {papelOrg: PapelOrg, papelMinisterio: Papel
     return regra.papelOrg.includes(usuario.papelOrg) || regra.papelMinisterio.includes(usuario.papelMinisterio); 
 }
 
-export function garanteDono(donoId: number, usuarioId: number): boolean {
-    if (donoId === usuarioId) {
+export function mesmoUsuario(idDoRecurso: number, usuarioId: number): boolean {
+    if (idDoRecurso === usuarioId) {
         return true;
     } 
     return false; 

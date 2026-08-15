@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { podeAcessar, garanteDono } from './capacidades';
+import { podeAcessar, mesmoUsuario } from './capacidades';
 
 describe('podeAcessar', () => {
   it('libera administrador em capacidade só organizacional', () => {
@@ -29,7 +29,7 @@ describe('podeAcessar', () => {
   });
 
   it('nega todo mundo, inclusive administrador, em capacidade escopo:proprio sem papelOrg/papelMinisterio (membro.senha.alterar)', () => {
-    // podeAcessar não consulta o campo escopo — quem garante "é o dono" é a garanteDono, separada.
+    // podeAcessar não consulta o campo escopo — quem confirma "é o mesmo usuário?" é a mesmoUsuario, separada.
     expect(podeAcessar({ papelOrg: 'administrador', papelMinisterio: null }, 'membro.senha.alterar')).toBe(false);
     expect(podeAcessar({ papelOrg: 'membro', papelMinisterio: null }, 'membro.senha.alterar')).toBe(false);
   });
@@ -39,12 +39,12 @@ describe('podeAcessar', () => {
   });
 });
 
-describe('garanteDono', () => {
-  it('retorna true quando o donoId bate com o usuarioId', () => {
-    expect(garanteDono(1, 1)).toBe(true);
+describe('mesmoUsuario', () => {
+  it('retorna true quando o idDoRecurso bate com o usuarioId', () => {
+    expect(mesmoUsuario(1, 1)).toBe(true);
   });
 
-  it('retorna false quando o donoId é diferente do usuarioId', () => {
-    expect(garanteDono(1, 2)).toBe(false);
+  it('retorna false quando o idDoRecurso é diferente do usuarioId', () => {
+    expect(mesmoUsuario(1, 2)).toBe(false);
   });
 });
