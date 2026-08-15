@@ -1,22 +1,50 @@
 import { describe, it, expect } from 'vitest';
-import { podeAcessar } from './capacidades';
+import { podeAcessar, garanteDono } from './capacidades';
 
 describe('podeAcessar', () => {
-it('deve retornar true se o usuário tiver a capacidade', () => {
-  expect(podeAcessar({ papelOrg: 'administrador', papelMinisterio: null }, 'lideranca.convidar')).toBe(true);
+  it('libera administrador em capacidade só organizacional', () => {
+    expect(podeAcessar({ papelOrg: 'administrador', papelMinisterio: null }, 'membro.cadastrar')).toBe(true);
+  });
+
+  it('nega lider em capacidade que só administrador pode', () => {
+    expect(podeAcessar({ papelOrg: 'lider', papelMinisterio: null }, 'membro.cadastrar')).toBe(false);
+  });
+
+  it('nega membro comum em capacidade só organizacional', () => {
+    expect(podeAcessar({ papelOrg: 'membro', papelMinisterio: null }, 'membro.cadastrar')).toBe(false);
+  });
+
+  it('libera ministro em escala.gerenciar mesmo sendo só membro no papelOrg', () => {
+    expect(podeAcessar({ papelOrg: 'membro', papelMinisterio: 'ministro' }, 'escala.gerenciar')).toBe(true);
+  });
+
+  it('nega vocal em escala.gerenciar (só ministro libera pelo eixo musical)', () => {
+    expect(podeAcessar({ papelOrg: 'membro', papelMinisterio: 'vocal' }, 'escala.gerenciar')).toBe(false);
+  });
+
+  it('libera qualquer papelOrg em capacidade aberta a todos (escalacao.confirmar)', () => {
+    expect(podeAcessar({ papelOrg: 'membro', papelMinisterio: null }, 'escalacao.confirmar')).toBe(true);
+    expect(podeAcessar({ papelOrg: 'lider', papelMinisterio: null }, 'escalacao.confirmar')).toBe(true);
+    expect(podeAcessar({ papelOrg: 'administrador', papelMinisterio: null }, 'escalacao.confirmar')).toBe(true);
+  });
+
+  it('nega todo mundo, inclusive administrador, em capacidade escopo:proprio sem papelOrg/papelMinisterio (membro.senha.alterar)', () => {
+    // podeAcessar não consulta o campo escopo — quem garante "é o dono" é a garanteDono, separada.
+    expect(podeAcessar({ papelOrg: 'administrador', papelMinisterio: null }, 'membro.senha.alterar')).toBe(false);
+    expect(podeAcessar({ papelOrg: 'membro', papelMinisterio: null }, 'membro.senha.alterar')).toBe(false);
+  });
+
+  it('lança erro se a capacidade não existir no mapa', () => {
+    expect(() => podeAcessar({ papelOrg: 'administrador', papelMinisterio: null }, 'capacidade.inexistente')).toThrow('Capacidade não encontrada');
+  });
 });
-it('deve retornar false se o usuário não tiver a capacidade', () => {
-  expect(podeAcessar({ papelOrg: 'lider', papelMinisterio: null }, 'lideranca.convidar')).toBe(false);
-  expect(podeAcessar({ papelOrg: 'membro', papelMinisterio: null }, 'lideranca.convidar')).toBe(false);
-});
-it('deve retornar true se o usuário tiver a capacidade em mais de um papel', () => {
-  expect(podeAcessar({ papelOrg: 'membro', papelMinisterio: 'ministro' }, 'escala.gerenciar')).toBe(true);
-});
-it('deve retornar false se o usuário não tiver a capacidade em nenhum dos papéis', () => {
-  expect(podeAcessar({ papelOrg: 'lider', papelMinisterio: 'vocal' }, 'culto.gerenciar')).toBe(false);
-  expect(podeAcessar({ papelOrg: 'membro', papelMinisterio: 'vocal' }, 'culto.gerenciar')).toBe(false);
-});
-it('deve lançar erro se a capacidade não existir', () => {
-   expect(() => podeAcessar({ papelOrg: 'administrador', papelMinisterio: null }, 'capacidade.inexistente')).toThrow('Capacidade não encontrada');
-});
+
+describe('garanteDono', () => {
+  it('retorna true quando o donoId bate com o usuarioId', () => {
+    expect(garanteDono(1, 1)).toBe(true);
+  });
+
+  it('retorna false quando o donoId é diferente do usuarioId', () => {
+    expect(garanteDono(1, 2)).toBe(false);
+  });
 });
