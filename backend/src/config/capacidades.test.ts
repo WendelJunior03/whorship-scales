@@ -22,10 +22,11 @@ describe('podeAcessar', () => {
     expect(podeAcessar({ papelOrg: 'membro', papelMinisterio: 'vocal' }, 'escala.gerenciar')).toBe(false);
   });
 
-  it('libera qualquer papelOrg em capacidade aberta a todos (escalacao.confirmar)', () => {
-    expect(podeAcessar({ papelOrg: 'membro', papelMinisterio: null }, 'escalacao.confirmar')).toBe(true);
-    expect(podeAcessar({ papelOrg: 'lider', papelMinisterio: null }, 'escalacao.confirmar')).toBe(true);
-    expect(podeAcessar({ papelOrg: 'administrador', papelMinisterio: null }, 'escalacao.confirmar')).toBe(true);
+  it('nega todo mundo via papelOrg em capacidade escopo:proprio pura (escalacao.confirmar) — nenhum papel dá acesso geral', () => {
+    // papelOrg/papelMinisterio vazios de propósito: só mesmoUsuario pode liberar essa capacidade.
+    expect(podeAcessar({ papelOrg: 'membro', papelMinisterio: null }, 'escalacao.confirmar')).toBe(false);
+    expect(podeAcessar({ papelOrg: 'lider', papelMinisterio: null }, 'escalacao.confirmar')).toBe(false);
+    expect(podeAcessar({ papelOrg: 'administrador', papelMinisterio: null }, 'escalacao.confirmar')).toBe(false);
   });
 
   it('nega todo mundo, inclusive administrador, em capacidade escopo:proprio sem papelOrg/papelMinisterio (membro.senha.alterar)', () => {
@@ -36,6 +37,22 @@ describe('podeAcessar', () => {
 
   it('lança erro se a capacidade não existir no mapa', () => {
     expect(() => podeAcessar({ papelOrg: 'administrador', papelMinisterio: null }, 'capacidade.inexistente')).toThrow('Capacidade não encontrada');
+  });
+});
+
+describe('podeAcessar + mesmoUsuario combinados (escopo: proprio)', () => {
+  const membro = { papelOrg: 'membro' as const, papelMinisterio: null };
+
+  it('libera membro confirmando a PRÓPRIA presença', () => {
+    const idDoRecurso = 1;
+    const usuarioId = 1;
+    expect(podeAcessar(membro, 'escalacao.confirmar') || mesmoUsuario(idDoRecurso, usuarioId)).toBe(true);
+  });
+
+  it('nega membro confirmando presença de OUTRA pessoa', () => {
+    const idDoRecurso = 2; // a escalação é de outro membro
+    const usuarioId = 1;   // quem está pedindo
+    expect(podeAcessar(membro, 'escalacao.confirmar') || mesmoUsuario(idDoRecurso, usuarioId)).toBe(false);
   });
 });
 
