@@ -1,5 +1,5 @@
 type PapelOrg = 'administrador' | 'lider' | 'membro';
-type PapelMinisterio = null | 'vocal' | 'instrumentista' | 'ministro' ;
+type PapelMinisterio = 'vocal' | 'instrumentista' | 'ministro';
 type Escopo = 'organizacao' | 'ministerio' | 'proprio'
 
 interface RegraCapacidade {
@@ -67,12 +67,12 @@ const capacidades: Record<string, RegraCapacidade> = {
         escopo: ['organizacao']
     },
     'escala.ver_propria':{
-        papelOrg: ['administrador', 'lider', 'membro'],
+        papelOrg: [],
         papelMinisterio: [],
         escopo: ['proprio']
     },
     'escalacao.confirmar':{
-        papelOrg: ['administrador', 'lider', 'membro'],
+        papelOrg: [],
         papelMinisterio: [],
         escopo: ['proprio']
     },
@@ -92,12 +92,12 @@ const capacidades: Record<string, RegraCapacidade> = {
         escopo: ['organizacao']
     },
     'notificacao.ver_propria':{
-        papelOrg: ['administrador', 'lider', 'membro'],
+        papelOrg: [],
         papelMinisterio: [],
         escopo: ['proprio']
     },
     'notificacao.marcar_lida':{
-        papelOrg: ['administrador', 'lider', 'membro'],
+        papelOrg: [],
         papelMinisterio: [],
         escopo: ['proprio']
     },
@@ -175,23 +175,21 @@ const capacidades: Record<string, RegraCapacidade> = {
         escopo: ['organizacao']
     },
     'video.visualizar':{
-        papelOrg: ['administrador'],
+        papelOrg: ['administrador', 'lider', 'membro'],
         papelMinisterio: [],
         escopo: ['organizacao']
     },
 }
 
-export function podeAcessar(usuario: {papelOrg: PapelOrg, papelMinisterio: PapelMinisterio}, capacidade: string): boolean {
+export function podeAcessar(usuario: {papelOrg: PapelOrg, papelMinisterio: PapelMinisterio | null}, capacidade: string): boolean {
     const regra = capacidades[capacidade];
     if (!regra) {
         throw new Error('Capacidade não encontrada');
     }
-    return regra.papelOrg.includes(usuario.papelOrg) || regra.papelMinisterio.includes(usuario.papelMinisterio); 
+    const liberaPorMinisterio = usuario.papelMinisterio !== null && regra.papelMinisterio.includes(usuario.papelMinisterio);
+    return regra.papelOrg.includes(usuario.papelOrg) || liberaPorMinisterio;
 }
 
 export function mesmoUsuario(idDoRecurso: number, usuarioId: number): boolean {
-    if (idDoRecurso === usuarioId) {
-        return true;
-    } 
-    return false; 
+    return idDoRecurso === usuarioId;
 }
