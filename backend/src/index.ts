@@ -9,6 +9,7 @@ import repertorioRoutes from './routes/repertorioRoutes'
 import cultoRoutes from './routes/cultoRoutes'
 import escalaAvulsaRoutes from './routes/escalaAvulsaRoutes'
 import notificacaoRoutes from './routes/notificacaoRoutes'
+import organizacaoRoutes from './routes/organizacaoRoutes'
 
 const app = express()
 
@@ -22,6 +23,7 @@ app.use(cors({
 }))
 app.use(express.json());
 
+app.use('/organizacoes', organizacaoRoutes)
 app.use('/membros', membroRoutes)
 app.use('/escala-fixa', escalaFixaRoutes)
 app.use('/excecoes', excecoesRoutes)

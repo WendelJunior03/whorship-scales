@@ -3,11 +3,15 @@ import { query } from '../config/database';
 import { Request, Response } from 'express';
 import { createMembers, deactivateMember } from '../models/membroModel';
 import { findByEmail, findById, findAllMembers, updateMember, findByIdComSenha, updatePassword } from '../models/membroModel';
-import jwt from 'jsonwebtoken';
+import { assinarTokenMembro } from '../utils/token';
 
 
 export async function cadastrarUser(req: Request, res: Response) {
     const {name, email, passwordUser, role, instrument, phone} = req.body
+
+    if (!req.orgId) {
+        return res.status(401).json({message: 'Não autenticado!'})
+    }
 
     const emailDuplicate = await query('SELECT * FROM membros WHERE email = $1', [email])
     if (emailDuplicate.rows.length > 0) {
@@ -17,7 +21,8 @@ export async function cadastrarUser(req: Request, res: Response) {
 
     const hashPassword = await bcrypt.hash(passwordUser, 10)
 
-    await createMembers (name, phone, instrument, email, role, hashPassword);
+    // Novo membro nasce na organização do admin que o cadastra.
+    await createMembers (name, phone, instrument, email, role, hashPassword, req.orgId);
 
     return res.status(201).json({message: 'Usuario cadastrado com sucesso!'})
 }
@@ -34,15 +39,7 @@ export async function loginUser(req: Request, res: Response) {
             return res.status(400).json({message: 'Credenciais inválidas!'})
         }
 
-        if (!process.env.JWT_SECRET) {
-        throw new Error('JWT_SECRET não configurado');
-        }
-
-        const token = jwt.sign(
-        { id: membro.id, papel: membro.papel },
-        process.env.JWT_SECRET,
-        { expiresIn: '1d' }     
-        )
+        const token = assinarTokenMembro({ id: membro.id, papel: membro.papel, org_id: membro.org_id })
 
         return res.status(200).json({ token, message: 'Login realizado com sucesso!'})
         

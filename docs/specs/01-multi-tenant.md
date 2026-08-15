@@ -138,16 +138,17 @@ necessidade real (ex.: músico que serve em duas igrejas).
 - [x] **T-01.1** — ~~Fechar D-01.1, D-01.2, D-01.3 e o dilema 1-org-vs-N-orgs.~~ ✅ **Decidido:**
   isolamento por `org_id` (A); `org_id` no JWT; 1 org por usuário; código `PREFIXO-XXXXXX`
   (prefixo editável + sufixo 6 chars sem ambíguos); dados atuais migrados para uma org "seed".
-- [ ] **T-01.2** — Migration: tabela `organizacoes` + `org_id` em todas as tabelas + índices.
+- [x] **T-01.2** — Migration: tabela `organizacoes` + `org_id` em todas as tabelas + índices. ✅ (Passo 2)
   _Pronto quando:_ schema criado do zero já nasce multi-tenant.
-- [ ] **T-01.3** — Migration de dados: criar org "seed" e vincular registros atuais.
+- [x] **T-01.3** — Migration de dados: criar org "seed" e vincular registros atuais. ✅ (Passo 2)
   _Pronto quando:_ dados existentes pertencem a uma organização e nada quebra.
-- [ ] **T-01.4** — Geração de código único de organização (com unicidade garantida).
+- [x] **T-01.4** — Geração de código único de organização (com unicidade garantida). ✅ (Passo 3)
   _Pronto quando:_ criar org gera um código no formato definido e colisão é impossível.
-- [ ] **T-01.5** — Fluxo de cadastro: "criar organização" (vira admin dela) e "entrar via código".
-  _Pronto quando:_ dois usuários com códigos diferentes não veem dados um do outro.
-- [ ] **T-01.6** — `org_id` no JWT + middleware `resolveOrg`. _Pronto quando:_ toda rota
-  autenticada tem `req.orgId` disponível.
+- [~] **T-01.5** — Fluxo de cadastro: "criar organização" (vira admin dela) e "entrar via código".
+  ✅ (Passo 3) fluxos e tokens com `org_id` distintos prontos; o "não veem dados um do outro"
+  depende do escopo por `org_id` nas queries (T-01.7 / Passo 4).
+- [x] **T-01.6** — `org_id` no JWT + middleware `resolveOrg`. ✅ (Passo 3) `req.orgId` disponível
+  em toda rota autenticada. _Pronto quando:_ toda rota autenticada tem `req.orgId` disponível.
 - [ ] **T-01.7** — Escopar **todas** as queries existentes por `org_id` (idealmente via
   camada de repositório). _Pronto quando:_ teste manual com 2 orgs confirma zero vazamento.
 - [ ] **T-01.8** — Telas de front: criar/entrar em organização; exibir código de convite pro admin.
