@@ -4,6 +4,8 @@
  * Uso: npm run seed   (após `npm run migrate:up`)
  *
  * Idempotente: se já houver membros, não faz nada (evita duplicar).
+ * Multi-tenant: anexa tudo à organização "seed" criada pela migration
+ * (slug = 'igreja-seed'), já que org_id é NOT NULL.
  * Login criado: admin@dev.local / senha123
  */
 import bcrypt from 'bcrypt';
@@ -16,59 +18,73 @@ async function seed() {
         return;
     }
 
+    const org = (await query(
+        `SELECT id FROM organizacoes WHERE slug = 'igreja-seed'`,
+    )).rows[0];
+    if (!org) {
+        throw new Error(
+            "Organização seed não encontrada (slug 'igreja-seed'). Rode `npm run migrate:up` antes do seed.",
+        );
+    }
+    const orgId = org.id;
+
     const senha = await bcrypt.hash('senha123', 10);
 
     const admin = (await query(
-        `INSERT INTO membros (nome, telefone, instrumento, email, papel, senha)
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-        ['Admin Dev', '11999990000', 'Violão', 'admin@dev.local', 'admin', senha],
+        `INSERT INTO membros (nome, telefone, instrumento, email, papel, senha, org_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+        ['Admin Dev', '11999990000', 'Violão', 'admin@dev.local', 'admin', senha, orgId],
     )).rows[0];
 
     const vocal1 = (await query(
-        `INSERT INTO membros (nome, telefone, instrumento, email, papel, senha)
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-        ['Ana Vocal', '11999990001', 'Voz', 'ana@dev.local', 'vocal', senha],
+        `INSERT INTO membros (nome, telefone, instrumento, email, papel, senha, org_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+        ['Ana Vocal', '11999990001', 'Voz', 'ana@dev.local', 'vocal', senha, orgId],
     )).rows[0];
 
     const vocal2 = (await query(
-        `INSERT INTO membros (nome, telefone, instrumento, email, papel, senha)
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-        ['Bruno Vocal', '11999990002', 'Voz', 'bruno@dev.local', 'vocal', senha],
+        `INSERT INTO membros (nome, telefone, instrumento, email, papel, senha, org_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+        ['Bruno Vocal', '11999990002', 'Voz', 'bruno@dev.local', 'vocal', senha, orgId],
     )).rows[0];
+
+    // Marca o admin como criador da org seed (criado_por).
+    await query(`UPDATE organizacoes SET criado_por = $1 WHERE id = $2`, [admin.id, orgId]);
 
     const culto = (await query(
-        `INSERT INTO cultos (data_hora, tipo)
-         VALUES (NOW() + INTERVAL '3 days', $1) RETURNING id`,
-        ['Culto de Domingo'],
+        `INSERT INTO cultos (data_hora, tipo, org_id)
+         VALUES (NOW() + INTERVAL '3 days', $1, $2) RETURNING id`,
+        ['Culto de Domingo', orgId],
     )).rows[0];
 
     await query(
-        `INSERT INTO escala_fixa (membro_id, dia_semana, funcao) VALUES ($1, $2, $3)`,
-        [admin.id, 'domingo', 'Violão'],
+        `INSERT INTO escala_fixa (membro_id, dia_semana, funcao, org_id) VALUES ($1, $2, $3, $4)`,
+        [admin.id, 'domingo', 'Violão', orgId],
     );
 
     await query(
-        `INSERT INTO escala_vocal (membro_id, culto_id) VALUES ($1, $2)`,
-        [vocal1.id, culto.id],
+        `INSERT INTO escala_vocal (membro_id, culto_id, org_id) VALUES ($1, $2, $3)`,
+        [vocal1.id, culto.id, orgId],
     );
 
     await query(
-        `INSERT INTO escala_avulsa (membro_id, culto_id, funcao) VALUES ($1, $2, $3)`,
-        [vocal2.id, culto.id, 'Backing vocal'],
+        `INSERT INTO escala_avulsa (membro_id, culto_id, funcao, org_id) VALUES ($1, $2, $3, $4)`,
+        [vocal2.id, culto.id, 'Backing vocal', orgId],
     );
 
     await query(
-        `INSERT INTO repertorio (culto_id, nome, tom, link_musica) VALUES ($1, $2, $3, $4)`,
-        [culto.id, 'Grande é o Senhor', 'G', 'https://www.youtube.com/watch?v=exemplo'],
+        `INSERT INTO repertorio (culto_id, nome, tom, link_musica, org_id) VALUES ($1, $2, $3, $4, $5)`,
+        [culto.id, 'Grande é o Senhor', 'G', 'https://www.youtube.com/watch?v=exemplo', orgId],
     );
 
     await query(
-        `INSERT INTO notificacoes (membro_id, tipo, titulo, descricao)
-         VALUES ($1, $2, $3, $4)`,
-        [vocal1.id, 'escala', 'Você foi escalado', 'Escala de vocal para o Culto de Domingo'],
+        `INSERT INTO notificacoes (membro_id, tipo, titulo, descricao, org_id)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [vocal1.id, 'escala', 'Você foi escalado', 'Escala de vocal para o Culto de Domingo', orgId],
     );
 
     console.log('✅ Seed concluído.');
+    console.log('   Organização: Igreja (dados existentes) — slug igreja-seed');
     console.log('   Login de teste:  admin@dev.local  /  senha123');
     console.log(`   Membros: 3 · Cultos: 1 · Escalas: fixa+vocal+avulsa · Repertório: 1`);
 }
