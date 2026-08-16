@@ -1,5 +1,17 @@
 export type Papel = 'admin' | 'ministro' | 'vocal' | 'membro';
 
+export type PlanoOrg = 'free' | 'pro';
+
+export interface Organizacao {
+  id: number;
+  nome: string;
+  codigo?: string;
+  slug?: string;
+  plano?: PlanoOrg;
+  criado_por?: number | null;
+  created_at?: string;
+}
+
 export type DiaSemana = 'quarta' | 'sabado' | 'domingo';
 
 export type StatusEscalaVocal = 'pendente' | 'confirmado' | 'recusado';

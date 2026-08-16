@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,7 +11,7 @@ import { MainTabScreenNavigationProp } from '@/navigation/types';
 import * as membrosService from '@/services/membros';
 import { ApiError } from '@/services/api';
 import { papelLabel, papelTone } from '@/utils/papel';
-import { colors, spacing, typography } from '@/theme';
+import { colors, radius, spacing, typography } from '@/theme';
 import appConfig from '../../../app.json';
 
 const MENU_ITEMS = [
@@ -23,8 +23,21 @@ const MENU_ITEMS = [
 ];
 
 export function PerfilScreen() {
-  const { user, signOut } = useAuth();
+  const { user, org, signOut } = useAuth();
   const navigation = useNavigation<MainTabScreenNavigationProp<'Perfil'>>();
+
+  const ehAdmin = user?.papel === 'admin';
+
+  async function compartilharCodigo() {
+    if (!org?.codigo) return;
+    try {
+      await Share.share({
+        message: `Entre na organização "${org.nome}" no Deep Scales com o código: ${org.codigo}`,
+      });
+    } catch {
+      // usuário cancelou o compartilhamento — sem ação
+    }
+  }
 
   const [senhaModalAberto, setSenhaModalAberto] = useState(false);
   const [senhaAtual, setSenhaAtual] = useState('');
@@ -125,7 +138,24 @@ export function PerfilScreen() {
             style={styles.papelBadge}
           />
         )}
-        <Text style={styles.igreja}>Igreja do Evangelho Quadrangular</Text>
+        <Text style={styles.igreja}>{org?.nome ?? 'Minha igreja'}</Text>
+
+        {ehAdmin && org?.codigo && (
+          <View style={styles.conviteCard}>
+            <View style={styles.conviteInfo}>
+              <Text style={styles.conviteLabel}>Código de convite</Text>
+              <Text style={styles.conviteCodigo}>{org.codigo}</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.conviteBotao}
+              onPress={compartilharCodigo}
+              hitSlop={8}
+            >
+              <Ionicons name="share-social-outline" size={18} color={colors.primary} />
+              <Text style={styles.conviteBotaoTexto}>Compartilhar</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <View style={styles.menu}>
           {MENU_ITEMS.map((item) => (
@@ -271,6 +301,40 @@ const styles = StyleSheet.create({
     ...typography.bodySmall,
     color: colors.textSecondary,
     marginBottom: spacing.lg,
+  },
+  conviteCard: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  conviteInfo: {
+    gap: 2,
+  },
+  conviteLabel: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  conviteCodigo: {
+    ...typography.h3,
+    color: colors.text,
+    letterSpacing: 1,
+  },
+  conviteBotao: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  conviteBotaoTexto: {
+    ...typography.bodySmall,
+    color: colors.primary,
+    fontWeight: '600',
   },
   menu: {
     width: '100%',
