@@ -4,6 +4,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';
 import { InitialState, NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import {
+  useFonts,
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+} from '@expo-google-fonts/plus-jakarta-sans';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { RootNavigator } from '@/navigation/RootNavigator';
 import { linking } from '@/navigation/linking';
@@ -13,6 +20,12 @@ import { colors } from '@/theme';
 export default function App() {
   const [isReady, setIsReady] = useState(false);
   const [initialState, setInitialState] = useState<InitialState | undefined>();
+  const [fontsLoaded] = useFonts({
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+  });
 
   useEffect(() => {
     async function restoreState() {
@@ -28,7 +41,7 @@ export default function App() {
     restoreState();
   }, []);
 
-  if (!isReady) {
+  if (!isReady || !fontsLoaded) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator size="large" color={colors.primary} />

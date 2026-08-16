@@ -18,7 +18,7 @@ import * as repertorioService from '@/services/repertorio';
 import { ApiError } from '@/services/api';
 import { MinhaEscalaFixaItem } from '@/types';
 import { MeuProximoCulto } from '@/services/repertorio';
-import { colors, spacing, radius, typography, shadows } from '@/theme';
+import { colors, spacing, radius, typography, shadows, fonts } from '@/theme';
 import { formatDiaCompleto, formatHora } from '@/utils/date';
 import { getSaudacao } from '@/utils/greeting';
 import { isGestor } from '@/utils/papel';
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
   retryText: {
     ...typography.body,
     color: colors.primary,
-    fontWeight: '600',
+    fontFamily: fonts.semibold,
   },
   header: {
     flexDirection: 'row',
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
   heroChipText: {
     ...typography.bodySmall,
     color: colors.primary,
-    fontWeight: '600',
+    fontFamily: fonts.semibold,
   },
   heroTipo: {
     ...typography.bodySmall,
@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
   gridLabel: {
     ...typography.body,
     color: colors.text,
-    fontWeight: '600',
+    fontFamily: fonts.semibold,
   },
   gridSublabel: {
     ...typography.caption,
@@ -431,7 +431,7 @@ const styles = StyleSheet.create({
   escalaDia: {
     ...typography.body,
     color: colors.text,
-    fontWeight: '600',
+    fontFamily: fonts.semibold,
   },
   escalaInfo: {
     ...typography.bodySmall,
