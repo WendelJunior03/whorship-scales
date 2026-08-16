@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, radius } from '@/theme';
+import { fonts, colors, spacing, radius } from '@/theme';
 import { HomeScreen } from '@/screens/home/HomeScreen';
 import { AgendaScreen } from '@/screens/escalas/AgendaScreen';
 import { NotificacoesScreen } from '@/screens/notificacoes/NotificacoesScreen';
@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: fonts.semibold,
   },
   iconWrap: {
     width: 52,

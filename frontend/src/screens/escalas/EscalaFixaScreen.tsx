@@ -28,7 +28,7 @@ import * as membrosService from '@/services/membros';
 import { ApiError } from '@/services/api';
 import { confirmAction } from '@/utils/confirm';
 import { Culto, DiaSemana, EscalaFixaMontada, EscalaVocalDoCultoItem, Membro } from '@/types';
-import { colors, spacing, typography } from '@/theme';
+import { fonts, colors, spacing, typography } from '@/theme';
 import { formatDiaCompleto, formatDiaCurto, formatHora } from '@/utils/date';
 import { papelLabel } from '@/utils/papel';
 
@@ -557,7 +557,7 @@ const styles = StyleSheet.create({
   itemNome: {
     ...typography.body,
     color: colors.text,
-    fontWeight: '600',
+    fontFamily: fonts.semibold,
   },
   itemFuncao: {
     ...typography.bodySmall,
@@ -628,7 +628,7 @@ const styles = StyleSheet.create({
   },
   diaChipTextAtivo: {
     color: colors.textInverse,
-    fontWeight: '600',
+    fontFamily: fonts.semibold,
   },
   selectorInput: {
     flexDirection: 'row',

@@ -15,7 +15,7 @@ import * as escalaAvulsaService from '@/services/escalaAvulsa';
 import * as escalaVocalService from '@/services/escalaVocal';
 import { ApiError } from '@/services/api';
 import { Culto } from '@/types';
-import { colors, spacing, typography } from '@/theme';
+import { fonts, colors, spacing, typography } from '@/theme';
 import { formatDiaCompleto, formatDiaSemana, formatHora } from '@/utils/date';
 
 interface CultoComContagem {
@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
   cultoTitulo: {
     ...typography.body,
     color: colors.text,
-    fontWeight: '600',
+    fontFamily: fonts.semibold,
   },
   cultoData: {
     ...typography.caption,

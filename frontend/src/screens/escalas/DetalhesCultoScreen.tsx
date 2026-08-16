@@ -40,7 +40,7 @@ import {
   StatusEscalaVocal,
   SugestaoVocal,
 } from '@/types';
-import { colors, spacing, typography } from '@/theme';
+import { fonts, colors, spacing, typography } from '@/theme';
 import { formatDiaCompleto, formatDiaCurto, formatDiaSemana, formatHora } from '@/utils/date';
 import { isGestor, papelLabel } from '@/utils/papel';
 import { confirmAction } from '@/utils/confirm';
@@ -893,7 +893,7 @@ const styles = StyleSheet.create({
   vocalNumeroText: {
     ...typography.caption,
     color: colors.textInverse,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   },
   vocalNome: {
     ...typography.body,
@@ -917,7 +917,7 @@ const styles = StyleSheet.create({
   adicionarTexto: {
     ...typography.bodySmall,
     color: colors.primary,
-    fontWeight: '600',
+    fontFamily: fonts.semibold,
   },
   vocalBotoes: {
     gap: spacing.sm,
@@ -976,7 +976,7 @@ const styles = StyleSheet.create({
   avatarText: {
     ...typography.body,
     color: colors.primary,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   },
   membroNome: {
     ...typography.caption,

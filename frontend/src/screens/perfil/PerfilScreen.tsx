@@ -11,7 +11,7 @@ import { MainTabScreenNavigationProp } from '@/navigation/types';
 import * as membrosService from '@/services/membros';
 import { ApiError } from '@/services/api';
 import { papelLabel, papelTone } from '@/utils/papel';
-import { colors, radius, spacing, typography } from '@/theme';
+import { fonts, colors, radius, spacing, typography } from '@/theme';
 import appConfig from '../../../app.json';
 
 const MENU_ITEMS = [
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
   conviteBotaoTexto: {
     ...typography.bodySmall,
     color: colors.primary,
-    fontWeight: '600',
+    fontFamily: fonts.semibold,
   },
   menu: {
     width: '100%',

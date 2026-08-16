@@ -15,7 +15,7 @@ import * as membrosService from '@/services/membros';
 import { ApiError } from '@/services/api';
 import { Membro, Papel } from '@/types';
 import { papelLabel, papelTone } from '@/utils/papel';
-import { colors, spacing, typography } from '@/theme';
+import { fonts, colors, spacing, typography } from '@/theme';
 
 const FILTROS: Array<{ label: string; papel?: Papel }> = [
   { label: 'Todos' },
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
   },
   filtroTextAtivo: {
     color: colors.textInverse,
-    fontWeight: '600',
+    fontFamily: fonts.semibold,
   },
   membroCard: {
     flexDirection: 'row',
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
   avatarText: {
     ...typography.body,
     color: colors.primary,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   },
   membroInfo: {
     flex: 1,
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   membroNome: {
     ...typography.body,
     color: colors.text,
-    fontWeight: '600',
+    fontFamily: fonts.semibold,
   },
   membroPapel: {
     ...typography.caption,

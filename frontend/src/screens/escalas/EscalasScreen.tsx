@@ -25,7 +25,7 @@ import { MainStackParamList } from '@/navigation/MainNavigator';
 import * as cultosService from '@/services/cultos';
 import { ApiError } from '@/services/api';
 import { Culto } from '@/types';
-import { colors, spacing, typography } from '@/theme';
+import { fonts, colors, spacing, typography } from '@/theme';
 import { formatDiaCompleto, formatDiaSemana, formatHora, montarDataHoraISO } from '@/utils/date';
 import { confirmAction } from '@/utils/confirm';
 
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
   cultoTitulo: {
     ...typography.body,
     color: colors.text,
-    fontWeight: '600',
+    fontFamily: fonts.semibold,
   },
   cultoData: {
     ...typography.caption,

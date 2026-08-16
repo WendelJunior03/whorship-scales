@@ -7,7 +7,7 @@ import { Card } from '@/components/Card';
 import * as notificacoesService from '@/services/notificacoes';
 import { ApiError } from '@/services/api';
 import { Notificacao, TipoNotificacao } from '@/types';
-import { colors, spacing, typography } from '@/theme';
+import { fonts, colors, spacing, typography } from '@/theme';
 import { formatDataRelativa, formatHora } from '@/utils/date';
 
 const iconePorTipo: Record<TipoNotificacao, keyof typeof Ionicons.glyphMap> = {
@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   itemTituloNaoLido: {
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   },
   itemDescricao: {
     ...typography.caption,

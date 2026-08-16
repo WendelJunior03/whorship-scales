@@ -22,7 +22,7 @@ import {
   MinhaEscalaVocalItem,
   StatusEscalaVocal,
 } from '@/types';
-import { colors, spacing, typography } from '@/theme';
+import { fonts, colors, spacing, typography } from '@/theme';
 import { formatDiaCompleto, formatHora } from '@/utils/date';
 import { confirmAction } from '@/utils/confirm';
 
@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
   compromissoDia: {
     ...typography.body,
     color: colors.text,
-    fontWeight: '600',
+    fontFamily: fonts.semibold,
   },
   compromissoHora: {
     ...typography.bodySmall,

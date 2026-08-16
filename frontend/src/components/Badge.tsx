@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
-import { colors, spacing, typography } from '@/theme';
+import { fonts, colors, spacing, typography } from '@/theme';
 
 type BadgeTone = 'primary' | 'success' | 'warning' | 'error' | 'neutral';
 
@@ -38,6 +38,6 @@ const styles = StyleSheet.create({
   },
   text: {
     ...typography.caption,
-    fontWeight: '600',
+    fontFamily: fonts.semibold,
   },
 });
