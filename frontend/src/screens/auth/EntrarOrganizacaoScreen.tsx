@@ -1,0 +1,162 @@
+import React, { useState } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { Button } from '@/components/Button';
+import { Input } from '@/components/Input';
+import { AuthScaffold } from '@/components/AuthScaffold';
+import { useAuth } from '@/contexts/AuthContext';
+import { AuthStackParamList } from '@/navigation/AuthNavigator';
+import { ApiError } from '@/services/api';
+import { colors, spacing, typography } from '@/theme';
+
+type Props = {
+  navigation: StackNavigationProp<AuthStackParamList, 'EntrarOrganizacao'>;
+};
+
+export function EntrarOrganizacaoScreen({ navigation }: Props) {
+  const { entrarComCodigo } = useAuth();
+
+  const [codigo, setCodigo] = useState('');
+  const [nome, setNome] = useState('');
+  const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
+  const [telefone, setTelefone] = useState('');
+  const [instrumento, setInstrumento] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleEntrar() {
+    if (!codigo.trim() || !nome.trim() || !email.trim() || !senha) {
+      setError('Preencha o código, seu nome, e-mail e senha.');
+      return;
+    }
+    if (senha.length < 6) {
+      setError('A senha precisa ter pelo menos 6 caracteres.');
+      return;
+    }
+
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      await entrarComCodigo({
+        codigo: codigo.trim().toUpperCase(),
+        name: nome.trim(),
+        email: email.trim(),
+        passwordUser: senha,
+        phone: telefone.trim() || undefined,
+        instrument: instrumento.trim() || undefined,
+      });
+      // Sucesso: o RootNavigator troca pra área logada automaticamente.
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Não foi possível entrar na organização.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <AuthScaffold>
+      <TouchableOpacity style={styles.back} onPress={() => navigation.goBack()} hitSlop={10}>
+        <Ionicons name="chevron-back" size={22} color={colors.textSecondary} />
+        <Text style={styles.backText}>Voltar</Text>
+      </TouchableOpacity>
+
+      <View style={styles.header}>
+        <Text style={styles.title}>Entrar com código</Text>
+        <Text style={styles.subtitle}>Use o código de convite da sua igreja.</Text>
+      </View>
+
+      <View style={styles.form}>
+        <Input
+          icon="key-outline"
+          placeholder="Código (ex.: QG-83HF92)"
+          value={codigo}
+          onChangeText={setCodigo}
+          autoCapitalize="characters"
+        />
+        <Input
+          icon="person-outline"
+          placeholder="Seu nome"
+          value={nome}
+          onChangeText={setNome}
+          autoCapitalize="words"
+        />
+        <Input
+          icon="mail-outline"
+          placeholder="E-mail"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoComplete="email"
+        />
+        <Input
+          icon="lock-closed-outline"
+          placeholder="Senha"
+          value={senha}
+          onChangeText={setSenha}
+          isPassword
+        />
+        <Input
+          icon="call-outline"
+          placeholder="Telefone (opcional)"
+          value={telefone}
+          onChangeText={setTelefone}
+          keyboardType="phone-pad"
+        />
+        <Input
+          icon="musical-notes-outline"
+          placeholder="Instrumento (opcional)"
+          value={instrumento}
+          onChangeText={setInstrumento}
+          autoCapitalize="words"
+        />
+
+        {error && <Text style={styles.error}>{error}</Text>}
+
+        <Button
+          title="Entrar na organização"
+          onPress={handleEntrar}
+          loading={isSubmitting}
+          style={styles.button}
+        />
+      </View>
+    </AuthScaffold>
+  );
+}
+
+const styles = StyleSheet.create({
+  back: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.lg,
+  },
+  backText: {
+    ...typography.body,
+    color: colors.textSecondary,
+  },
+  header: {
+    marginBottom: spacing.lg,
+  },
+  title: {
+    ...typography.h1,
+    color: colors.text,
+  },
+  subtitle: {
+    ...typography.body,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+  },
+  form: {
+    gap: spacing.md,
+  },
+  error: {
+    ...typography.bodySmall,
+    color: colors.error,
+    textAlign: 'center',
+  },
+  button: {
+    marginTop: spacing.sm,
+  },
+});

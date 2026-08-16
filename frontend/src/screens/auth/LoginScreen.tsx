@@ -1,22 +1,20 @@
 import React, { useState } from 'react';
-import {
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Alert, Image, StyleSheet, Text, View } from 'react-native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
+import { AuthScaffold } from '@/components/AuthScaffold';
 import { useAuth } from '@/contexts/AuthContext';
+import { AuthStackParamList } from '@/navigation/AuthNavigator';
 import { ApiError } from '@/services/api';
 import { colors, spacing, typography } from '@/theme';
 import logo from '../../../assets/logo.png';
 
-export function LoginScreen() {
+type Props = {
+  navigation: StackNavigationProp<AuthStackParamList, 'Login'>;
+};
+
+export function LoginScreen({ navigation }: Props) {
   const { signIn } = useAuth();
 
   const [email, setEmail] = useState('');
@@ -47,96 +45,59 @@ export function LoginScreen() {
   }
 
   return (
-    <View style={styles.screen}>
-      <View style={[styles.glow, styles.glowTop]} />
-      <View style={[styles.glow, styles.glowBottom]} />
+    <AuthScaffold>
+      <View style={styles.header}>
+        <Image source={logo} style={styles.logo} resizeMode="contain" />
+        <Text style={styles.subtitle}>Organize seu ministério com excelência</Text>
+      </View>
 
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <ScrollView
-          style={styles.flex}
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.header}>
-            <Image source={logo} style={styles.logo} resizeMode="contain" />
-            <Text style={styles.subtitle}>Organize seu ministério com excelência</Text>
-          </View>
+      <View style={styles.form}>
+        <Input
+          icon="mail-outline"
+          placeholder="E-mail"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoComplete="email"
+        />
+        <Input
+          icon="lock-closed-outline"
+          placeholder="Senha"
+          value={password}
+          onChangeText={setPassword}
+          isPassword
+          autoComplete="password"
+        />
 
-          <View style={styles.form}>
-            <Input
-              icon="mail-outline"
-              placeholder="E-mail"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoComplete="email"
-            />
-            <Input
-              icon="lock-closed-outline"
-              placeholder="Senha"
-              value={password}
-              onChangeText={setPassword}
-              isPassword
-              autoComplete="password"
-            />
+        <Text style={styles.forgotPassword} onPress={handleEsqueciSenha}>
+          Esqueci minha senha
+        </Text>
 
-            <Text style={styles.forgotPassword} onPress={handleEsqueciSenha}>
-              Esqueci minha senha
-            </Text>
+        {error && <Text style={styles.error}>{error}</Text>}
 
-            {error && <Text style={styles.error}>{error}</Text>}
+        <Button
+          title="Entrar"
+          onPress={handleEntrar}
+          loading={isSubmitting}
+          style={styles.button}
+        />
 
-            <Button
-              title="Entrar"
-              onPress={handleEntrar}
-              loading={isSubmitting}
-              style={styles.button}
-            />
-
-            <Text style={styles.footer}>Ainda não tem uma conta? Fale com o admin</Text>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </View>
+        <Text style={styles.footer}>
+          Ainda não tem uma conta?{' '}
+          <Text style={styles.footerLink} onPress={() => navigation.navigate('CriarOrganizacao')}>
+            Criar organização
+          </Text>
+          {'  ·  '}
+          <Text style={styles.footerLink} onPress={() => navigation.navigate('EntrarOrganizacao')}>
+            Entrar com código
+          </Text>
+        </Text>
+      </View>
+    </AuthScaffold>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    width: '100%',
-    backgroundColor: colors.background,
-    overflow: 'hidden',
-  },
-  flex: {
-    flex: 1,
-  },
-  glow: {
-    position: 'absolute',
-    width: 320,
-    height: 320,
-    borderRadius: 160,
-    backgroundColor: colors.primary,
-    opacity: 0.18,
-  },
-  glowTop: {
-    top: -140,
-    left: -80,
-  },
-  glowBottom: {
-    bottom: -160,
-    right: -100,
-  },
-  content: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xxl,
-  },
   header: {
     alignItems: 'center',
     marginBottom: spacing.xxl,
@@ -172,5 +133,9 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     marginTop: spacing.lg,
+  },
+  footerLink: {
+    color: colors.primary,
+    fontWeight: '600',
   },
 });
