@@ -1,48 +1,48 @@
 /**
- * Paleta CLARA (protótipo do redesign — spec 04).
+ * Paleta CLARA (protótipo do redesign — spec 04), baseada na referência Louve:
+ * fundo claro, cards brancos, acento AZUL, ícones outline, muito espaço em branco.
  *
- * Isolada de propósito: enquanto o redesign claro está em avaliação, só as telas
- * do protótipo importam daqui. Quando o estilo for aprovado, isto vira a base do
- * `colors` global e as demais telas migram.
+ * Isolada de propósito: enquanto o redesign está em avaliação, só as telas do
+ * protótipo importam daqui. Aprovado o estilo, isto vira a base do `colors` global.
  */
 export const lightColors = {
   // fundo
-  background: '#F5F5FA',
+  background: '#F4F6FB',
   surface: '#FFFFFF',
-  surfaceMuted: '#F0EFF6',
+  surfaceMuted: '#EEF1F8',
 
-  // marca / ação (mantém o roxo como acento)
-  primary: '#6C3CE0',
-  primarySoft: '#EEE9FC',
-  accent: '#8B5CF6',
-  primaryGradient: ['#8B5CF6', '#6C3CE0'] as const,
+  // marca / ação (azul, como na referência)
+  primary: '#3D5AF1',
+  primarySoft: '#E7ECFD',
+  accent: '#4C6FFF',
+  primaryGradient: ['#4C6FFF', '#3D5AF1'] as const,
 
   // texto
-  text: '#1B1726',
-  textSecondary: '#655F73',
-  textMuted: '#9E98AC',
+  text: '#1E2340',
+  textSecondary: '#667085',
+  textMuted: '#98A0B3',
   textInverse: '#FFFFFF',
 
-  border: '#E9E7F1',
+  border: '#EAEDF5',
 
   // status
   success: '#16A34A',
   warning: '#D97706',
-  error: '#DC2626',
-  info: '#0EA5E9',
+  error: '#E5484D',
+  info: '#3D5AF1',
 };
 
-/** Sombras suaves adequadas a fundo claro (mais leves que as do tema escuro). */
+/** Sombras suaves adequadas a fundo claro. */
 export const lightShadows = {
   sm: {
-    shadowColor: '#1B1726',
+    shadowColor: '#1E2340',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 2,
   },
   md: {
-    shadowColor: '#1B1726',
+    shadowColor: '#1E2340',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.08,
     shadowRadius: 20,

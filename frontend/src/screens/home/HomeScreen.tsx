@@ -8,7 +8,6 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
@@ -141,32 +140,25 @@ export function HomeScreen() {
       >
         {proximoCulto ? (
           <TouchableOpacity
-            activeOpacity={0.9}
+            activeOpacity={0.85}
             onPress={() => navigation.navigate('DetalhesCulto', { cultoId: proximoCulto.culto.id })}
-            style={styles.heroShadow}
+            style={styles.hero}
           >
-            <LinearGradient
-              colors={colors.primaryGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.hero}
-            >
-              <View style={styles.heroTop}>
-                <View style={styles.heroBadge}>
-                  <Ionicons name="musical-notes" size={16} color={colors.textInverse} />
-                </View>
-                <Text style={styles.heroLabel}>Próximo culto</Text>
+            <View style={styles.heroTop}>
+              <View style={styles.heroIcon}>
+                <Ionicons name="musical-notes-outline" size={18} color={colors.primary} />
               </View>
-              <Text style={styles.heroData}>{formatDiaCompleto(proximoCulto.culto.data_hora)}</Text>
-              <View style={styles.heroFooter}>
-                <View style={styles.heroChip}>
-                  <Ionicons name="time-outline" size={14} color={colors.textInverse} />
-                  <Text style={styles.heroChipText}>{formatHora(proximoCulto.culto.data_hora)}</Text>
-                </View>
-                {proximoCulto.culto.tipo && <Text style={styles.heroTipo}>{proximoCulto.culto.tipo}</Text>}
-                <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.9)" style={styles.heroChevron} />
+              <Text style={styles.heroLabel}>Próximo culto</Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} style={styles.heroChevron} />
+            </View>
+            <Text style={styles.heroData}>{formatDiaCompleto(proximoCulto.culto.data_hora)}</Text>
+            <View style={styles.heroFooter}>
+              <View style={styles.heroChip}>
+                <Ionicons name="time-outline" size={14} color={colors.primary} />
+                <Text style={styles.heroChipText}>{formatHora(proximoCulto.culto.data_hora)}</Text>
               </View>
-            </LinearGradient>
+              {proximoCulto.culto.tipo && <Text style={styles.heroTipo}>{proximoCulto.culto.tipo}</Text>}
+            </View>
           </TouchableOpacity>
         ) : (
           <View style={styles.card}>
@@ -200,7 +192,9 @@ export function HomeScreen() {
         ) : (
           minhaEscala.map((escala, index) => (
             <View key={`${escala.dia_semana}-${escala.funcao}-${index}`} style={styles.escalaCard}>
-              <View style={styles.escalaDot} />
+              <View style={styles.escalaIcon}>
+                <Ionicons name="repeat-outline" size={18} color={colors.primary} />
+              </View>
               <View>
                 <Text style={styles.escalaDia}>{capitalize(escala.dia_semana)}</Text>
                 <Text style={styles.escalaInfo}>{escala.funcao}</Text>
@@ -309,15 +303,13 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     gap: spacing.md,
   },
-  heroShadow: {
-    borderRadius: radius.xxl,
-    ...lightShadows.md,
-    shadowColor: colors.primary,
-    shadowOpacity: 0.28,
-  },
   hero: {
-    borderRadius: radius.xxl,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: spacing.lg,
+    ...lightShadows.md,
   },
   heroTop: {
     flexDirection: 'row',
@@ -325,21 +317,24 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginBottom: spacing.md,
   },
-  heroBadge: {
-    width: 30,
-    height: 30,
-    borderRadius: radius.pill,
-    backgroundColor: 'rgba(255,255,255,0.22)',
+  heroIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
+    backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
   heroLabel: {
     ...typography.bodySmall,
-    color: 'rgba(255,255,255,0.9)',
+    color: colors.textSecondary,
+  },
+  heroChevron: {
+    marginLeft: 'auto',
   },
   heroData: {
     ...typography.h2,
-    color: colors.textInverse,
+    color: colors.text,
   },
   heroFooter: {
     flexDirection: 'row',
@@ -351,22 +346,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    backgroundColor: 'rgba(255,255,255,0.22)',
+    backgroundColor: colors.primarySoft,
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
     borderRadius: radius.pill,
   },
   heroChipText: {
     ...typography.bodySmall,
-    color: colors.textInverse,
+    color: colors.primary,
     fontWeight: '600',
   },
   heroTipo: {
     ...typography.bodySmall,
-    color: 'rgba(255,255,255,0.85)',
-  },
-  heroChevron: {
-    marginLeft: 'auto',
+    color: colors.textSecondary,
   },
   card: {
     backgroundColor: colors.surface,
@@ -429,11 +421,13 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     ...lightShadows.sm,
   },
-  escalaDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: colors.primary,
+  escalaIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
+    backgroundColor: colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   escalaDia: {
     ...typography.body,
