@@ -47,7 +47,7 @@ export default function App() {
           }
         >
           <RootNavigator />
-          <StatusBar style="light" />
+          <StatusBar style="dark" />
         </NavigationContainer>
       </AuthProvider>
     </SafeAreaProvider>

@@ -18,8 +18,7 @@ import * as repertorioService from '@/services/repertorio';
 import { ApiError } from '@/services/api';
 import { MinhaEscalaFixaItem } from '@/types';
 import { MeuProximoCulto } from '@/services/repertorio';
-import { spacing, radius, typography } from '@/theme';
-import { lightColors as colors, lightShadows } from '@/theme/light';
+import { colors, spacing, radius, typography, shadows } from '@/theme';
 import { formatDiaCompleto, formatHora } from '@/utils/date';
 import { getSaudacao } from '@/utils/greeting';
 import { isGestor } from '@/utils/papel';
@@ -284,7 +283,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: colors.border,
-    ...lightShadows.sm,
+    ...shadows.sm,
   },
   badgeDot: {
     position: 'absolute',
@@ -309,7 +308,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.lg,
-    ...lightShadows.md,
+    ...shadows.md,
   },
   heroTop: {
     flexDirection: 'row',
@@ -366,7 +365,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.md,
-    ...lightShadows.sm,
+    ...shadows.sm,
   },
   mutedText: {
     ...typography.bodySmall,
@@ -390,7 +389,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: spacing.md,
     gap: 4,
-    ...lightShadows.sm,
+    ...shadows.sm,
   },
   gridIcon: {
     width: 40,
@@ -419,7 +418,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.md,
-    ...lightShadows.sm,
+    ...shadows.sm,
   },
   escalaIcon: {
     width: 36,
