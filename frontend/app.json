@@ -24,7 +24,8 @@
       "backgroundColor": "#0D0210"
     },
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-font"
     ]
   }
 }

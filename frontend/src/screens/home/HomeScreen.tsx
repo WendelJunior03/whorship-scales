@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -9,11 +8,8 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
 import { useAuth } from '@/contexts/AuthContext';
 import { MainTabScreenNavigationProp } from '@/navigation/types';
 import * as escalaFixaService from '@/services/escalaFixa';
@@ -22,61 +18,21 @@ import * as repertorioService from '@/services/repertorio';
 import { ApiError } from '@/services/api';
 import { MinhaEscalaFixaItem } from '@/types';
 import { MeuProximoCulto } from '@/services/repertorio';
-import { colors, radius, shadows, spacing, typography } from '@/theme';
+import { colors, spacing, radius, typography, shadows, fonts } from '@/theme';
 import { formatDiaCompleto, formatHora } from '@/utils/date';
 import { getSaudacao } from '@/utils/greeting';
 import { isGestor } from '@/utils/papel';
-import logo from '../../../assets/logo.png';
-
-// A imagem original (1092x1092) tem o emblema circular em cima e o texto
-// "Deep Scales" embaixo. Essas constantes recortam só o círculo (região
-// x: 210-876, y: 140-802 medida na imagem original), escalado pro
-// tamanho do header.
-const LOGO_MARK_SIZE = 36;
-const LOGO_MARK_SCALE = 1092 / (876 - 210);
-const LOGO_MARK_OFFSET_X = -(210 / (876 - 210)) * LOGO_MARK_SIZE;
-const LOGO_MARK_OFFSET_Y = -(140 / (802 - 140)) * LOGO_MARK_SIZE;
 
 const ATALHOS_GESTAO = [
-  {
-    icon: 'calendar-outline' as const,
-    label: 'Escalas',
-    sublabel: 'Ver escalas',
-    route: 'Escalas' as const,
-  },
-  {
-    icon: 'people-outline' as const,
-    label: 'Membros',
-    sublabel: 'Gerenciar',
-    route: 'Membros' as const,
-  },
-  {
-    icon: 'repeat-outline' as const,
-    label: 'Escala Fixa',
-    sublabel: 'Configurar',
-    route: 'EscalaFixa' as const,
-  },
-  {
-    icon: 'checkmark-done-outline' as const,
-    label: 'Confirmações',
-    sublabel: 'Acompanhar',
-    route: 'Confirmacoes' as const,
-  },
+  { icon: 'calendar-outline' as const, label: 'Escalas', sublabel: 'Ver escalas', route: 'Escalas' as const },
+  { icon: 'people-outline' as const, label: 'Membros', sublabel: 'Gerenciar', route: 'Membros' as const },
+  { icon: 'repeat-outline' as const, label: 'Escala Fixa', sublabel: 'Configurar', route: 'EscalaFixa' as const },
+  { icon: 'checkmark-done-outline' as const, label: 'Confirmações', sublabel: 'Acompanhar', route: 'Confirmacoes' as const },
 ];
 
 const ATALHOS_MEMBRO = [
-  {
-    icon: 'calendar-outline' as const,
-    label: 'Escalas',
-    sublabel: 'Ver cultos',
-    route: 'Escalas' as const,
-  },
-  {
-    icon: 'checkmark-done-outline' as const,
-    label: 'Confirmar',
-    sublabel: 'Sua presença',
-    route: 'Agenda' as const,
-  },
+  { icon: 'calendar-outline' as const, label: 'Escalas', sublabel: 'Ver cultos', route: 'Escalas' as const },
+  { icon: 'checkmark-done-outline' as const, label: 'Confirmar', sublabel: 'Sua presença', route: 'Agenda' as const },
 ];
 
 export function HomeScreen() {
@@ -95,7 +51,6 @@ export function HomeScreen() {
     try {
       const [culto, escala] = await Promise.all([
         repertorioService.getMeuProximoCulto().catch((err) => {
-          // 404 aqui significa "sem culto futuro", um estado válido, não um erro
           if (err instanceof ApiError && err.status === 404) return null;
           throw err;
         }),
@@ -138,33 +93,33 @@ export function HomeScreen() {
       <SafeAreaView style={[styles.screen, styles.centered]} edges={['top']}>
         <Ionicons name="cloud-offline-outline" size={40} color={colors.textMuted} />
         <Text style={styles.errorText}>{error}</Text>
-        <Button
-          title="Tentar novamente"
-          onPress={carregarDados}
-          variant="outline"
-          style={styles.retryButton}
-        />
+        <TouchableOpacity style={styles.retryButton} onPress={carregarDados}>
+          <Text style={styles.retryText}>Tentar novamente</Text>
+        </TouchableOpacity>
       </SafeAreaView>
     );
   }
 
+  const primeiroNome = user?.nome?.split(' ')[0] ?? 'membro';
   const atalhos =
     user && isGestor(user.papel)
-      ? ATALHOS_GESTAO.filter((atalho) => atalho.label !== 'Membros' || user.papel === 'admin')
+      ? ATALHOS_GESTAO.filter((a) => a.label !== 'Membros' || user.papel === 'admin')
       : ATALHOS_MEMBRO;
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={styles.header}>
         <View style={styles.headerBrand}>
-          <View style={styles.headerLogoCrop}>
-            <Image source={logo} style={styles.headerLogo} />
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{primeiroNome[0]?.toUpperCase() ?? '?'}</Text>
           </View>
           <View style={styles.headerTexts}>
+            <Text style={styles.greeting}>
+              {getSaudacao()}, {primeiroNome}
+            </Text>
             <Text style={styles.headerOrg} numberOfLines={1}>
               {org?.nome ?? 'Deep Scales'}
             </Text>
-            <Text style={styles.headerHint}>Seu ministério</Text>
           </View>
         </View>
         <TouchableOpacity
@@ -182,67 +137,41 @@ export function HomeScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <View>
-          <Text style={styles.greeting}>
-            {getSaudacao()}, {user?.nome?.split(' ')[0] ?? 'membro'} 👋
-          </Text>
-          <Text style={styles.subtitle}>Aqui está o que acontece no ministério.</Text>
-        </View>
-
         {proximoCulto ? (
           <TouchableOpacity
-            activeOpacity={0.9}
+            activeOpacity={0.85}
             onPress={() => navigation.navigate('DetalhesCulto', { cultoId: proximoCulto.culto.id })}
-            style={styles.heroShadow}
+            style={styles.hero}
           >
-            <LinearGradient
-              colors={colors.primaryGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.proximoCultoCard}
-            >
-              <View style={styles.proximoCultoTop}>
-                <View style={styles.proximoCultoBadge}>
-                  <Ionicons name="musical-notes" size={18} color={colors.textInverse} />
-                </View>
-                <Text style={styles.proximoCultoLabel}>Próximo culto</Text>
+            <View style={styles.heroTop}>
+              <View style={styles.heroIcon}>
+                <Ionicons name="musical-notes-outline" size={18} color={colors.primary} />
               </View>
-              <Text style={styles.proximoCultoData}>
-                {formatDiaCompleto(proximoCulto.culto.data_hora)}
-              </Text>
-              <View style={styles.proximoCultoFooter}>
-                <View style={styles.proximoCultoHoraChip}>
-                  <Ionicons name="time-outline" size={14} color={colors.textInverse} />
-                  <Text style={styles.proximoCultoHora}>
-                    {formatHora(proximoCulto.culto.data_hora)}
-                  </Text>
-                </View>
-                {proximoCulto.culto.tipo && (
-                  <Text style={styles.proximoCultoTipo}>{proximoCulto.culto.tipo}</Text>
-                )}
-                <Ionicons
-                  name="chevron-forward"
-                  size={18}
-                  color="rgba(255,255,255,0.9)"
-                  style={styles.proximoCultoChevron}
-                />
+              <Text style={styles.heroLabel}>Próximo culto</Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} style={styles.heroChevron} />
+            </View>
+            <Text style={styles.heroData}>{formatDiaCompleto(proximoCulto.culto.data_hora)}</Text>
+            <View style={styles.heroFooter}>
+              <View style={styles.heroChip}>
+                <Ionicons name="time-outline" size={14} color={colors.primary} />
+                <Text style={styles.heroChipText}>{formatHora(proximoCulto.culto.data_hora)}</Text>
               </View>
-            </LinearGradient>
+              {proximoCulto.culto.tipo && <Text style={styles.heroTipo}>{proximoCulto.culto.tipo}</Text>}
+            </View>
           </TouchableOpacity>
         ) : (
-          <Card style={styles.cardShadow}>
-            <Text style={styles.semCultoTexto}>Nenhum culto agendado pra você no momento.</Text>
-          </Card>
+          <View style={styles.card}>
+            <Text style={styles.mutedText}>Nenhum culto agendado pra você no momento.</Text>
+          </View>
         )}
 
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Atalhos</Text>
-        </View>
+        <Text style={styles.sectionTitle}>Atalhos</Text>
         <View style={styles.grid}>
           {atalhos.map((atalho) => (
-            <Card
+            <TouchableOpacity
               key={atalho.label}
               style={styles.gridCard}
+              activeOpacity={0.8}
               onPress={() => navigation.navigate(atalho.route)}
             >
               <View style={styles.gridIcon}>
@@ -250,30 +179,26 @@ export function HomeScreen() {
               </View>
               <Text style={styles.gridLabel}>{atalho.label}</Text>
               <Text style={styles.gridSublabel}>{atalho.sublabel}</Text>
-            </Card>
+            </TouchableOpacity>
           ))}
         </View>
 
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Sua escala fixa</Text>
-        </View>
-
+        <Text style={styles.sectionTitle}>Sua escala fixa</Text>
         {minhaEscala.length === 0 ? (
-          <Card style={styles.cardShadow}>
-            <Text style={styles.semCultoTexto}>Você ainda não tem uma escala fixa cadastrada.</Text>
-          </Card>
+          <View style={styles.card}>
+            <Text style={styles.mutedText}>Você ainda não tem uma escala fixa cadastrada.</Text>
+          </View>
         ) : (
           minhaEscala.map((escala, index) => (
-            <Card
-              key={`${escala.dia_semana}-${escala.funcao}-${index}`}
-              style={StyleSheet.flatten([styles.escalaCard, styles.cardShadow])}
-            >
-              <View style={styles.escalaDot} />
-              <View style={styles.escalaInfoBlock}>
+            <View key={`${escala.dia_semana}-${escala.funcao}-${index}`} style={styles.escalaCard}>
+              <View style={styles.escalaIcon}>
+                <Ionicons name="repeat-outline" size={18} color={colors.primary} />
+              </View>
+              <View>
                 <Text style={styles.escalaDia}>{capitalize(escala.dia_semana)}</Text>
                 <Text style={styles.escalaInfo}>{escala.funcao}</Text>
               </View>
-            </Card>
+            </View>
           ))
         )}
       </ScrollView>
@@ -302,14 +227,23 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   retryButton: {
-    minWidth: 200,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: radius.lg,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+  },
+  retryText: {
+    ...typography.body,
+    color: colors.primary,
+    fontFamily: fonts.semibold,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
   },
   headerBrand: {
     flexDirection: 'row',
@@ -317,45 +251,44 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     flex: 1,
   },
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    ...typography.h3,
+    color: colors.primary,
+  },
   headerTexts: {
     flex: 1,
   },
-  headerLogoCrop: {
-    width: LOGO_MARK_SIZE,
-    height: LOGO_MARK_SIZE,
-    overflow: 'hidden',
-    borderRadius: LOGO_MARK_SIZE / 2,
-  },
-  headerLogo: {
-    position: 'absolute',
-    width: LOGO_MARK_SIZE * LOGO_MARK_SCALE,
-    height: LOGO_MARK_SIZE * LOGO_MARK_SCALE,
-    left: LOGO_MARK_OFFSET_X,
-    top: LOGO_MARK_OFFSET_Y,
+  greeting: {
+    ...typography.h3,
+    color: colors.text,
   },
   headerOrg: {
-    ...typography.body,
-    color: colors.text,
-    fontWeight: '700',
-  },
-  headerHint: {
-    ...typography.caption,
-    color: colors.textMuted,
+    ...typography.bodySmall,
+    color: colors.textSecondary,
   },
   bell: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     borderRadius: radius.pill,
     backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: colors.border,
+    ...shadows.sm,
   },
   badgeDot: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: 10,
+    right: 10,
     width: 8,
     height: 8,
     borderRadius: 4,
@@ -369,82 +302,79 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     gap: spacing.md,
   },
-  greeting: {
-    ...typography.h1,
-    color: colors.text,
-  },
-  subtitle: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-  },
-  heroShadow: {
-    borderRadius: radius.xxl,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  proximoCultoCard: {
-    borderRadius: radius.xxl,
+  hero: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: spacing.lg,
+    ...shadows.md,
   },
-  proximoCultoTop: {
+  heroTop: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
     marginBottom: spacing.md,
   },
-  proximoCultoBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.pill,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+  heroIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
+    backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  proximoCultoLabel: {
+  heroLabel: {
     ...typography.bodySmall,
-    color: 'rgba(255,255,255,0.85)',
+    color: colors.textSecondary,
   },
-  proximoCultoData: {
+  heroChevron: {
+    marginLeft: 'auto',
+  },
+  heroData: {
     ...typography.h2,
-    color: colors.textInverse,
+    color: colors.text,
   },
-  proximoCultoFooter: {
+  heroFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
     marginTop: spacing.md,
   },
-  proximoCultoHoraChip: {
+  heroChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: colors.primarySoft,
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
     borderRadius: radius.pill,
   },
-  proximoCultoHora: {
+  heroChipText: {
     ...typography.bodySmall,
-    color: colors.textInverse,
-    fontWeight: '600',
+    color: colors.primary,
+    fontFamily: fonts.semibold,
   },
-  proximoCultoTipo: {
-    ...typography.bodySmall,
-    color: 'rgba(255,255,255,0.85)',
-  },
-  proximoCultoChevron: {
-    marginLeft: 'auto',
-  },
-  semCultoTexto: {
+  heroTipo: {
     ...typography.bodySmall,
     color: colors.textSecondary,
   },
-  cardShadow: {
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
     ...shadows.sm,
+  },
+  mutedText: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+  },
+  sectionTitle: {
+    ...typography.h3,
+    color: colors.text,
+    marginTop: spacing.sm,
   },
   grid: {
     flexDirection: 'row',
@@ -453,6 +383,11 @@ const styles = StyleSheet.create({
   },
   gridCard: {
     width: '47%',
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
     gap: 4,
     ...shadows.sm,
   },
@@ -460,7 +395,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: radius.md,
-    backgroundColor: colors.primaryDark,
+    backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.xs,
@@ -468,40 +403,35 @@ const styles = StyleSheet.create({
   gridLabel: {
     ...typography.body,
     color: colors.text,
-    fontWeight: '600',
+    fontFamily: fonts.semibold,
   },
   gridSublabel: {
     ...typography.caption,
     color: colors.textSecondary,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: spacing.sm,
-  },
-  sectionTitle: {
-    ...typography.h3,
-    color: colors.text,
-  },
   escalaCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    ...shadows.sm,
   },
-  escalaDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: colors.primary,
-  },
-  escalaInfoBlock: {
-    gap: 2,
+  escalaIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
+    backgroundColor: colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   escalaDia: {
     ...typography.body,
     color: colors.text,
-    fontWeight: '600',
+    fontFamily: fonts.semibold,
   },
   escalaInfo: {
     ...typography.bodySmall,

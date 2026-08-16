@@ -22,9 +22,6 @@ interface AuthScaffoldProps {
 export function AuthScaffold({ children, contentStyle }: AuthScaffoldProps) {
   return (
     <View style={styles.screen}>
-      <View style={[styles.glow, styles.glowTop]} />
-      <View style={[styles.glow, styles.glowBottom]} />
-
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -51,22 +48,6 @@ const styles = StyleSheet.create({
   },
   flex: {
     flex: 1,
-  },
-  glow: {
-    position: 'absolute',
-    width: 320,
-    height: 320,
-    borderRadius: 160,
-    backgroundColor: colors.primary,
-    opacity: 0.18,
-  },
-  glowTop: {
-    top: -140,
-    left: -80,
-  },
-  glowBottom: {
-    bottom: -160,
-    right: -100,
   },
   content: {
     flexGrow: 1,
