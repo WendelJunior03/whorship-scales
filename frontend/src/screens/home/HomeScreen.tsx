@@ -22,7 +22,7 @@ import * as repertorioService from '@/services/repertorio';
 import { ApiError } from '@/services/api';
 import { MinhaEscalaFixaItem } from '@/types';
 import { MeuProximoCulto } from '@/services/repertorio';
-import { colors, spacing, typography } from '@/theme';
+import { colors, radius, shadows, spacing, typography } from '@/theme';
 import { formatDiaCompleto, formatHora } from '@/utils/date';
 import { getSaudacao } from '@/utils/greeting';
 import { isGestor } from '@/utils/papel';
@@ -32,7 +32,7 @@ import logo from '../../../assets/logo.png';
 // "Deep Scales" embaixo. Essas constantes recortam só o círculo (região
 // x: 210-876, y: 140-802 medida na imagem original), escalado pro
 // tamanho do header.
-const LOGO_MARK_SIZE = 32;
+const LOGO_MARK_SIZE = 36;
 const LOGO_MARK_SCALE = 1092 / (876 - 210);
 const LOGO_MARK_OFFSET_X = -(210 / (876 - 210)) * LOGO_MARK_SIZE;
 const LOGO_MARK_OFFSET_Y = -(140 / (802 - 140)) * LOGO_MARK_SIZE;
@@ -64,8 +64,23 @@ const ATALHOS_GESTAO = [
   },
 ];
 
+const ATALHOS_MEMBRO = [
+  {
+    icon: 'calendar-outline' as const,
+    label: 'Escalas',
+    sublabel: 'Ver cultos',
+    route: 'Escalas' as const,
+  },
+  {
+    icon: 'checkmark-done-outline' as const,
+    label: 'Confirmar',
+    sublabel: 'Sua presença',
+    route: 'Agenda' as const,
+  },
+];
+
 export function HomeScreen() {
-  const { user } = useAuth();
+  const { user, org } = useAuth();
   const navigation = useNavigation<MainTabScreenNavigationProp<'Home'>>();
 
   const [proximoCulto, setProximoCulto] = useState<MeuProximoCulto | null>(null);
@@ -133,14 +148,31 @@ export function HomeScreen() {
     );
   }
 
+  const atalhos =
+    user && isGestor(user.papel)
+      ? ATALHOS_GESTAO.filter((atalho) => atalho.label !== 'Membros' || user.papel === 'admin')
+      : ATALHOS_MEMBRO;
+
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={styles.header}>
-        <View style={styles.headerLogoCrop}>
-          <Image source={logo} style={styles.headerLogo} />
+        <View style={styles.headerBrand}>
+          <View style={styles.headerLogoCrop}>
+            <Image source={logo} style={styles.headerLogo} />
+          </View>
+          <View style={styles.headerTexts}>
+            <Text style={styles.headerOrg} numberOfLines={1}>
+              {org?.nome ?? 'Deep Scales'}
+            </Text>
+            <Text style={styles.headerHint}>Seu ministério</Text>
+          </View>
         </View>
-        <TouchableOpacity onPress={() => navigation.navigate('Notificacoes')}>
-          <Ionicons name="notifications-outline" size={24} color={colors.text} />
+        <TouchableOpacity
+          style={styles.bell}
+          onPress={() => navigation.navigate('Notificacoes')}
+          hitSlop={8}
+        >
+          <Ionicons name="notifications-outline" size={22} color={colors.text} />
           {temNotificacaoNaoLida && <View style={styles.badgeDot} />}
         </TouchableOpacity>
       </View>
@@ -150,15 +182,18 @@ export function HomeScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.greeting}>
-          {getSaudacao()}, {user?.nome?.split(' ')[0] ?? 'membro'} 👋
-        </Text>
-        <Text style={styles.subtitle}>Aqui está o que acontece no ministério.</Text>
+        <View>
+          <Text style={styles.greeting}>
+            {getSaudacao()}, {user?.nome?.split(' ')[0] ?? 'membro'} 👋
+          </Text>
+          <Text style={styles.subtitle}>Aqui está o que acontece no ministério.</Text>
+        </View>
 
         {proximoCulto ? (
           <TouchableOpacity
-            activeOpacity={0.85}
+            activeOpacity={0.9}
             onPress={() => navigation.navigate('DetalhesCulto', { cultoId: proximoCulto.culto.id })}
+            style={styles.heroShadow}
           >
             <LinearGradient
               colors={colors.primaryGradient}
@@ -166,71 +201,78 @@ export function HomeScreen() {
               end={{ x: 1, y: 1 }}
               style={styles.proximoCultoCard}
             >
-              <View style={styles.proximoCultoBadge}>
-                <Ionicons name="musical-notes" size={18} color={colors.textInverse} />
+              <View style={styles.proximoCultoTop}>
+                <View style={styles.proximoCultoBadge}>
+                  <Ionicons name="musical-notes" size={18} color={colors.textInverse} />
+                </View>
+                <Text style={styles.proximoCultoLabel}>Próximo culto</Text>
               </View>
-              <Text style={styles.proximoCultoLabel}>Próximo culto</Text>
               <Text style={styles.proximoCultoData}>
                 {formatDiaCompleto(proximoCulto.culto.data_hora)}
               </Text>
-              <Text style={styles.proximoCultoHora}>
-                {formatHora(proximoCulto.culto.data_hora)}
-              </Text>
-              {proximoCulto.culto.tipo && (
-                <Text style={styles.proximoCultoTipo}>{proximoCulto.culto.tipo}</Text>
-              )}
+              <View style={styles.proximoCultoFooter}>
+                <View style={styles.proximoCultoHoraChip}>
+                  <Ionicons name="time-outline" size={14} color={colors.textInverse} />
+                  <Text style={styles.proximoCultoHora}>
+                    {formatHora(proximoCulto.culto.data_hora)}
+                  </Text>
+                </View>
+                {proximoCulto.culto.tipo && (
+                  <Text style={styles.proximoCultoTipo}>{proximoCulto.culto.tipo}</Text>
+                )}
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color="rgba(255,255,255,0.9)"
+                  style={styles.proximoCultoChevron}
+                />
+              </View>
             </LinearGradient>
           </TouchableOpacity>
         ) : (
-          <Card>
+          <Card style={styles.cardShadow}>
             <Text style={styles.semCultoTexto}>Nenhum culto agendado pra você no momento.</Text>
           </Card>
         )}
 
-        {user && isGestor(user.papel) ? (
-          <View style={styles.grid}>
-            {ATALHOS_GESTAO.filter(
-              (atalho) => atalho.label !== 'Membros' || user.papel === 'admin',
-            ).map((atalho) => (
-              <Card
-                key={atalho.label}
-                style={styles.gridCard}
-                onPress={() => atalho.route && navigation.navigate(atalho.route)}
-              >
-                <Ionicons name={atalho.icon} size={22} color={colors.primary} />
-                <Text style={styles.gridLabel}>{atalho.label}</Text>
-                <Text style={styles.gridSublabel}>{atalho.sublabel}</Text>
-              </Card>
-            ))}
-          </View>
-        ) : (
-          <View style={styles.grid}>
-            <Card style={styles.gridCard} onPress={() => navigation.navigate('Escalas')}>
-              <Ionicons name="calendar-outline" size={22} color={colors.primary} />
-              <Text style={styles.gridLabel}>Escalas</Text>
-              <Text style={styles.gridSublabel}>Ver cultos</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Atalhos</Text>
+        </View>
+        <View style={styles.grid}>
+          {atalhos.map((atalho) => (
+            <Card
+              key={atalho.label}
+              style={styles.gridCard}
+              onPress={() => navigation.navigate(atalho.route)}
+            >
+              <View style={styles.gridIcon}>
+                <Ionicons name={atalho.icon} size={20} color={colors.primary} />
+              </View>
+              <Text style={styles.gridLabel}>{atalho.label}</Text>
+              <Text style={styles.gridSublabel}>{atalho.sublabel}</Text>
             </Card>
-            <Card style={styles.gridCard} onPress={() => navigation.navigate('Agenda')}>
-              <Ionicons name="checkmark-done-outline" size={22} color={colors.primary} />
-              <Text style={styles.gridLabel}>Confirmar Presença</Text>
-              <Text style={styles.gridSublabel}>Seus compromissos</Text>
-            </Card>
-          </View>
-        )}
+          ))}
+        </View>
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Sua escala fixa</Text>
         </View>
 
         {minhaEscala.length === 0 ? (
-          <Card>
+          <Card style={styles.cardShadow}>
             <Text style={styles.semCultoTexto}>Você ainda não tem uma escala fixa cadastrada.</Text>
           </Card>
         ) : (
           minhaEscala.map((escala, index) => (
-            <Card key={`${escala.dia_semana}-${escala.funcao}-${index}`} style={styles.escalaCard}>
-              <Text style={styles.escalaDia}>{capitalize(escala.dia_semana)}</Text>
-              <Text style={styles.escalaInfo}>{escala.funcao}</Text>
+            <Card
+              key={`${escala.dia_semana}-${escala.funcao}-${index}`}
+              style={StyleSheet.flatten([styles.escalaCard, styles.cardShadow])}
+            >
+              <View style={styles.escalaDot} />
+              <View style={styles.escalaInfoBlock}>
+                <Text style={styles.escalaDia}>{capitalize(escala.dia_semana)}</Text>
+                <Text style={styles.escalaInfo}>{escala.funcao}</Text>
+              </View>
             </Card>
           ))
         )}
@@ -269,6 +311,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
   },
+  headerBrand: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flex: 1,
+  },
+  headerTexts: {
+    flex: 1,
+  },
   headerLogoCrop: {
     width: LOGO_MARK_SIZE,
     height: LOGO_MARK_SIZE,
@@ -282,10 +333,29 @@ const styles = StyleSheet.create({
     left: LOGO_MARK_OFFSET_X,
     top: LOGO_MARK_OFFSET_Y,
   },
+  headerOrg: {
+    ...typography.body,
+    color: colors.text,
+    fontWeight: '700',
+  },
+  headerHint: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  bell: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
   badgeDot: {
     position: 'absolute',
-    top: -2,
-    right: -2,
+    top: 8,
+    right: 8,
     width: 8,
     height: 8,
     borderRadius: 4,
@@ -300,26 +370,39 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   greeting: {
-    ...typography.h2,
+    ...typography.h1,
     color: colors.text,
   },
   subtitle: {
     ...typography.bodySmall,
     color: colors.textSecondary,
-    marginTop: -spacing.sm,
+    marginTop: spacing.xs,
+  },
+  heroShadow: {
+    borderRadius: radius.xxl,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    elevation: 10,
   },
   proximoCultoCard: {
-    borderRadius: 18,
+    borderRadius: radius.xxl,
     padding: spacing.lg,
+  },
+  proximoCultoTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
   },
   proximoCultoBadge: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: radius.pill,
     backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.sm,
   },
   proximoCultoLabel: {
     ...typography.bodySmall,
@@ -328,21 +411,40 @@ const styles = StyleSheet.create({
   proximoCultoData: {
     ...typography.h2,
     color: colors.textInverse,
-    marginTop: spacing.xs,
+  },
+  proximoCultoFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  proximoCultoHoraChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
   },
   proximoCultoHora: {
-    ...typography.body,
-    color: 'rgba(255,255,255,0.9)',
-    marginTop: 2,
+    ...typography.bodySmall,
+    color: colors.textInverse,
+    fontWeight: '600',
   },
   proximoCultoTipo: {
     ...typography.bodySmall,
-    color: 'rgba(255,255,255,0.75)',
-    marginTop: 2,
+    color: 'rgba(255,255,255,0.85)',
+  },
+  proximoCultoChevron: {
+    marginLeft: 'auto',
   },
   semCultoTexto: {
     ...typography.bodySmall,
     color: colors.textSecondary,
+  },
+  cardShadow: {
+    ...shadows.sm,
   },
   grid: {
     flexDirection: 'row',
@@ -352,12 +454,21 @@ const styles = StyleSheet.create({
   gridCard: {
     width: '47%',
     gap: 4,
+    ...shadows.sm,
+  },
+  gridIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    backgroundColor: colors.primaryDark,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xs,
   },
   gridLabel: {
     ...typography.body,
     color: colors.text,
     fontWeight: '600',
-    marginTop: spacing.xs,
   },
   gridSublabel: {
     ...typography.caption,
@@ -374,6 +485,17 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   escalaCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  escalaDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.primary,
+  },
+  escalaInfoBlock: {
     gap: 2,
   },
   escalaDia: {
