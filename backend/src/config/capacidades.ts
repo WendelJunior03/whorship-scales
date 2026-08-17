@@ -1,5 +1,5 @@
-type PapelOrg = 'administrador' | 'lider' | 'membro';
-type PapelMinisterio = 'vocal' | 'instrumentista' | 'ministro';
+export type PapelOrg = 'administrador' | 'lider' | 'membro';
+export type PapelMinisterio = 'vocal' | 'instrumentista' | 'ministro';
 type Escopo = 'organizacao' | 'ministerio' | 'proprio'
 
 interface RegraCapacidade {
