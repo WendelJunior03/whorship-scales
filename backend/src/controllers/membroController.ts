@@ -4,6 +4,7 @@ import { Request, Response } from 'express';
 import { createMembers, deactivateMember } from '../models/membroModel';
 import { findByEmail, findById, findAllMembers, updateMember, findByIdComSenha, updatePassword } from '../models/membroModel';
 import { assinarTokenMembro } from '../utils/token';
+import { podeAcessar, mesmoUsuario } from '../config/capacidades';
 
 
 export async function cadastrarUser(req: Request, res: Response) {
@@ -39,7 +40,13 @@ export async function loginUser(req: Request, res: Response) {
             return res.status(400).json({message: 'Credenciais inválidas!'})
         }
 
-        const token = assinarTokenMembro({ id: membro.id, papel: membro.papel, org_id: membro.org_id })
+        const token = assinarTokenMembro({
+            id: membro.id,
+            papel: membro.papel,
+            papel_org: membro.papel_org,
+            papel_ministerio: membro.papel_ministerio,
+            org_id: membro.org_id,
+        })
 
         return res.status(200).json({ token, message: 'Login realizado com sucesso!'})
         
@@ -73,7 +80,9 @@ export async function getMemberById(req: Request, res: Response) {
         return res.status(401).json({message: 'Não autenticado!'})
     }
 
-    if (req.user.papel !== 'admin' && req.user.papel !== 'ministro' && req.user.id !== id) {
+    // Admin/ministro (via capacidade) ou o próprio membro (via ownership).
+    const usuario = { papelOrg: req.user.papel_org, papelMinisterio: req.user.papel_ministerio ?? null };
+    if (!podeAcessar(usuario, 'membro.visualizar') && !mesmoUsuario(id, req.user.id)) {
         return res.status(403).json({message: 'Não autorizado!'})
     }
 
@@ -89,11 +98,15 @@ export async function updateMemberController (req: Request, res: Response) {
         return res.status(401).json({message: 'Não autenticado!'})
     }
 
-    if ( req.user.papel !== 'admin' && req.user.id !== id ) {
+    const usuario = { papelOrg: req.user.papel_org, papelMinisterio: req.user.papel_ministerio ?? null };
+
+    // Admin (via capacidade) ou o próprio membro (via ownership).
+    if ( !podeAcessar(usuario, 'membro.editar') && !mesmoUsuario(id, req.user.id) ) {
         return res.status(403).json({message: 'Não autorizado!'})
     }
 
-    if (role && req.user.papel !== 'admin') {
+    // Alterar o papel é exclusivo de quem tem a capacidade (administrador).
+    if (role && !podeAcessar(usuario, 'membro.papel.alterar')) {
         return res.status(403).json({message: 'Só admin pode alterar o papel!'})
     }
 

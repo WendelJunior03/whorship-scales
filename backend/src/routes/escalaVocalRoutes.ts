@@ -1,14 +1,14 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middlewares/authMiddleware';
 import { confirmarPresencaController, createEscalaVocalController, sugerirVocaisController, getEscalaVocalDoCultoController, getMinhaEscalaVocalController, deleteEscalaVocalController } from '../controllers/escalaVocalController';
-import { autorizator } from '../middlewares/roleMiddleware';
+import { autoriza } from '../middlewares/roleMiddleware';
 
 const router = Router();
 
-router.post('/', authMiddleware, autorizator(['admin', 'ministro']),createEscalaVocalController)
-router.get('/sugestao', authMiddleware, autorizator(['admin', 'ministro']), sugerirVocaisController)
+router.post('/', authMiddleware, autoriza('escala.gerenciar'),createEscalaVocalController)
+router.get('/sugestao', authMiddleware, autoriza('escala.gerenciar'), sugerirVocaisController)
 router.get('/culto/:cultoId', authMiddleware, getEscalaVocalDoCultoController)
 router.get('/me', authMiddleware, getMinhaEscalaVocalController)
 router.put('/:id/status', authMiddleware, confirmarPresencaController)
-router.delete('/:id', authMiddleware, autorizator(['admin', 'ministro']), deleteEscalaVocalController)
+router.delete('/:id', authMiddleware, autoriza('escala.gerenciar'), deleteEscalaVocalController)
 export default router;

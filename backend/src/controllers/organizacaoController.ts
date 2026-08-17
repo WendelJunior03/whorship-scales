@@ -41,7 +41,13 @@ export async function criarOrganizacao(req: Request, res: Response) {
         instrumento: instrument,
     });
 
-    const token = assinarTokenMembro({ id: membro.id, papel: membro.papel, org_id: org.id });
+    const token = assinarTokenMembro({
+        id: membro.id,
+        papel: membro.papel,
+        papel_org: membro.papel_org,
+        papel_ministerio: membro.papel_ministerio,
+        org_id: org.id,
+    });
 
     return res.status(201).json({
         token,
@@ -76,7 +82,13 @@ export async function entrarComCodigo(req: Request, res: Response) {
     // Quem entra por código nasce como 'membro' (papéis maiores vêm no RBAC — spec 02).
     const membro = await createMembers(name, phone, instrument, email, 'membro', hashPassword, org.id);
 
-    const token = assinarTokenMembro({ id: membro.id, papel: membro.papel, org_id: org.id });
+    const token = assinarTokenMembro({
+        id: membro.id,
+        papel: membro.papel,
+        papel_org: membro.papel_org,
+        papel_ministerio: membro.papel_ministerio,
+        org_id: org.id,
+    });
 
     return res.status(201).json({
         token,

@@ -64,9 +64,10 @@ export async function criarOrganizacaoComAdmin(dados: NovaOrgComAdmin) {
             [dados.nomeOrg, codigo, slug],
         )).rows[0];
 
+        // O criador da org nasce como Administrador no eixo organizacional (spec 02).
         const membro = (await client.query(
-            `INSERT INTO membros (nome, telefone, instrumento, email, papel, senha, org_id)
-             VALUES ($1, $2, $3, $4, 'admin', $5, $6) RETURNING *`,
+            `INSERT INTO membros (nome, telefone, instrumento, email, papel, papel_org, papel_ministerio, senha, org_id)
+             VALUES ($1, $2, $3, $4, 'admin', 'administrador', NULL, $5, $6) RETURNING *`,
             [dados.nome, dados.telefone, dados.instrumento, dados.email, dados.senhaHash, org.id],
         )).rows[0];
 

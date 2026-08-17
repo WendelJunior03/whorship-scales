@@ -1,4 +1,5 @@
 import { query, unscopedQuery } from '../config/database';
+import { derivarPapeis } from '../utils/papeis';
 
 export async function createMembers(
     name: string,
@@ -9,7 +10,13 @@ export async function createMembers(
     password: string,
     orgId: number) {
 
-    const result = await query('INSERT INTO membros (nome, telefone, instrumento, email, papel, senha, org_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *', [name, phone, instrument, email, role, password, orgId]);
+    // Deriva os dois eixos de papel (spec 02) a partir do papel legado informado.
+    const { papelOrg, papelMinisterio } = derivarPapeis(role);
+
+    const result = await query(
+        'INSERT INTO membros (nome, telefone, instrumento, email, papel, papel_org, papel_ministerio, senha, org_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
+        [name, phone, instrument, email, role, papelOrg, papelMinisterio, password, orgId],
+    );
 
     return result.rows[0];
 
