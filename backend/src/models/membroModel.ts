@@ -1,4 +1,4 @@
-import { query } from '../config/database';
+import { query, unscopedQuery } from '../config/database';
 
 export async function createMembers(
     name: string,
@@ -16,7 +16,9 @@ export async function createMembers(
 }
 
 export async function findByEmail(email: string) {
-    const membro = await query('SELECT * FROM membros WHERE email = $1', [email])
+    // Login roda pré-auth (ainda não há org na sessão) e o email é único global →
+    // busca cross-tenant legítima. Precisa de bypass, senão o RLS devolve 0 linhas.
+    const membro = await unscopedQuery('SELECT * FROM membros WHERE email = $1', [email])
 
     return membro.rows[0];
 }

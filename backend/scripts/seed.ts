@@ -9,7 +9,9 @@
  * Login criado: admin@dev.local / senha123
  */
 import bcrypt from 'bcrypt';
-import { pool, query } from '../src/config/database';
+import { pool, unscopedQuery as query } from '../src/config/database';
+// Seed é provisionamento de sistema: roda em bypass do RLS (não há org na sessão).
+// O alias mantém as chamadas `query(...)` abaixo legíveis.
 
 async function seed() {
     const { rows } = await query('SELECT COUNT(*)::int AS n FROM membros');
