@@ -30,7 +30,7 @@ import { confirmAction } from '@/utils/confirm';
 import { Culto, DiaSemana, EscalaFixaMontada, EscalaVocalDoCultoItem, Membro } from '@/types';
 import { colors, spacing, typography } from '@/theme';
 import { formatDiaCompleto, formatDiaCurto, formatHora } from '@/utils/date';
-import { papelLabel } from '@/utils/papel';
+import { papelLabel, podeGerir } from '@/utils/papel';
 
 const DIAS: DiaSemana[] = ['quarta', 'sabado', 'domingo'];
 
@@ -205,7 +205,7 @@ export function EscalaFixaScreen() {
     setCultoPickerAberto(true);
   }
 
-  if (user && user.papel !== 'admin' && user.papel !== 'ministro') {
+  if (user && !podeGerir(user)) {
     return (
       <SafeAreaView style={styles.screen} edges={['top']}>
         <Header title="Escala Fixa" showBack />

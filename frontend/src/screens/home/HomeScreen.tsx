@@ -21,7 +21,7 @@ import { MeuProximoCulto } from '@/services/repertorio';
 import { colors, spacing, radius, typography, shadows, fonts } from '@/theme';
 import { formatDiaCompleto, formatHora } from '@/utils/date';
 import { getSaudacao } from '@/utils/greeting';
-import { isGestor } from '@/utils/papel';
+import { podeGerir, isAdmin } from '@/utils/papel';
 
 const ATALHOS_GESTAO = [
   { icon: 'calendar-outline' as const, label: 'Escalas', sublabel: 'Ver escalas', route: 'Escalas' as const },
@@ -102,8 +102,8 @@ export function HomeScreen() {
 
   const primeiroNome = user?.nome?.split(' ')[0] ?? 'membro';
   const atalhos =
-    user && isGestor(user.papel)
-      ? ATALHOS_GESTAO.filter((a) => a.label !== 'Membros' || user.papel === 'admin')
+    user && podeGerir(user)
+      ? ATALHOS_GESTAO.filter((a) => a.label !== 'Membros' || isAdmin(user))
       : ATALHOS_MEMBRO;
 
   return (

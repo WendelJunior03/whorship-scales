@@ -10,8 +10,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { MainTabScreenNavigationProp } from '@/navigation/types';
 import * as membrosService from '@/services/membros';
 import { ApiError } from '@/services/api';
-import { papelLabel, papelTone } from '@/utils/papel';
-import { colors, radius, spacing, typography } from '@/theme';
+import { papelOrgLabel, papelOrgTone, papelOrgDe, papelMinisterioLabel, isAdmin } from '@/utils/papel';
+import { SeloPro } from '@/components/SeloPro';
+import { useRecurso } from '@/hooks/useRecurso';
+import { colors, fonts, radius, spacing, typography } from '@/theme';
 import appConfig from '../../../app.json';
 
 const MENU_ITEMS = [
@@ -22,11 +24,44 @@ const MENU_ITEMS = [
   { icon: 'information-circle-outline' as const, label: 'Sobre o aplicativo' },
 ];
 
+// Amostra de recursos PRO (spec 03). Na v1 os liberados aparecem com selo; os de
+// flag desligada (ex.: backup) aparecem como "em breve".
+const RECURSOS_PRO = [
+  { chave: 'offline.download', icon: 'cloud-download-outline' as const, label: 'Downloads offline' },
+  { chave: 'estatisticas', icon: 'stats-chart-outline' as const, label: 'Estatísticas' },
+  { chave: 'playlists', icon: 'list-outline' as const, label: 'Playlists' },
+  { chave: 'backup.automatico', icon: 'save-outline' as const, label: 'Backup automático' },
+];
+
+/** Linha de recurso PRO — usa useRecurso pra decidir selo vs. "em breve". */
+function RecursoProRow({
+  chave,
+  icon,
+  label,
+}: {
+  chave: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+}) {
+  const { liberado, isPro } = useRecurso(chave);
+  return (
+    <View style={styles.recursoRow}>
+      <Ionicons name={icon} size={18} color={colors.textSecondary} />
+      <Text style={styles.recursoLabel}>{label}</Text>
+      {liberado ? (
+        isPro && <SeloPro />
+      ) : (
+        <Text style={styles.recursoEmBreve}>em breve</Text>
+      )}
+    </View>
+  );
+}
+
 export function PerfilScreen() {
   const { user, org, signOut } = useAuth();
   const navigation = useNavigation<MainTabScreenNavigationProp<'Perfil'>>();
 
-  const ehAdmin = user?.papel === 'admin';
+  const ehAdmin = user ? isAdmin(user) : false;
 
   async function compartilharCodigo() {
     if (!org?.codigo) return;
@@ -133,10 +168,13 @@ export function PerfilScreen() {
         <Text style={styles.nome}>{user?.nome ?? '—'}</Text>
         {user && (
           <Badge
-            label={papelLabel[user.papel]}
-            tone={papelTone[user.papel]}
+            label={papelOrgLabel[papelOrgDe(user)]}
+            tone={papelOrgTone[papelOrgDe(user)]}
             style={styles.papelBadge}
           />
+        )}
+        {user?.papel_ministerio && (
+          <Text style={styles.papelMinisterio}>{papelMinisterioLabel[user.papel_ministerio]} no ministério</Text>
         )}
         <Text style={styles.igreja}>{org?.nome ?? 'Minha igreja'}</Text>
 
@@ -156,6 +194,22 @@ export function PerfilScreen() {
             </TouchableOpacity>
           </View>
         )}
+
+        <View style={styles.planoCard}>
+          <View style={styles.planoHeader}>
+            <Text style={styles.planoTitulo}>Seu plano</Text>
+            <Badge
+              label={org?.plano === 'pro' ? 'PRO' : 'Free'}
+              tone={org?.plano === 'pro' ? 'primary' : 'neutral'}
+            />
+          </View>
+          <Text style={styles.planoSub}>
+            Tudo liberado nesta versão — os recursos PRO chegam em breve.
+          </Text>
+          {RECURSOS_PRO.map((r) => (
+            <RecursoProRow key={r.chave} chave={r.chave} icon={r.icon} label={r.label} />
+          ))}
+        </View>
 
         <View style={styles.menu}>
           {MENU_ITEMS.map((item) => (
@@ -297,6 +351,11 @@ const styles = StyleSheet.create({
   papelBadge: {
     alignSelf: 'center',
   },
+  papelMinisterio: {
+    ...typography.caption,
+    color: colors.textMuted,
+    marginTop: spacing.xs,
+  },
   igreja: {
     ...typography.bodySmall,
     color: colors.textSecondary,
@@ -334,7 +393,46 @@ const styles = StyleSheet.create({
   conviteBotaoTexto: {
     ...typography.bodySmall,
     color: colors.primary,
-    fontWeight: '600',
+    fontFamily: fonts.semibold,
+  },
+  planoCard: {
+    width: '100%',
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    gap: spacing.sm,
+  },
+  planoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  planoTitulo: {
+    ...typography.h3,
+    color: colors.text,
+  },
+  planoSub: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  recursoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  recursoLabel: {
+    ...typography.bodySmall,
+    color: colors.text,
+    flex: 1,
+  },
+  recursoEmBreve: {
+    ...typography.caption,
+    color: colors.textMuted,
+    fontStyle: 'italic',
   },
   menu: {
     width: '100%',

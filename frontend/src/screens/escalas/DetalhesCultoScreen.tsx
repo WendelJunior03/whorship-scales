@@ -42,7 +42,7 @@ import {
 } from '@/types';
 import { colors, spacing, typography } from '@/theme';
 import { formatDiaCompleto, formatDiaCurto, formatDiaSemana, formatHora } from '@/utils/date';
-import { isGestor, papelLabel } from '@/utils/papel';
+import { podeGerir, papelLabel } from '@/utils/papel';
 import { confirmAction } from '@/utils/confirm';
 
 const statusLabel: Record<StatusEscalaVocal, string> = {
@@ -445,7 +445,7 @@ export function DetalhesCultoScreen() {
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Repertório</Text>
-          {user && isGestor(user.papel) && (
+          {user && podeGerir(user) && (
             <TouchableOpacity onPress={abrirRepertorioModal}>
               <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
             </TouchableOpacity>
@@ -473,7 +473,7 @@ export function DetalhesCultoScreen() {
                   style={styles.tomBadge}
                   textStyle={styles.tomBadgeText}
                 />
-                {user && isGestor(user.papel) && (
+                {user && podeGerir(user) && (
                   <OptionsMenu
                     loading={excluindoMusicaId === musica.id}
                     actions={[
@@ -493,7 +493,7 @@ export function DetalhesCultoScreen() {
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Equipe</Text>
-          {user && isGestor(user.papel) && (
+          {user && podeGerir(user) && (
             <TouchableOpacity onPress={abrirEquipeModal}>
               <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
             </TouchableOpacity>
@@ -513,7 +513,7 @@ export function DetalhesCultoScreen() {
               const podeExcluir =
                 membro.origem === 'fixa'
                   ? user?.papel === 'admin'
-                  : Boolean(user && isGestor(user.papel));
+                  : Boolean(user && podeGerir(user));
 
               return (
                 <View key={membro.chave} style={styles.membroAvatarBlock}>

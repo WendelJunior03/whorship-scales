@@ -14,7 +14,7 @@ import { MainStackParamList } from '@/navigation/MainNavigator';
 import * as membrosService from '@/services/membros';
 import { ApiError } from '@/services/api';
 import { Membro, Papel } from '@/types';
-import { papelLabel, papelTone } from '@/utils/papel';
+import { papelLabel, isAdmin, papelOrgLabel, papelOrgTone, papelOrgDe } from '@/utils/papel';
 import { colors, spacing, typography } from '@/theme';
 
 const FILTROS: Array<{ label: string; papel?: Papel }> = [
@@ -52,7 +52,7 @@ export function MembrosScreen() {
     carregarDados();
   }, [carregarDados]);
 
-  if (user && user.papel !== 'admin') {
+  if (user && !isAdmin(user)) {
     return (
       <SafeAreaView style={styles.screen} edges={['top']}>
         <Header title="Membros" showBack />
@@ -147,7 +147,7 @@ export function MembrosScreen() {
               <Text style={styles.membroNome}>{item.nome}</Text>
               <Text style={styles.membroPapel}>{papelLabel[item.papel]}</Text>
             </View>
-            <Badge label={papelLabel[item.papel]} tone={papelTone[item.papel]} />
+            <Badge label={papelOrgLabel[papelOrgDe(item)]} tone={papelOrgTone[papelOrgDe(item)]} />
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </Card>
         )}
