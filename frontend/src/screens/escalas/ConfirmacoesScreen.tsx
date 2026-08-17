@@ -9,6 +9,7 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Header } from '@/components/Header';
 import { useAuth } from '@/contexts/AuthContext';
+import { podeGerir } from '@/utils/papel';
 import { MainStackParamList } from '@/navigation/MainNavigator';
 import * as cultosService from '@/services/cultos';
 import * as escalaAvulsaService from '@/services/escalaAvulsa';
@@ -73,7 +74,7 @@ export function ConfirmacoesScreen() {
     carregarDados();
   }, [carregarDados]);
 
-  if (user && user.papel !== 'admin' && user.papel !== 'ministro') {
+  if (user && !podeGerir(user)) {
     return (
       <SafeAreaView style={styles.screen} edges={['top']}>
         <Header title="Confirmações" showBack />

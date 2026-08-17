@@ -1,5 +1,10 @@
 export type Papel = 'admin' | 'ministro' | 'vocal' | 'membro';
 
+/** Eixo organizacional (permissões) — spec 02. */
+export type PapelOrg = 'administrador' | 'lider' | 'membro';
+/** Eixo musical (escalas) — spec 02. Pode ser null. */
+export type PapelMinisterio = 'ministro' | 'vocal' | 'instrumentista';
+
 export type PlanoOrg = 'free' | 'pro';
 
 export interface Organizacao {
@@ -22,6 +27,10 @@ export interface Membro {
   email: string;
   telefone: string | null;
   papel: Papel;
+  /** Eixo organizacional (permissões) — spec 02. */
+  papel_org?: PapelOrg;
+  /** Eixo musical (escalas) — spec 02. */
+  papel_ministerio?: PapelMinisterio | null;
   instrumento: string | null;
   ativo?: boolean;
 }

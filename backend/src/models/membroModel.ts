@@ -31,18 +31,23 @@ export async function findByEmail(email: string) {
 }
 
 export async function findById(id: number) {
-    const membro = await query('SELECT id, nome, telefone, instrumento, email, papel FROM membros WHERE ativo = true AND id = $1', [id])
+    const membro = await query('SELECT id, nome, telefone, instrumento, email, papel, papel_org, papel_ministerio FROM membros WHERE ativo = true AND id = $1', [id])
     return membro.rows[0];
 }
 
 export async function findAllMembers() {
-    const membros = await query('SELECT id, nome, telefone, instrumento, email, papel FROM membros WHERE ativo = true');
+    const membros = await query('SELECT id, nome, telefone, instrumento, email, papel, papel_org, papel_ministerio FROM membros WHERE ativo = true');
     return membros.rows;
 }
 
 export async function updateMember(id: number, name: string, phone: string, instrument: string, email: string, role?: string) {
     if (role) {
-        const alteracoes = await query('UPDATE membros SET nome = $1, telefone = $2, instrumento = $3, email = $4, papel = $5 WHERE id = $6 RETURNING *', [name, phone, instrument, email, role, id]);
+        // Mantém os dois eixos (spec 02) em sincronia quando o admin troca o papel.
+        const { papelOrg, papelMinisterio } = derivarPapeis(role);
+        const alteracoes = await query(
+            'UPDATE membros SET nome = $1, telefone = $2, instrumento = $3, email = $4, papel = $5, papel_org = $6, papel_ministerio = $7 WHERE id = $8 RETURNING *',
+            [name, phone, instrument, email, role, papelOrg, papelMinisterio, id],
+        );
         return alteracoes.rows[0];
     }
     const alteracoes = await query('UPDATE membros SET nome = $1, telefone = $2, instrumento = $3, email = $4 WHERE id = $5 RETURNING *', [name, phone, instrument, email, id]);

@@ -21,7 +21,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import * as membrosService from '@/services/membros';
 import { ApiError } from '@/services/api';
 import { Papel } from '@/types';
-import { papelLabel } from '@/utils/papel';
+import { papelLabel, isAdmin } from '@/utils/papel';
 import { confirmAction } from '@/utils/confirm';
 import { formatTelefone } from '@/utils/telefone';
 import { colors, spacing, typography } from '@/theme';
@@ -34,7 +34,7 @@ export function DetalheMembroScreen() {
   const { user } = useAuth();
   const { membroId } = route.params ?? {};
   const isNovo = !membroId;
-  const isAdmin = user?.papel === 'admin';
+  const ehAdmin = user ? isAdmin(user) : false;
 
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
@@ -106,7 +106,7 @@ export function DetalheMembroScreen() {
           // só manda role se quem edita é admin — o back-end rejeita a
           // troca de papel de qualquer outra pessoa, mesmo que seja o
           // valor atual, então nem vale a pena mandar nesse caso.
-          ...(isAdmin ? { role: papel } : {}),
+          ...(ehAdmin ? { role: papel } : {}),
         });
         Alert.alert('Alterações salvas', 'Os dados do membro foram atualizados.');
       }
@@ -224,7 +224,7 @@ export function DetalheMembroScreen() {
             />
           )}
 
-          {isAdmin && (
+          {ehAdmin && (
             <>
               <Text style={styles.label}>Papel</Text>
               <TouchableOpacity style={styles.selector} onPress={() => setPapelPickerAberto(true)}>
@@ -244,7 +244,7 @@ export function DetalheMembroScreen() {
           style={styles.saveButton}
         />
 
-        {isAdmin && !isNovo && (
+        {ehAdmin && !isNovo && (
           <Button
             title="Desativar membro"
             onPress={handleDesativar}
