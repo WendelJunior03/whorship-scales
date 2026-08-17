@@ -1,9 +1,11 @@
-import { pool, query } from '../config/database';
+import { query, unscopedQuery, withBypass } from '../config/database';
 import { gerarOrgCode } from '../utils/orgCode';
 import { slugify } from '../utils/slug';
 
 export async function buscarOrgPorCodigo(codigo: string) {
-    const result = await query('SELECT * FROM organizacoes WHERE codigo = $1', [codigo]);
+    // Entrar por código é pré-auth e cross-tenant (o usuário ainda não pertence à
+    // org) → bypass, senão a policy `org_self` esconde a org de quem quer entrar.
+    const result = await unscopedQuery('SELECT * FROM organizacoes WHERE codigo = $1', [codigo]);
     return result.rows[0];
 }
 
@@ -13,7 +15,9 @@ export async function buscarOrgPorId(id: number) {
 }
 
 async function codigoExiste(codigo: string): Promise<boolean> {
-    const result = await query('SELECT 1 FROM organizacoes WHERE codigo = $1', [codigo]);
+    // Unicidade do código é global (entre todas as orgs) → bypass, senão a checagem
+    // enxergaria só a org atual e geraria códigos colidentes.
+    const result = await unscopedQuery('SELECT 1 FROM organizacoes WHERE codigo = $1', [codigo]);
     return result.rows.length > 0;
 }
 
@@ -51,10 +55,9 @@ export async function criarOrganizacaoComAdmin(dados: NovaOrgComAdmin) {
     const sufixo = codigo.slice(codigo.indexOf('-') + 1).toLowerCase();
     const slug = `${slugify(dados.nomeOrg) || 'org'}-${sufixo}`;
 
-    const client = await pool.connect();
-    try {
-        await client.query('BEGIN');
-
+    // Criação é cross-tenant por natureza (a org ainda não existe, logo não há
+    // `app.current_org`): roda em bypass do RLS numa transação de sistema.
+    return withBypass(async (client) => {
         const org = (await client.query(
             `INSERT INTO organizacoes (nome, codigo, slug, plano)
              VALUES ($1, $2, $3, 'free') RETURNING *`,
@@ -69,12 +72,6 @@ export async function criarOrganizacaoComAdmin(dados: NovaOrgComAdmin) {
 
         await client.query('UPDATE organizacoes SET criado_por = $1 WHERE id = $2', [membro.id, org.id]);
 
-        await client.query('COMMIT');
         return { org: { ...org, criado_por: membro.id }, membro };
-    } catch (err) {
-        await client.query('ROLLBACK');
-        throw err;
-    } finally {
-        client.release();
-    }
+    });
 }
