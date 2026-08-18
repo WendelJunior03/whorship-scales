@@ -1,0 +1,94 @@
+name: Validação de PR
+
+# Roda a cada PR (do Japa ou de qualquer um) pra main: build, lint e testes —
+# incluindo os testes de SEGURANÇA (isolamento por org + autorização), que rodam
+# de verdade contra um Postgres com RLS (role não-superusuário deepscales_app).
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+# Cancela execuções antigas do mesmo PR quando chega um push novo.
+concurrency:
+  group: pr-validacao-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend · tsc + testes de segurança
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: escalas_louvor
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d escalas_louvor"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Instalar dependências
+        run: npm ci
+
+      # Duas conexões (Passo 4): admin p/ migrations, deepscales_app p/ o app/testes.
+      # O role deepscales_app é criado pela própria migration de RLS.
+      - name: Preparar .env de CI
+        run: |
+          cat > .env <<'EOF'
+          DATABASE_URL=postgres://postgres:postgres@localhost:5432/escalas_louvor
+          APP_DATABASE_URL=postgres://deepscales_app:deepscales_app_dev@localhost:5432/escalas_louvor
+          JWT_SECRET=ci-secret-nao-usar-em-producao
+          PORT=3002
+          EOF
+
+      - name: Rodar migrations (cria schema + RLS + role do app)
+        run: npm run migrate:up
+
+      - name: Typecheck (tsc)
+        run: npx tsc --noEmit
+
+      - name: Testes (unitários + integração de segurança com RLS)
+        run: npx vitest run
+
+  frontend:
+    name: Frontend · tsc + lint + build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Typecheck (tsc)
+        run: npx tsc --noEmit
+
+      - name: Lint (eslint)
+        run: npm run lint
+
+      - name: Build web (bundle)
+        run: npx expo export -p web
