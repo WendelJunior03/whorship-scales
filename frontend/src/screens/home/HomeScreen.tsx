@@ -29,12 +29,14 @@ const ATALHOS_GESTAO = [
   { icon: 'repeat-outline' as const, label: 'Escala Fixa', sublabel: 'Configurar', route: 'EscalaFixa' as const },
   { icon: 'checkmark-done-outline' as const, label: 'Confirmações', sublabel: 'Acompanhar', route: 'Confirmacoes' as const },
   { icon: 'musical-note-outline' as const, label: 'Afinador', sublabel: 'Afine o instrumento', route: 'Afinador' as const },
+  { icon: 'grid-outline' as const, label: 'Octapad', sublabel: 'Pads de som', route: 'Octapad' as const },
 ];
 
 const ATALHOS_MEMBRO = [
   { icon: 'calendar-outline' as const, label: 'Escalas', sublabel: 'Ver cultos', route: 'Escalas' as const },
   { icon: 'checkmark-done-outline' as const, label: 'Confirmar', sublabel: 'Sua presença', route: 'Agenda' as const },
   { icon: 'musical-note-outline' as const, label: 'Afinador', sublabel: 'Afine o instrumento', route: 'Afinador' as const },
+  { icon: 'grid-outline' as const, label: 'Octapad', sublabel: 'Pads de som', route: 'Octapad' as const },
 ];
 
 export function HomeScreen() {
