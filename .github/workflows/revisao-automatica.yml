@@ -1,0 +1,59 @@
+name: Revisão automática de PR
+
+# Review automático e GRATUITO a cada PR pra main (sem API paga, sem secret):
+# análise estática com Semgrep (regras OSS de segurança/TS/React/Node) que comenta
+# os problemas no PR. Usa só o GITHUB_TOKEN que o GitHub fornece de graça.
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: revisao-auto-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  semgrep:
+    name: Análise de segurança e qualidade (Semgrep)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Instalar Semgrep
+        run: pipx install semgrep
+
+      # Regras da Registry pública do Semgrep (gratuitas, sem login/token).
+      # `|| true`: não aborta aqui — o resumo/veredito é gerado no passo seguinte.
+      - name: Rodar Semgrep
+        run: |
+          semgrep scan \
+            --config p/security-audit \
+            --config p/secrets \
+            --config p/typescript \
+            --config p/react \
+            --config p/nodejs \
+            --config p/owasp-top-ten \
+            --json --output semgrep.json --quiet . || true
+
+      - name: Gerar resumo do PR
+        id: resumo
+        run: node .github/scripts/resumo-semgrep.js
+
+      - name: Comentar no PR (comentário fixo que se atualiza)
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: revisao-semgrep
+          path: revisao.md
+
+      - name: Falhar se houver problemas graves
+        if: steps.resumo.outputs.erros != '0'
+        run: |
+          echo "Semgrep encontrou ${{ steps.resumo.outputs.erros }} problema(s) grave(s)."
+          exit 1
