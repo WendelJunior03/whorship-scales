@@ -7,6 +7,7 @@ import { ConfirmacoesScreen } from '@/screens/escalas/ConfirmacoesScreen';
 import { DetalhesCultoScreen } from '@/screens/escalas/DetalhesCultoScreen';
 import { MembrosScreen } from '@/screens/membros/MembrosScreen';
 import { DetalheMembroScreen } from '@/screens/membros/DetalheMembroScreen';
+import { OctapadScreen } from '@/screens/octapad/OctapadScreen';
 
 export type MainStackParamList = {
   MainTabs: undefined;
@@ -16,6 +17,7 @@ export type MainStackParamList = {
   DetalhesCulto: { cultoId: number };
   Membros: undefined;
   DetalheMembro: { membroId?: number };
+  Octapad: undefined;
 };
 
 const Stack = createStackNavigator<MainStackParamList>();
@@ -30,6 +32,7 @@ export function MainNavigator() {
       <Stack.Screen name="DetalhesCulto" component={DetalhesCultoScreen} />
       <Stack.Screen name="Membros" component={MembrosScreen} />
       <Stack.Screen name="DetalheMembro" component={DetalheMembroScreen} />
+      <Stack.Screen name="Octapad" component={OctapadScreen} />
     </Stack.Navigator>
   );
 }
