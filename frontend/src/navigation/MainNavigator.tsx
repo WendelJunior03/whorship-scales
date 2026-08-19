@@ -10,6 +10,7 @@ import { DetalheMembroScreen } from '@/screens/membros/DetalheMembroScreen';
 import { OctapadScreen } from '@/screens/octapad/OctapadScreen';
 import { AfinadorScreen } from '@/screens/afinador/AfinadorScreen';
 import { MetronomoScreen } from '@/screens/metronomo/MetronomoScreen';
+import { PadContinuoScreen } from '@/screens/padContinuo/PadContinuoScreen';
 
 export type MainStackParamList = {
   MainTabs: undefined;
@@ -22,6 +23,7 @@ export type MainStackParamList = {
   Octapad: undefined;
   Afinador: undefined;
   Metronomo: undefined;
+  PadContinuo: undefined;
 };
 
 const Stack = createStackNavigator<MainStackParamList>();
@@ -39,6 +41,7 @@ export function MainNavigator() {
       <Stack.Screen name="Octapad" component={OctapadScreen} />
       <Stack.Screen name="Afinador" component={AfinadorScreen} />
       <Stack.Screen name="Metronomo" component={MetronomoScreen} />
+      <Stack.Screen name="PadContinuo" component={PadContinuoScreen} />
     </Stack.Navigator>
   );
 }

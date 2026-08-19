@@ -20,8 +20,8 @@
     },
     "web": {
       "favicon": "./assets/favicon.png",
-      "themeColor": "#6C3CE0",
-      "backgroundColor": "#0D0210"
+      "themeColor": "#3D5AF1",
+      "backgroundColor": "#F4F6FB"
     },
     "plugins": [
       "expo-secure-store",
