@@ -19,6 +19,31 @@ export interface Organizacao {
 
 export type DiaSemana = 'quarta' | 'sabado' | 'domingo';
 
+// --- Biblioteca de vídeos (spec 08) ---
+
+export type CategoriaVideo = 'oficial' | 'playback' | 'tutorial' | 'ministracao';
+
+export interface Musica {
+  id: number;
+  nome: string;
+  tom_padrao: string | null;
+  bpm: number | null;
+  created_at?: string;
+}
+
+export interface Video {
+  id: number;
+  musica_id: number;
+  provider: string;
+  video_id: string;
+  categoria: CategoriaVideo;
+  titulo: string | null;
+  adicionado_por?: number | null;
+  created_at?: string;
+  /** Presente em GET /videos (lista geral, com JOIN na música). */
+  musica_nome?: string;
+}
+
 export type StatusEscalaVocal = 'pendente' | 'confirmado' | 'recusado';
 
 export interface Membro {

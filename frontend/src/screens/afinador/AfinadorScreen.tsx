@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, IconName } from '@/components/Icon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/Button';
@@ -19,14 +19,14 @@ function Aviso({
   texto,
   acao,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
   titulo: string;
   texto: string;
   acao?: { label: string; onPress: () => void };
 }) {
   return (
     <View style={styles.aviso}>
-      <Ionicons name={icon} size={44} color={colors.textMuted} />
+      <Icon name={icon} size={44} color={colors.textMuted} />
       <Text style={styles.avisoTitulo}>{titulo}</Text>
       <Text style={styles.avisoTexto}>{texto}</Text>
       {acao && <Button title={acao.label} onPress={acao.onPress} style={styles.avisoBotao} />}

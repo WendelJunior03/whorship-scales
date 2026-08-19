@@ -26,6 +26,9 @@ export const recursos: Record<string, RecursoPlano> = {
   'estatisticas': { planoMinimo: 'pro', flagAtiva: true },
   'lideranca.recursos_avancados': { planoMinimo: 'pro', flagAtiva: true },
   'conteudos.exclusivos': { planoMinimo: 'pro', flagAtiva: true },
+  'videos.playlist': { planoMinimo: 'pro', flagAtiva: true },
+  'videos.upload': { planoMinimo: 'pro', flagAtiva: true },
+  'videos.privado': { planoMinimo: 'pro', flagAtiva: true },
   // Ainda não lançado (flag desligada) — some da UI mesmo em quem teria plano.
   'backup.automatico': { planoMinimo: 'pro', flagAtiva: false },
 };

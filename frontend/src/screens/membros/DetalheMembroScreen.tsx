@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '@/components/Icon';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -228,9 +228,9 @@ export function DetalheMembroScreen() {
             <>
               <Text style={styles.label}>Papel</Text>
               <TouchableOpacity style={styles.selector} onPress={() => setPapelPickerAberto(true)}>
-                <Ionicons name="shield-outline" size={20} color={colors.textSecondary} />
+                <Icon name="shield-outline" size={20} color={colors.textSecondary} />
                 <Text style={styles.selectorText}>{papelLabel[papel]}</Text>
-                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                <Icon name="chevron-forward" size={18} color={colors.textMuted} />
               </TouchableOpacity>
             </>
           )}
@@ -276,7 +276,7 @@ export function DetalheMembroScreen() {
               >
                 <Text style={styles.modalItemText}>{papelLabel[item]}</Text>
                 {papel === item && (
-                  <Ionicons name="checkmark" size={20} color={colors.primary} />
+                  <Icon name="checkmark" size={20} color={colors.primary} />
                 )}
               </TouchableOpacity>
             ))}

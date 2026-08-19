@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '@/components/Icon';
 import { colors, radius, shadows, typography } from '@/theme';
 
 interface LogoProps {
@@ -21,7 +21,7 @@ export function Logo({ size = 88 }: LogoProps) {
           { width: size, height: size, borderRadius: size * 0.28 },
         ]}
       >
-        <Ionicons name="musical-notes" size={size * 0.5} color={colors.textInverse} />
+        <Icon name="musical-notes" size={size * 0.5} color={colors.textInverse} />
       </LinearGradient>
       <Text style={styles.wordmark}>
         <Text style={styles.wordmarkDark}>Deep</Text>
