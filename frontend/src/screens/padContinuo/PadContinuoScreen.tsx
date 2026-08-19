@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { GestureResponderEvent, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '@/components/Icon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '@/components/Header';
 import { usePadContinuo } from '@/hooks/usePadContinuo';
@@ -55,7 +55,7 @@ export function PadContinuoScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.container}>
           <View style={styles.aviso}>
-            <Ionicons name="information-circle-outline" size={18} color={colors.textSecondary} />
+            <Icon name="information-circle-outline" size={18} color={colors.textSecondary} />
             <Text style={styles.avisoTexto}>Toque nos pads para iniciar/parar as notas contínuas.</Text>
           </View>
 

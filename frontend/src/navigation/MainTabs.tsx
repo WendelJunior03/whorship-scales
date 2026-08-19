@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, IconName } from '@/components/Icon';
 import { colors, spacing, radius } from '@/theme';
 import { HomeScreen } from '@/screens/home/HomeScreen';
 import { AgendaScreen } from '@/screens/escalas/AgendaScreen';
@@ -15,7 +15,7 @@ export type MainTabParamList = {
   Perfil: undefined;
 };
 
-const tabIcon: Record<keyof MainTabParamList, keyof typeof Ionicons.glyphMap> = {
+const tabIcon: Record<keyof MainTabParamList, IconName> = {
   Home: 'home',
   Agenda: 'calendar',
   Notificacoes: 'notifications',
@@ -37,15 +37,7 @@ export function MainTabs() {
         tabBarItemStyle: styles.item,
         tabBarIcon: ({ color, focused }) => (
           <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
-            <Ionicons
-              name={
-                focused
-                  ? tabIcon[route.name]
-                  : (`${tabIcon[route.name]}-outline` as keyof typeof Ionicons.glyphMap)
-              }
-              size={22}
-              color={color}
-            />
+            <Icon name={tabIcon[route.name]} size={22} color={color} />
           </View>
         ),
       })}

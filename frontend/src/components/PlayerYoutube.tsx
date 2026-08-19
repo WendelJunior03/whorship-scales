@@ -1,6 +1,6 @@
 import React from 'react';
 import { Image, Linking, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '@/components/Icon';
 import { colors, radius } from '@/theme';
 
 /**
@@ -36,7 +36,7 @@ export function PlayerYoutube({ videoId }: { videoId: string }) {
         resizeMode="cover"
       />
       <View style={styles.play}>
-        <Ionicons name="play" size={26} color={colors.textInverse} />
+        <Icon name="play" size={26} color={colors.textInverse} />
       </View>
     </TouchableOpacity>
   );

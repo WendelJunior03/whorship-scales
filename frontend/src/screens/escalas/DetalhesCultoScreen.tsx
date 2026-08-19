@@ -12,7 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '@/components/Icon';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -438,7 +438,7 @@ export function DetalhesCultoScreen() {
           <Text style={styles.data}>{formatDiaCompleto(culto.data_hora)}</Text>
           <Text style={styles.hora}>{formatHora(culto.data_hora)}</Text>
           <View style={styles.tipoRow}>
-            <Ionicons name="bookmark-outline" size={16} color={colors.textSecondary} />
+            <Icon name="bookmark-outline" size={16} color={colors.textSecondary} />
             <Text style={styles.tipo}>{culto.tipo ?? `Culto de ${formatDiaSemana(culto.data_hora)}`}</Text>
           </View>
         </Card>
@@ -447,7 +447,7 @@ export function DetalhesCultoScreen() {
           <Text style={styles.sectionTitle}>Repertório</Text>
           {user && podeGerir(user) && (
             <TouchableOpacity onPress={abrirRepertorioModal}>
-              <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
+              <Icon name="add-circle-outline" size={22} color={colors.primary} />
             </TouchableOpacity>
           )}
         </View>
@@ -495,7 +495,7 @@ export function DetalhesCultoScreen() {
           <Text style={styles.sectionTitle}>Equipe</Text>
           {user && podeGerir(user) && (
             <TouchableOpacity onPress={abrirEquipeModal}>
-              <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
+              <Icon name="add-circle-outline" size={22} color={colors.primary} />
             </TouchableOpacity>
           )}
         </View>
@@ -578,10 +578,10 @@ export function DetalhesCultoScreen() {
                           onPress={() => abrirPickerVocalParaTrocar(index)}
                           hitSlop={8}
                         >
-                          <Ionicons name="swap-horizontal" size={20} color={colors.primary} />
+                          <Icon name="swap-horizontal" size={20} color={colors.primary} />
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => removerVocal(index)} hitSlop={8}>
-                          <Ionicons name="close-circle" size={20} color={colors.error} />
+                          <Icon name="close-circle" size={20} color={colors.error} />
                         </TouchableOpacity>
                       </View>
                     )}
@@ -592,7 +592,7 @@ export function DetalhesCultoScreen() {
                     style={styles.adicionarRow}
                     onPress={abrirPickerVocalParaAdicionar}
                   >
-                    <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
+                    <Icon name="add-circle-outline" size={20} color={colors.primary} />
                     <Text style={styles.adicionarTexto}>Adicionar vocal</Text>
                   </TouchableOpacity>
                 )}
@@ -634,7 +634,7 @@ export function DetalhesCultoScreen() {
           <Card style={styles.suaFuncaoCard}>
             <Text style={styles.suaFuncaoLabel}>Sua função</Text>
             <View style={styles.suaFuncaoRow}>
-              <Ionicons name="musical-notes" size={20} color={colors.primary} />
+              <Icon name="musical-notes" size={20} color={colors.primary} />
               <Text style={styles.suaFuncaoValor}>{suaFuncao}</Text>
             </View>
           </Card>
@@ -803,7 +803,7 @@ export function DetalhesCultoScreen() {
                       onPress={() => selecionarVocal(membro)}
                     >
                       <Text style={styles.modalItemText}>{membro.nome}</Text>
-                      <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                      <Icon name="chevron-forward" size={18} color={colors.textMuted} />
                     </TouchableOpacity>
                   ))
                 )}

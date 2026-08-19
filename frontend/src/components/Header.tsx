@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, IconName } from '@/components/Icon';
 import { useNavigation } from '@react-navigation/native';
 import { colors, spacing, typography } from '@/theme';
 
@@ -8,7 +8,7 @@ interface HeaderProps {
   title: string;
   subtitle?: string;
   showBack?: boolean;
-  rightIcon?: keyof typeof Ionicons.glyphMap;
+  rightIcon?: IconName;
   onRightPress?: () => void;
 }
 
@@ -20,7 +20,7 @@ export function Header({ title, subtitle, showBack, rightIcon, onRightPress }: H
       <View style={styles.side}>
         {showBack && (
           <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
+            <Icon name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
         )}
       </View>
@@ -39,7 +39,7 @@ export function Header({ title, subtitle, showBack, rightIcon, onRightPress }: H
       <View style={[styles.side, styles.sideRight]}>
         {rightIcon && (
           <TouchableOpacity onPress={onRightPress} hitSlop={10}>
-            <Ionicons name={rightIcon} size={24} color={colors.text} />
+            <Icon name={rightIcon} size={24} color={colors.text} />
           </TouchableOpacity>
         )}
       </View>

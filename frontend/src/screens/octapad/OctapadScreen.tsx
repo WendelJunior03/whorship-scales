@@ -8,7 +8,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '@/components/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -101,7 +101,7 @@ export function OctapadScreen() {
         <View style={styles.container}>
           <View style={styles.topo}>
             <Pressable onPress={() => navigation.goBack()} hitSlop={10} style={styles.voltar}>
-              <Ionicons name="chevron-back" size={22} color={colors.text} />
+              <Icon name="chevron-back" size={22} color={colors.text} />
             </Pressable>
             <View style={styles.marca}>
               <LinearGradient
@@ -110,7 +110,7 @@ export function OctapadScreen() {
                 end={{ x: 1, y: 1 }}
                 style={styles.marcaBadge}
               >
-                <Ionicons name="grid" size={16} color={colors.textInverse} />
+                <Icon name="grid" size={16} color={colors.textInverse} />
               </LinearGradient>
               <View>
                 <Text style={styles.titulo}>Octapad</Text>
@@ -122,7 +122,7 @@ export function OctapadScreen() {
 
           {!suportado ? (
             <View style={styles.aviso}>
-              <Ionicons name="musical-notes-outline" size={44} color={colors.textMuted} />
+              <Icon name="musical-notes-outline" size={44} color={colors.textMuted} />
               <Text style={styles.avisoTitulo}>Disponível na versão web</Text>
               <Text style={styles.avisoTexto}>
                 O Octapad usa áudio de baixa latência via navegador. Abra o Deep Scales no
@@ -144,7 +144,7 @@ export function OctapadScreen() {
               </View>
 
               <View style={styles.proCard}>
-                <Ionicons name="cloud-upload-outline" size={20} color={colors.primaryLight} />
+                <Icon name="cloud-upload-outline" size={20} color={colors.primaryLight} />
                 <View style={styles.proTexto}>
                   <Text style={styles.proTitulo}>Seus samples e packs de sons</Text>
                   <Text style={styles.proSub}>Suba seus próprios sons e presets — em breve.</Text>
@@ -156,7 +156,7 @@ export function OctapadScreen() {
 
           {suportado && (
             <View style={styles.master}>
-              <Ionicons name="volume-medium" size={18} color={colors.textSecondary} />
+              <Icon name="volume-medium" size={18} color={colors.textSecondary} />
               <Fader valor={volume} onChange={setVolume} />
               <Text style={styles.masterPct}>{Math.round(volume * 100)}%</Text>
             </View>

@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '@/components/Icon';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '@/components/Header';
@@ -77,7 +77,7 @@ export function MetronomoScreen() {
       <SafeAreaView style={styles.screen} edges={['top']}>
         <Header title="Metrônomo" showBack />
         <View style={styles.aviso}>
-          <Ionicons name="timer-outline" size={44} color={colors.textMuted} />
+          <Icon name="timer-outline" size={44} color={colors.textMuted} />
           <Text style={styles.avisoTitulo}>Disponível na versão web</Text>
           <Text style={styles.avisoTexto}>
             O metrônomo usa áudio de tempo preciso via navegador. No app nativo chega numa
@@ -137,11 +137,11 @@ export function MetronomoScreen() {
             onPress={alternar}
             style={[styles.play, tocando && styles.playAtivo]}
           >
-            <Ionicons name={tocando ? 'stop' : 'play'} size={30} color={colors.textInverse} />
+            <Icon name={tocando ? 'stop' : 'play'} size={30} color={colors.textInverse} />
             <Text style={styles.playTexto}>{tocando ? 'Parar' : 'Iniciar'}</Text>
           </Pressable>
           <TouchableOpacity style={styles.tap} onPress={tapTempo}>
-            <Ionicons name="hand-left-outline" size={20} color={colors.primary} />
+            <Icon name="hand-left-outline" size={20} color={colors.primary} />
             <Text style={styles.tapTexto}>Tap tempo</Text>
           </TouchableOpacity>
         </View>
