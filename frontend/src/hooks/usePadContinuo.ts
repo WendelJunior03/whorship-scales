@@ -14,14 +14,28 @@ export function usePadContinuo() {
   const alternar = useCallback(
     (nota: Note) => {
       const estaAtivo = ativos[nota];
+
       if (estaAtivo) {
+        // mesma nota que já tocava — só desliga ela.
         parar(nota);
-      } else {
-        tocar(nota);
+        setAtivos((atual) => ({ ...atual, [nota]: false }));
+        return;
       }
-      // atualizador puro (sem efeito colateral aqui dentro) — seguro contra dupla
-      // invocação do Strict Mode.
-      setAtivos((atual) => ({ ...atual, [nota]: !estaAtivo }));
+
+      // nota diferente — só uma toca por vez, então desliga qualquer outra ativa
+      // antes de ligar essa (cada "parar" já usa o fade suave que existe na engine).
+      NOTAS.forEach((outraNota) => {
+        if (outraNota !== nota && ativos[outraNota]) {
+          parar(outraNota);
+        }
+      });
+      tocar(nota);
+
+      setAtivos(() => {
+        const novoEstado = Object.fromEntries(NOTAS.map((n) => [n, false])) as Record<Note, boolean>;
+        novoEstado[nota] = true;
+        return novoEstado;
+      });
     },
     [ativos],
   );
