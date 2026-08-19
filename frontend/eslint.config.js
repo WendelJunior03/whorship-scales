@@ -36,6 +36,10 @@ module.exports = [
       'react-native/no-unused-styles': 'warn',
       '@typescript-eslint/no-unused-vars': 'warn',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
+      // O TypeScript já checa identificadores desconhecidos de forma correta (ciente
+      // das libs configuradas, ex. DOM). A regra crua do ESLint não conhece globals/tipos
+      // do TS e gera falso positivo em globals de navegador (AudioContext, Audio, etc.).
+      'no-undef': 'off',
     },
   },
   {

@@ -12,6 +12,7 @@ import { AfinadorScreen } from '@/screens/afinador/AfinadorScreen';
 import { MetronomoScreen } from '@/screens/metronomo/MetronomoScreen';
 import { BibliotecaScreen } from '@/screens/biblioteca/BibliotecaScreen';
 import { DetalheMusicaScreen } from '@/screens/biblioteca/DetalheMusicaScreen';
+import { PadContinuoScreen } from '@/screens/padContinuo/PadContinuoScreen';
 
 export type MainStackParamList = {
   MainTabs: undefined;
@@ -26,6 +27,7 @@ export type MainStackParamList = {
   Metronomo: { bpm?: number } | undefined;
   Biblioteca: undefined;
   DetalheMusica: { musicaId: number; nome?: string };
+  PadContinuo: undefined;
 };
 
 const Stack = createStackNavigator<MainStackParamList>();
@@ -45,6 +47,7 @@ export function MainNavigator() {
       <Stack.Screen name="Metronomo" component={MetronomoScreen} />
       <Stack.Screen name="Biblioteca" component={BibliotecaScreen} />
       <Stack.Screen name="DetalheMusica" component={DetalheMusicaScreen} />
+      <Stack.Screen name="PadContinuo" component={PadContinuoScreen} />
     </Stack.Navigator>
   );
 }

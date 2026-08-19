@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { Alert, Image, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { AuthScaffold } from '@/components/AuthScaffold';
+import { Logo } from '@/components/Logo';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthStackParamList } from '@/navigation/AuthNavigator';
 import { ApiError } from '@/services/api';
 import { colors, spacing, typography } from '@/theme';
-import logo from '../../../assets/logo.png';
 
 type Props = {
   navigation: StackNavigationProp<AuthStackParamList, 'Login'>;
@@ -47,7 +47,7 @@ export function LoginScreen({ navigation }: Props) {
   return (
     <AuthScaffold>
       <View style={styles.header}>
-        <Image source={logo} style={styles.logo} resizeMode="contain" />
+        <Logo />
         <Text style={styles.subtitle}>Organize seu ministério com excelência</Text>
       </View>
 
@@ -101,11 +101,6 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: spacing.xxl,
-  },
-  logo: {
-    width: 220,
-    height: 220,
-    marginBottom: spacing.xs,
   },
   subtitle: {
     ...typography.body,
