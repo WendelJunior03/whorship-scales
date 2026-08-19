@@ -1,9 +1,11 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { RouteProp, useRoute } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '@/components/Header';
 import { useMetronomo } from '@/hooks/useMetronomo';
+import { MainStackParamList } from '@/navigation/MainNavigator';
 import { ConfigMetronomo, TIMBRES } from '@/audio/metronomo';
 import { colors, fonts, radius, spacing, typography } from '@/theme';
 
@@ -33,7 +35,9 @@ function Chip({ ativo, onPress, children }: { ativo: boolean; onPress: () => voi
 }
 
 export function MetronomoScreen() {
-  const [bpm, setBpm] = useState(100);
+  // Pode ser aberto pela música (spec 10 × 08): inicia no BPM salvo dela.
+  const route = useRoute<RouteProp<MainStackParamList, 'Metronomo'>>();
+  const [bpm, setBpm] = useState(() => clampBpm(route.params?.bpm ?? 100));
   const [compasso, setCompasso] = useState(4);
   const [subdivisao, setSubdivisao] = useState(1);
   const [volume, setVolume] = useState(0.75);

@@ -10,6 +10,8 @@ import { DetalheMembroScreen } from '@/screens/membros/DetalheMembroScreen';
 import { OctapadScreen } from '@/screens/octapad/OctapadScreen';
 import { AfinadorScreen } from '@/screens/afinador/AfinadorScreen';
 import { MetronomoScreen } from '@/screens/metronomo/MetronomoScreen';
+import { BibliotecaScreen } from '@/screens/biblioteca/BibliotecaScreen';
+import { DetalheMusicaScreen } from '@/screens/biblioteca/DetalheMusicaScreen';
 
 export type MainStackParamList = {
   MainTabs: undefined;
@@ -21,7 +23,9 @@ export type MainStackParamList = {
   DetalheMembro: { membroId?: number };
   Octapad: undefined;
   Afinador: undefined;
-  Metronomo: undefined;
+  Metronomo: { bpm?: number } | undefined;
+  Biblioteca: undefined;
+  DetalheMusica: { musicaId: number; nome?: string };
 };
 
 const Stack = createStackNavigator<MainStackParamList>();
@@ -39,6 +43,8 @@ export function MainNavigator() {
       <Stack.Screen name="Octapad" component={OctapadScreen} />
       <Stack.Screen name="Afinador" component={AfinadorScreen} />
       <Stack.Screen name="Metronomo" component={MetronomoScreen} />
+      <Stack.Screen name="Biblioteca" component={BibliotecaScreen} />
+      <Stack.Screen name="DetalheMusica" component={DetalheMusicaScreen} />
     </Stack.Navigator>
   );
 }

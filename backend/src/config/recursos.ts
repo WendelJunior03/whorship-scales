@@ -44,6 +44,10 @@ export const recursos: Record<string, RecursoPlano> = {
     'estatisticas':               { planoMinimo: 'pro', flagAtiva: true },
     'lideranca.recursos_avancados': { planoMinimo: 'pro', flagAtiva: true },
     'conteudos.exclusivos':       { planoMinimo: 'pro', flagAtiva: true },
+    // Biblioteca de vídeos (spec 08): cadastro/consulta é free; estes são PRO/futuro.
+    'videos.playlist':            { planoMinimo: 'pro', flagAtiva: true },
+    'videos.upload':              { planoMinimo: 'pro', flagAtiva: true },
+    'videos.privado':             { planoMinimo: 'pro', flagAtiva: true },
     // Ainda não lançado no produto → flag desligada (exemplo real do eixo de flag).
     'backup.automatico':          { planoMinimo: 'pro', flagAtiva: false },
 };
