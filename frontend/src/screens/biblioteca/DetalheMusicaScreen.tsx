@@ -25,7 +25,9 @@ import { ApiError } from '@/services/api';
 import { isAdmin } from '@/utils/papel';
 import { extrairVideoIdYoutube } from '@/utils/youtube';
 import { CategoriaVideo, Musica, Video } from '@/types';
-import { colors, fonts, radius, spacing, typography } from '@/theme';
+import { fonts, radius, spacing, typography } from '@/theme';
+import { Cores } from '@/theme/palettes';
+import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 
 const CATEGORIAS: { v: CategoriaVideo; nome: string }[] = [
   { v: 'oficial', nome: 'Vídeo Oficial' },
@@ -35,6 +37,8 @@ const CATEGORIAS: { v: CategoriaVideo; nome: string }[] = [
 ];
 
 export function DetalheMusicaScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(criarEstilos);
   const route = useRoute<RouteProp<MainStackParamList, 'DetalheMusica'>>();
   const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();
   const { user } = useAuth();
@@ -218,7 +222,7 @@ export function DetalheMusicaScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: Cores) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   centro: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   conteudo: { padding: spacing.lg, gap: spacing.md },

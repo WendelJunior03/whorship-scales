@@ -9,7 +9,9 @@ import { useAfinador } from '@/hooks/useAfinador';
 import { useRecurso } from '@/hooks/useRecurso';
 import { freqParaNota } from '@/utils/notas';
 import { AFINACOES, cordaMaisProxima, RECURSO_AFINADOR_AVANCADO } from '@/config/afinacoes';
-import { colors, fonts, radius, shadows, spacing, typography } from '@/theme';
+import { fonts, radius, spacing, typography } from '@/theme';
+import { Cores } from '@/theme/palettes';
+import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 
 const AFINADO_CENTS = 5; // tolerância pra considerar "afinado"
 
@@ -24,6 +26,8 @@ function Aviso({
   texto: string;
   acao?: { label: string; onPress: () => void };
 }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(criarEstilos);
   return (
     <View style={styles.aviso}>
       <Icon name={icon} size={44} color={colors.textMuted} />
@@ -35,6 +39,8 @@ function Aviso({
 }
 
 function Medidor({ cents, temNota }: { cents: number; temNota: boolean }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(criarEstilos);
   const pct = Math.max(-50, Math.min(50, cents)) + 50; // 0..100
   const afinado = Math.abs(cents) <= AFINADO_CENTS;
   return (
@@ -54,6 +60,8 @@ function Medidor({ cents, temNota }: { cents: number; temNota: boolean }) {
 }
 
 export function AfinadorScreen() {
+  const { shadows } = useTheme();
+  const styles = useThemedStyles(criarEstilos);
   const { estado, freq, iniciar, parar } = useAfinador();
   const [afinacaoId, setAfinacaoId] = useState(AFINACOES[0].id);
   // Afinações avançadas são PRO (spec 03) — na v1 ficam liberadas, mas com selo.
@@ -157,7 +165,7 @@ export function AfinadorScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: Cores) => StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,

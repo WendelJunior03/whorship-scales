@@ -12,8 +12,11 @@ import * as membrosService from '@/services/membros';
 import { ApiError } from '@/services/api';
 import { papelOrgLabel, papelOrgTone, papelOrgDe, papelMinisterioLabel, isAdmin } from '@/utils/papel';
 import { SeloPro } from '@/components/SeloPro';
+import { SeletorTema } from '@/components/SeletorTema';
 import { useRecurso } from '@/hooks/useRecurso';
-import { colors, fonts, radius, spacing, typography } from '@/theme';
+import { fonts, radius, spacing, typography } from '@/theme';
+import { Cores } from '@/theme/palettes';
+import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import appConfig from '../../../app.json';
 
 const MENU_ITEMS = [
@@ -43,6 +46,8 @@ function RecursoProRow({
   icon: IconName;
   label: string;
 }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(criarEstilos);
   const { liberado, isPro } = useRecurso(chave);
   return (
     <View style={styles.recursoRow}>
@@ -58,6 +63,8 @@ function RecursoProRow({
 }
 
 export function PerfilScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(criarEstilos);
   const { user, org, signOut } = useAuth();
   const navigation = useNavigation<MainTabScreenNavigationProp<'Perfil'>>();
 
@@ -211,6 +218,11 @@ export function PerfilScreen() {
           ))}
         </View>
 
+        <View style={styles.temaBloco}>
+          <Text style={styles.temaTitulo}>Aparência</Text>
+          <SeletorTema />
+        </View>
+
         <View style={styles.menu}>
           {MENU_ITEMS.map((item) => (
             <TouchableOpacity
@@ -290,7 +302,7 @@ export function PerfilScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: Cores) => StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
@@ -433,6 +445,16 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.textMuted,
     fontStyle: 'italic',
+  },
+  temaBloco: {
+    width: '100%',
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  temaTitulo: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    fontFamily: fonts.semibold,
   },
   menu: {
     width: '100%',

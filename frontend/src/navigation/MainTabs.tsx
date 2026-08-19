@@ -2,7 +2,9 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Icon, IconName } from '@/components/Icon';
-import { colors, spacing, radius } from '@/theme';
+import { spacing, radius } from '@/theme';
+import { Cores } from '@/theme/palettes';
+import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { HomeScreen } from '@/screens/home/HomeScreen';
 import { AgendaScreen } from '@/screens/escalas/AgendaScreen';
 import { NotificacoesScreen } from '@/screens/notificacoes/NotificacoesScreen';
@@ -25,6 +27,8 @@ const tabIcon: Record<keyof MainTabParamList, IconName> = {
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export function MainTabs() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(criarEstilos);
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -54,7 +58,7 @@ export function MainTabs() {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: Cores) => StyleSheet.create({
   bar: {
     backgroundColor: colors.surface,
     borderTopColor: colors.border,

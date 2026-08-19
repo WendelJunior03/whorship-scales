@@ -18,7 +18,9 @@ import * as repertorioService from '@/services/repertorio';
 import { ApiError } from '@/services/api';
 import { MinhaEscalaFixaItem } from '@/types';
 import { MeuProximoCulto } from '@/services/repertorio';
-import { colors, spacing, radius, typography, shadows, fonts } from '@/theme';
+import { spacing, radius, typography, fonts } from '@/theme';
+import { Cores, Sombras } from '@/theme/palettes';
+import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { formatDiaCompleto, formatHora } from '@/utils/date';
 import { getSaudacao } from '@/utils/greeting';
 import { podeGerir, isAdmin } from '@/utils/papel';
@@ -46,6 +48,8 @@ const ATALHOS_MEMBRO = [
 ];
 
 export function HomeScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(criarEstilos);
   const { user, org } = useAuth();
   const navigation = useNavigation<MainTabScreenNavigationProp<'Home'>>();
 
@@ -220,7 +224,7 @@ function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: Cores, shadows: Sombras) => StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,

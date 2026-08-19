@@ -16,7 +16,9 @@ import * as escalaAvulsaService from '@/services/escalaAvulsa';
 import * as escalaVocalService from '@/services/escalaVocal';
 import { ApiError } from '@/services/api';
 import { Culto } from '@/types';
-import { colors, spacing, typography } from '@/theme';
+import { spacing, typography } from '@/theme';
+import { Cores } from '@/theme/palettes';
+import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { formatDiaCompleto, formatDiaSemana, formatHora } from '@/utils/date';
 
 interface CultoComContagem {
@@ -28,6 +30,8 @@ interface CultoComContagem {
 }
 
 export function ConfirmacoesScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(criarEstilos);
   const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();
   const { user } = useAuth();
 
@@ -153,7 +157,7 @@ export function ConfirmacoesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: Cores) => StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,

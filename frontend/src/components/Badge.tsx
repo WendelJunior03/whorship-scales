@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
-import { colors, spacing, typography } from '@/theme';
+import { spacing, typography } from '@/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 type BadgeTone = 'primary' | 'success' | 'warning' | 'error' | 'neutral';
 
@@ -11,15 +12,15 @@ interface BadgeProps {
   textStyle?: TextStyle;
 }
 
-const toneColors: Record<BadgeTone, { bg: string; text: string }> = {
-  primary: { bg: colors.primary + '33', text: colors.primary },
-  success: { bg: colors.success + '33', text: colors.success },
-  warning: { bg: colors.warning + '33', text: colors.warning },
-  error: { bg: colors.error + '33', text: colors.error },
-  neutral: { bg: colors.surfaceElevated, text: colors.textSecondary },
-};
-
 export function Badge({ label, tone = 'neutral', style, textStyle }: BadgeProps) {
+  const { colors } = useTheme();
+  const toneColors: Record<BadgeTone, { bg: string; text: string }> = {
+    primary: { bg: colors.primary + '33', text: colors.primary },
+    success: { bg: colors.success + '33', text: colors.success },
+    warning: { bg: colors.warning + '33', text: colors.warning },
+    error: { bg: colors.error + '33', text: colors.error },
+    neutral: { bg: colors.surfaceElevated, text: colors.textSecondary },
+  };
   const { bg, text } = toneColors[tone];
 
   return (

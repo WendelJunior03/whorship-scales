@@ -7,7 +7,9 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { colors, spacing } from '@/theme';
+import { spacing } from '@/theme';
+import { Cores } from '@/theme/palettes';
+import { useThemedStyles } from '@/contexts/ThemeContext';
 
 interface AuthScaffoldProps {
   children: React.ReactNode;
@@ -20,6 +22,7 @@ interface AuthScaffoldProps {
  * teclado. Centraliza o layout pra todas essas telas ficarem consistentes.
  */
 export function AuthScaffold({ children, contentStyle }: AuthScaffoldProps) {
+  const styles = useThemedStyles(criarEstilos);
   return (
     <View style={styles.screen}>
       <KeyboardAvoidingView
@@ -39,7 +42,7 @@ export function AuthScaffold({ children, contentStyle }: AuthScaffoldProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: Cores) => StyleSheet.create({
   screen: {
     flex: 1,
     width: '100%',

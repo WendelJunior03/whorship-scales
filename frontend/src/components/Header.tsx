@@ -2,7 +2,9 @@ import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Icon, IconName } from '@/components/Icon';
 import { useNavigation } from '@react-navigation/native';
-import { colors, spacing, typography } from '@/theme';
+import { spacing, typography } from '@/theme';
+import { Cores } from '@/theme/palettes';
+import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 
 interface HeaderProps {
   title: string;
@@ -14,6 +16,8 @@ interface HeaderProps {
 
 export function Header({ title, subtitle, showBack, rightIcon, onRightPress }: HeaderProps) {
   const navigation = useNavigation();
+  const { colors } = useTheme();
+  const styles = useThemedStyles(criarEstilos);
 
   return (
     <View style={styles.container}>
@@ -47,7 +51,7 @@ export function Header({ title, subtitle, showBack, rightIcon, onRightPress }: H
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: Cores) => StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',

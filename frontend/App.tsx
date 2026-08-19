@@ -15,7 +15,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { RootNavigator } from '@/navigation/RootNavigator';
 import { linking } from '@/navigation/linking';
 import { NAVIGATION_PERSISTENCE_KEY } from '@/navigation/persistence';
-import { colors } from '@/theme';
+import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 
 export default function App() {
   const [isReady, setIsReady] = useState(false);
@@ -41,7 +41,22 @@ export default function App() {
     restoreState();
   }, []);
 
-  if (!isReady || !fontsLoaded) {
+  return (
+    <ThemeProvider>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <RaizApp pronto={isReady && fontsLoaded} initialState={initialState} />
+        </AuthProvider>
+      </SafeAreaProvider>
+    </ThemeProvider>
+  );
+}
+
+// Fica dentro do ThemeProvider pra ler o tema (loading temático + StatusBar dinâmico).
+function RaizApp({ pronto, initialState }: { pronto: boolean; initialState?: InitialState }) {
+  const { colors, modo } = useTheme();
+
+  if (!pronto) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -50,19 +65,15 @@ export default function App() {
   }
 
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <NavigationContainer
-          linking={linking}
-          initialState={initialState}
-          onStateChange={(state) =>
-            AsyncStorage.setItem(NAVIGATION_PERSISTENCE_KEY, JSON.stringify(state))
-          }
-        >
-          <RootNavigator />
-          <StatusBar style="light" />
-        </NavigationContainer>
-      </AuthProvider>
-    </SafeAreaProvider>
+    <NavigationContainer
+      linking={linking}
+      initialState={initialState}
+      onStateChange={(state) =>
+        AsyncStorage.setItem(NAVIGATION_PERSISTENCE_KEY, JSON.stringify(state))
+      }
+    >
+      <RootNavigator />
+      <StatusBar style={modo === 'escuro' ? 'light' : 'dark'} />
+    </NavigationContainer>
   );
 }

@@ -22,9 +22,13 @@ import * as musicasService from '@/services/musicas';
 import { ApiError } from '@/services/api';
 import { podeGerir } from '@/utils/papel';
 import { Musica } from '@/types';
-import { colors, fonts, radius, spacing, typography } from '@/theme';
+import { fonts, radius, spacing, typography } from '@/theme';
+import { Cores } from '@/theme/palettes';
+import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 
 export function BibliotecaScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(criarEstilos);
   const { user } = useAuth();
   const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();
   const gestor = user ? podeGerir(user) : false;
@@ -149,7 +153,7 @@ export function BibliotecaScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: Cores) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   centro: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.lg },
   erroTexto: { ...typography.bodySmall, color: colors.textSecondary, textAlign: 'center' },

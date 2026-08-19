@@ -6,7 +6,9 @@ import { Header } from '@/components/Header';
 import { usePadContinuo } from '@/hooks/usePadContinuo';
 import { Note } from './padContinuoEngine';
 import { NOTA_LABEL } from './notasLabel';
-import { colors, fonts, radius, spacing, typography } from '@/theme';
+import { fonts, radius, spacing, typography } from '@/theme';
+import { Cores } from '@/theme/palettes';
+import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 
 // Coluna centralizada com largura máxima (não estica no desktop/PWA).
 const MAX_LARGURA = 640;
@@ -20,6 +22,7 @@ const ATIVO_CLARO = '#2DD4BF';
  * tela, então não precisa de nenhuma dependência nova.
  */
 function BarraVolume({ valor, onChange }: { valor: number; onChange: (v: number) => void }) {
+  const styles = useThemedStyles(criarEstilos);
   const [largura, setLargura] = useState(1); // evita divisão por zero antes do 1º layout
 
   function definirPelaPosicao(e: GestureResponderEvent) {
@@ -46,6 +49,8 @@ function BarraVolume({ valor, onChange }: { valor: number; onChange: (v: number)
 }
 
 export function PadContinuoScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(criarEstilos);
   const { notas, ativos, alternar, volumeGeral, ajustarVolumeGeral } = usePadContinuo();
 
   return (
@@ -84,7 +89,7 @@ export function PadContinuoScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: Cores) => StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
