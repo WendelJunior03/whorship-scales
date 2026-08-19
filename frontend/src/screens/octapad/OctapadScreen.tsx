@@ -1,20 +1,19 @@
-import React, { useState } from 'react';
-import {
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { Icon } from '@/components/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import type { MainStackParamList } from '@/navigation/MainNavigator';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Header } from '@/components/Header';
+import { BarraDeslizante } from '@/components/BarraDeslizante';
 import { SeloPro } from '@/components/SeloPro';
 import { useOctapad } from '@/hooks/useOctapad';
+import { useOctapadAparencia } from '@/hooks/useOctapadAparencia';
 import { KIT_PADRAO, PadDef } from '@/audio/kits';
+import { PainelPersonalizarOctapad } from './PainelPersonalizarOctapad';
+import { hexParaRgba } from '@/utils/cor';
 import { fonts, radius, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
@@ -29,14 +28,27 @@ const PAD_GAP = spacing.sm;
 // base bem escura. Ao afundar, escurece/achata.
 const BORRACHA = ['#343A45', '#181B21'] as const;
 const BORRACHA_AFUNDADA = ['#1B1E25', '#0D0F14'] as const;
+// Faixa de opacidade do flash de destaque ao tocar, conforme o brilho (nunca zero, nunca ofusca).
+const ALPHA_DESTAQUE_MIN = 0.15;
+const ALPHA_DESTAQUE_MAX = 0.45;
 
 function vibrar() {
   const g = globalThis as unknown as { navigator?: { vibrate?: (ms: number) => void } };
   g.navigator?.vibrate?.(8);
 }
 
-function Pad({ pad, size, onHit }: { pad: PadDef; size: number; onHit: (id: string) => void }) {
+interface PadProps {
+  pad: PadDef;
+  nome: string;
+  size: number;
+  onHit: (id: string) => void;
+  corDestaque: string;
+  brilho: number;
+}
+
+function Pad({ pad, nome, size, onHit, corDestaque, brilho }: PadProps) {
   const styles = useThemedStyles(criarEstilos);
+  const alphaDestaque = ALPHA_DESTAQUE_MIN + brilho * (ALPHA_DESTAQUE_MAX - ALPHA_DESTAQUE_MIN);
   return (
     <Pressable style={[styles.padCelula, { width: size }]} onPressIn={() => onHit(pad.id)}>
       {({ pressed }) => (
@@ -47,49 +59,50 @@ function Pad({ pad, size, onHit }: { pad: PadDef; size: number; onHit: (id: stri
             end={{ x: 0.8, y: 1 }}
             style={StyleSheet.absoluteFill}
           />
+          {pressed && (
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: hexParaRgba(corDestaque, alphaDestaque) }]} />
+          )}
           <View style={styles.brilho} />
           <View
             style={[
               styles.led,
-              pressed && { backgroundColor: pad.cor, shadowColor: pad.cor, shadowOpacity: 0.9 },
+              pressed && {
+                backgroundColor: corDestaque,
+                shadowColor: corDestaque,
+                shadowOpacity: 0.5 + brilho * 0.4,
+              },
             ]}
           />
-          <Text style={[styles.padNome, pressed && { color: pad.cor }]}>{pad.nome}</Text>
+          <Text style={[styles.padNome, pressed && { color: corDestaque }]} numberOfLines={1}>
+            {nome}
+          </Text>
         </View>
       )}
     </Pressable>
   );
 }
 
-function Fader({ valor, onChange }: { valor: number; onChange: (v: number) => void }) {
-  const styles = useThemedStyles(criarEstilos);
-  const [largura, setLargura] = useState(0);
-  return (
-    <Pressable
-      style={styles.faderTrack}
-      onLayout={(e) => setLargura(e.nativeEvent.layout.width)}
-      onPress={(e) => {
-        if (largura > 0) {
-          onChange(Math.max(0, Math.min(1, e.nativeEvent.locationX / largura)));
-        }
-      }}
-    >
-      <View style={styles.faderBar} />
-      <View style={[styles.faderFill, { width: `${valor * 100}%` }]} />
-      <View style={[styles.faderThumb, { left: `${valor * 100}%` }]} />
-    </Pressable>
-  );
-}
+type Nav = StackNavigationProp<MainStackParamList, 'Octapad'>;
 
 export function OctapadScreen() {
   const { colors } = useTheme();
   const styles = useThemedStyles(criarEstilos);
-  const navigation = useNavigation();
-  const { width } = useWindowDimensions();
-  const { suportado, tocar } = useOctapad();
+  const navigation = useNavigation<Nav>();
+  const { aparencia, definirCorPad, definirNomePad, ajustarBrilho, restaurarPadrao, recarregar } = useOctapadAparencia();
+  const { suportado, tocar } = useOctapad(aparencia.somPads);
   const [volume, setVolume] = useState(0.85);
   const [gridLargura, setGridLargura] = useState(0);
+  const [painelAberto, setPainelAberto] = useState(false);
 
+  // A Biblioteca de Drums (tela separada) grava o som escolhido direto no storage — recarrega
+  // ao voltar pra essa tela pra refletir a troca (instância de hook diferente da de lá).
+  useFocusEffect(
+    useCallback(() => {
+      recarregar();
+    }, [recarregar]),
+  );
+
+  const { width } = useWindowDimensions();
   const colunas = width >= BREAKPOINT_LARGO ? 4 : 2;
   const padSize = gridLargura > 0 ? (gridLargura - PAD_GAP * (colunas - 1)) / colunas : 0;
 
@@ -105,26 +118,13 @@ export function OctapadScreen() {
       <LinearGradient colors={colors.bgGradient} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <View style={styles.container}>
-          <View style={styles.topo}>
-            <Pressable onPress={() => navigation.goBack()} hitSlop={10} style={styles.voltar}>
-              <Icon name="chevron-back" size={22} color={colors.text} />
-            </Pressable>
-            <View style={styles.marca}>
-              <LinearGradient
-                colors={[colors.primaryLight, colors.primary]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.marcaBadge}
-              >
-                <Icon name="grid" size={16} color={colors.textInverse} />
-              </LinearGradient>
-              <View>
-                <Text style={styles.titulo}>Octapad</Text>
-                <Text style={styles.subtitulo}>Bateria eletrônica</Text>
-              </View>
-            </View>
-            <View style={styles.voltar} />
-          </View>
+          <Header
+            title="Octapad"
+            subtitle="Bateria eletrônica"
+            showBack
+            rightIcon={suportado ? 'settings-outline' : undefined}
+            onRightPress={() => setPainelAberto(true)}
+          />
 
           {!suportado ? (
             <View style={styles.aviso}>
@@ -144,10 +144,31 @@ export function OctapadScreen() {
                 >
                   {padSize > 0 &&
                     KIT_PADRAO.map((pad) => (
-                      <Pad key={pad.id} pad={pad} size={padSize} onHit={handlePad} />
+                      <Pad
+                        key={pad.id}
+                        pad={pad}
+                        nome={aparencia.nomesPads[pad.id] ?? pad.nome}
+                        size={padSize}
+                        onHit={handlePad}
+                        corDestaque={aparencia.coresPads[pad.id] ?? pad.cor}
+                        brilho={aparencia.brilho}
+                      />
                     ))}
                 </View>
               </View>
+
+              <TouchableOpacity
+                style={styles.proCard}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('BibliotecaDrums')}
+              >
+                <Icon name="musical-notes-outline" size={20} color={colors.primaryLight} />
+                <View style={styles.proTexto}>
+                  <Text style={styles.proTitulo}>Biblioteca de Drums</Text>
+                  <Text style={styles.proSub}>58 sons prontos pra personalizar seus pads.</Text>
+                </View>
+                <SeloPro />
+              </TouchableOpacity>
 
               <View style={styles.proCard}>
                 <Icon name="cloud-upload-outline" size={20} color={colors.primaryLight} />
@@ -157,18 +178,31 @@ export function OctapadScreen() {
                 </View>
                 <SeloPro />
               </View>
-            </ScrollView>
-          )}
 
-          {suportado && (
-            <View style={styles.master}>
-              <Icon name="volume-medium" size={18} color={colors.textSecondary} />
-              <Fader valor={volume} onChange={setVolume} />
-              <Text style={styles.masterPct}>{Math.round(volume * 100)}%</Text>
-            </View>
+              <Text style={styles.secao}>Volume geral</Text>
+              <View style={styles.volumeLinha}>
+                <BarraDeslizante
+                  valor={volume}
+                  onChange={setVolume}
+                  corPreenchida={colors.primary}
+                  corBolinha={colors.primary}
+                />
+                <Text style={styles.volumeTexto}>{Math.round(volume * 100)}%</Text>
+              </View>
+            </ScrollView>
           )}
         </View>
       </SafeAreaView>
+
+      <PainelPersonalizarOctapad
+        visible={painelAberto}
+        onClose={() => setPainelAberto(false)}
+        aparencia={aparencia}
+        definirCorPad={definirCorPad}
+        definirNomePad={definirNomePad}
+        ajustarBrilho={ajustarBrilho}
+        restaurarPadrao={restaurarPadrao}
+      />
     </View>
   );
 }
@@ -177,18 +211,6 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
   raiz: { flex: 1, backgroundColor: colors.background },
   safe: { flex: 1 },
   container: { flex: 1, width: '100%', maxWidth: MAX_LARGURA, alignSelf: 'center' },
-  topo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  voltar: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  marca: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  marcaBadge: { width: 34, height: 34, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-  titulo: { fontFamily: fonts.bold, fontSize: 18, color: colors.text },
-  subtitulo: { ...typography.caption, color: colors.textMuted },
   conteudo: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, gap: spacing.lg },
 
   chassi: {
@@ -253,30 +275,22 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
   proTitulo: { ...typography.bodySmall, color: colors.text, fontFamily: fonts.semibold },
   proSub: { ...typography.caption, color: colors.textMuted },
 
-  master: {
+  secao: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    fontFamily: fonts.semibold,
+  },
+  volumeLinha: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: colors.surface,
   },
-  faderTrack: { flex: 1, height: 28, justifyContent: 'center' },
-  faderBar: { position: 'absolute', left: 0, right: 0, height: 6, borderRadius: radius.pill, backgroundColor: colors.surfaceElevated },
-  faderFill: { position: 'absolute', left: 0, height: 6, borderRadius: radius.pill, backgroundColor: colors.primary },
-  faderThumb: {
-    position: 'absolute',
-    width: 20,
-    height: 20,
-    marginLeft: -10,
-    borderRadius: radius.pill,
-    backgroundColor: colors.primaryLight,
-    borderWidth: 3,
-    borderColor: colors.background,
+  volumeTexto: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    width: 44,
+    textAlign: 'right',
   },
-  masterPct: { ...typography.bodySmall, color: colors.textSecondary, width: 44, textAlign: 'right' },
   aviso: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.sm, padding: spacing.xl },
   avisoTitulo: { ...typography.h3, color: colors.text, textAlign: 'center' },
   avisoTexto: { ...typography.bodySmall, color: colors.textSecondary, textAlign: 'center' },
