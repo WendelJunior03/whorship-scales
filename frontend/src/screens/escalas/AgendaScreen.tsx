@@ -22,7 +22,9 @@ import {
   MinhaEscalaVocalItem,
   StatusEscalaVocal,
 } from '@/types';
-import { colors, spacing, typography } from '@/theme';
+import { spacing, typography } from '@/theme';
+import { Cores } from '@/theme/palettes';
+import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { formatDiaCompleto, formatHora } from '@/utils/date';
 import { confirmAction } from '@/utils/confirm';
 
@@ -49,6 +51,8 @@ function capitalize(text: string): string {
 }
 
 export function AgendaScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(criarEstilos);
   const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();
   const [escalaVocal, setEscalaVocal] = useState<MinhaEscalaVocalItem[]>([]);
   const [escalaAvulsa, setEscalaAvulsa] = useState<MinhaEscalaAvulsaItem[]>([]);
@@ -365,7 +369,7 @@ export function AgendaScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: Cores) => StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,

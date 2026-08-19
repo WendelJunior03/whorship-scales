@@ -1,7 +1,9 @@
 import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, spacing, typography } from '@/theme';
+import { spacing, typography } from '@/theme';
+import { Cores } from '@/theme/palettes';
+import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 
 interface ButtonProps {
   title: string;
@@ -20,6 +22,8 @@ export function Button({
   variant = 'primary',
   style,
 }: ButtonProps) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(criarEstilos);
   const isDisabled = disabled || loading;
 
   if (variant === 'outline') {
@@ -57,7 +61,7 @@ export function Button({
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: Cores) => StyleSheet.create({
   gradient: {
     borderRadius: 14,
     paddingVertical: spacing.md,

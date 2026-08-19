@@ -2,13 +2,17 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Icon } from '@/components/Icon';
-import { colors, radius, shadows, typography } from '@/theme';
+import { radius, typography } from '@/theme';
+import { Cores } from '@/theme/palettes';
+import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 
 interface LogoProps {
   size?: number;
 }
 
 export function Logo({ size = 88 }: LogoProps) {
+  const { colors, shadows } = useTheme();
+  const styles = useThemedStyles(criarEstilos);
   return (
     <View style={styles.container}>
       <LinearGradient
@@ -31,7 +35,7 @@ export function Logo({ size = 88 }: LogoProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: Cores) => StyleSheet.create({
   container: {
     alignItems: 'center',
   },

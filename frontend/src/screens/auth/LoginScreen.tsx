@@ -8,13 +8,16 @@ import { Logo } from '@/components/Logo';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthStackParamList } from '@/navigation/AuthNavigator';
 import { ApiError } from '@/services/api';
-import { colors, spacing, typography } from '@/theme';
+import { spacing, typography } from '@/theme';
+import { Cores } from '@/theme/palettes';
+import { useThemedStyles } from '@/contexts/ThemeContext';
 
 type Props = {
   navigation: StackNavigationProp<AuthStackParamList, 'Login'>;
 };
 
 export function LoginScreen({ navigation }: Props) {
+  const styles = useThemedStyles(criarEstilos);
   const { signIn } = useAuth();
 
   const [email, setEmail] = useState('');
@@ -97,7 +100,7 @@ export function LoginScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: Cores) => StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: spacing.xxl,

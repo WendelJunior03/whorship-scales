@@ -25,11 +25,15 @@ import { MainStackParamList } from '@/navigation/MainNavigator';
 import * as cultosService from '@/services/cultos';
 import { ApiError } from '@/services/api';
 import { Culto } from '@/types';
-import { colors, spacing, typography } from '@/theme';
+import { spacing, typography } from '@/theme';
+import { Cores } from '@/theme/palettes';
+import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { formatDiaCompleto, formatDiaSemana, formatHora, montarDataHoraISO } from '@/utils/date';
 import { confirmAction } from '@/utils/confirm';
 
 export function EscalasScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(criarEstilos);
   const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();
   const { user } = useAuth();
 
@@ -272,7 +276,7 @@ export function EscalasScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: Cores) => StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,

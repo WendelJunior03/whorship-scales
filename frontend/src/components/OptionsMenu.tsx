@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { ActivityIndicator, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Icon, IconName } from '@/components/Icon';
 import { Button } from '@/components/Button';
-import { colors, spacing, typography } from '@/theme';
+import { spacing, typography } from '@/theme';
+import { Cores } from '@/theme/palettes';
+import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 
 export interface OptionsMenuAction {
   label: string;
@@ -21,6 +23,8 @@ interface OptionsMenuProps {
  * lugar de deixar um ícone de ação sempre visível grudado na linha.
  */
 export function OptionsMenu({ actions, loading }: OptionsMenuProps) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(criarEstilos);
   const [aberto, setAberto] = useState(false);
 
   if (loading) {
@@ -75,7 +79,7 @@ export function OptionsMenu({ actions, loading }: OptionsMenuProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: Cores) => StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',

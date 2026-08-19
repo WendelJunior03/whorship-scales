@@ -1,12 +1,15 @@
 import React from 'react';
 import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
-import { colors, fonts, radius } from '@/theme';
+import { fonts, radius } from '@/theme';
+import { Cores } from '@/theme/palettes';
+import { useThemedStyles } from '@/contexts/ThemeContext';
 
 /**
  * Selo "PRO" reutilizável (spec 03, T-03.4). Marca uma feature como paga na UI.
  * Na v1 nada é bloqueado por plano — o selo é informativo (CTA de upgrade futura).
  */
 export function SeloPro({ style }: { style?: StyleProp<ViewStyle> }) {
+  const styles = useThemedStyles(criarEstilos);
   return (
     <View style={[styles.selo, style]}>
       <Text style={styles.texto}>PRO</Text>
@@ -14,7 +17,7 @@ export function SeloPro({ style }: { style?: StyleProp<ViewStyle> }) {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: Cores) => StyleSheet.create({
   selo: {
     alignSelf: 'flex-start',
     backgroundColor: colors.warning,

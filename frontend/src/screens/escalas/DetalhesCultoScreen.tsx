@@ -40,7 +40,9 @@ import {
   StatusEscalaVocal,
   SugestaoVocal,
 } from '@/types';
-import { colors, spacing, typography } from '@/theme';
+import { spacing, typography } from '@/theme';
+import { Cores } from '@/theme/palettes';
+import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { formatDiaCompleto, formatDiaCurto, formatDiaSemana, formatHora } from '@/utils/date';
 import { podeGerir, papelLabel } from '@/utils/papel';
 import { confirmAction } from '@/utils/confirm';
@@ -67,6 +69,8 @@ interface EquipeItem {
 }
 
 export function DetalhesCultoScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(criarEstilos);
   const route = useRoute<RouteProp<MainStackParamList, 'DetalhesCulto'>>();
   const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();
   const { cultoId } = route.params;
@@ -817,7 +821,7 @@ export function DetalhesCultoScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: Cores) => StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,

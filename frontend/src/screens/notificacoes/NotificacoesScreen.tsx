@@ -7,7 +7,9 @@ import { Card } from '@/components/Card';
 import * as notificacoesService from '@/services/notificacoes';
 import { ApiError } from '@/services/api';
 import { Notificacao, TipoNotificacao } from '@/types';
-import { colors, spacing, typography } from '@/theme';
+import { spacing, typography } from '@/theme';
+import { Cores } from '@/theme/palettes';
+import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { formatDataRelativa, formatHora } from '@/utils/date';
 
 const iconePorTipo: Record<TipoNotificacao, IconName> = {
@@ -38,6 +40,8 @@ function agruparPorData(notificacoes: Notificacao[]): Secao[] {
 }
 
 export function NotificacoesScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(criarEstilos);
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -134,7 +138,7 @@ export function NotificacoesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: Cores) => StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,

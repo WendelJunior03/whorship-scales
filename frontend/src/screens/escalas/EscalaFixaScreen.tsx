@@ -28,7 +28,9 @@ import * as membrosService from '@/services/membros';
 import { ApiError } from '@/services/api';
 import { confirmAction } from '@/utils/confirm';
 import { Culto, DiaSemana, EscalaFixaMontada, EscalaVocalDoCultoItem, Membro } from '@/types';
-import { colors, spacing, typography } from '@/theme';
+import { spacing, typography } from '@/theme';
+import { Cores } from '@/theme/palettes';
+import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { formatDiaCompleto, formatDiaCurto, formatHora } from '@/utils/date';
 import { papelLabel, podeGerir } from '@/utils/papel';
 
@@ -47,6 +49,8 @@ const diaSemanaPorIndice: Record<number, DiaSemana> = {
 };
 
 export function EscalaFixaScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(criarEstilos);
   const { user } = useAuth();
   const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();
 
@@ -495,7 +499,7 @@ export function EscalaFixaScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: Cores) => StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,

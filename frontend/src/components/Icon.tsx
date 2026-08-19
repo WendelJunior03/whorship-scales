@@ -43,7 +43,10 @@ import {
   LayoutGrid,
   List,
   type LucideProps,
+  Moon,
   Music,
+  Smartphone,
+  Sun,
   Pencil,
   Play,
   Plus,
@@ -133,6 +136,9 @@ const MAPA = {
   'logo-youtube': SquarePlay,
   'text-outline': Type,
   'search-outline': Search,
+  'sunny-outline': Sun,
+  'moon-outline': Moon,
+  'phone-portrait-outline': Smartphone,
 } as const;
 
 export type IconName = keyof typeof MAPA;

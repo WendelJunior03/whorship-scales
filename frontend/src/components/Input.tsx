@@ -9,7 +9,9 @@ import {
   ViewStyle,
 } from 'react-native';
 import { Icon, IconName } from '@/components/Icon';
-import { colors, spacing, typography } from '@/theme';
+import { spacing, typography } from '@/theme';
+import { Cores } from '@/theme/palettes';
+import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 
 interface InputProps extends TextInputProps {
   icon: IconName;
@@ -18,6 +20,8 @@ interface InputProps extends TextInputProps {
 }
 
 export function Input({ icon, isPassword, containerStyle, style, onFocus, onBlur, ...rest }: InputProps) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(criarEstilos);
   const [hidden, setHidden] = useState(isPassword);
   const [isFocused, setIsFocused] = useState(false);
 
@@ -52,7 +56,7 @@ export function Input({ icon, isPassword, containerStyle, style, onFocus, onBlur
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: Cores) => StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',

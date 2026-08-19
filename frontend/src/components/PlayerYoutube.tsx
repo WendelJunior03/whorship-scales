@@ -1,13 +1,15 @@
 import React from 'react';
 import { Image, Linking, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Icon } from '@/components/Icon';
-import { colors, radius } from '@/theme';
+import { radius } from '@/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 /**
  * Player de vídeo do YouTube (spec 08, D-08.2). Web-first: embed via IFrame API. No nativo,
  * mostra a thumbnail e abre o vídeo no app/navegador (wrapper nativo fica pra fase nativa).
  */
 export function PlayerYoutube({ videoId }: { videoId: string }) {
+  const { colors } = useTheme();
   if (Platform.OS === 'web') {
     return (
       <View style={styles.webWrap}>

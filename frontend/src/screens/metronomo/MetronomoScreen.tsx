@@ -7,7 +7,9 @@ import { Header } from '@/components/Header';
 import { useMetronomo } from '@/hooks/useMetronomo';
 import { MainStackParamList } from '@/navigation/MainNavigator';
 import { ConfigMetronomo, TIMBRES } from '@/audio/metronomo';
-import { colors, fonts, radius, spacing, typography } from '@/theme';
+import { fonts, radius, spacing, typography } from '@/theme';
+import { Cores } from '@/theme/palettes';
+import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 
 const BPM_MIN = 40;
 const BPM_MAX = 240;
@@ -27,6 +29,7 @@ const VOLUMES = [
 const clampBpm = (b: number) => Math.min(BPM_MAX, Math.max(BPM_MIN, b));
 
 function Chip({ ativo, onPress, children }: { ativo: boolean; onPress: () => void; children: React.ReactNode }) {
+  const styles = useThemedStyles(criarEstilos);
   return (
     <TouchableOpacity onPress={onPress} style={[styles.chip, ativo && styles.chipAtivo]}>
       <Text style={[styles.chipTexto, ativo && styles.chipTextoAtivo]}>{children}</Text>
@@ -35,6 +38,8 @@ function Chip({ ativo, onPress, children }: { ativo: boolean; onPress: () => voi
 }
 
 export function MetronomoScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(criarEstilos);
   // Pode ser aberto pela música (spec 10 × 08): inicia no BPM salvo dela.
   const route = useRoute<RouteProp<MainStackParamList, 'Metronomo'>>();
   const [bpm, setBpm] = useState(() => clampBpm(route.params?.bpm ?? 100));
@@ -195,7 +200,7 @@ export function MetronomoScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: Cores) => StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,

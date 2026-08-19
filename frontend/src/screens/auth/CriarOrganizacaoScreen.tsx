@@ -8,13 +8,17 @@ import { AuthScaffold } from '@/components/AuthScaffold';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthStackParamList } from '@/navigation/AuthNavigator';
 import { ApiError } from '@/services/api';
-import { colors, spacing, typography } from '@/theme';
+import { spacing, typography } from '@/theme';
+import { Cores } from '@/theme/palettes';
+import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 
 type Props = {
   navigation: StackNavigationProp<AuthStackParamList, 'CriarOrganizacao'>;
 };
 
 export function CriarOrganizacaoScreen({ navigation }: Props) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(criarEstilos);
   const { criarOrganizacao } = useAuth();
 
   const [nomeOrg, setNomeOrg] = useState('');
@@ -130,7 +134,7 @@ export function CriarOrganizacaoScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: Cores) => StyleSheet.create({
   back: {
     flexDirection: 'row',
     alignItems: 'center',

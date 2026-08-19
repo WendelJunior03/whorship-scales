@@ -24,11 +24,15 @@ import { Papel } from '@/types';
 import { papelLabel, isAdmin } from '@/utils/papel';
 import { confirmAction } from '@/utils/confirm';
 import { formatTelefone } from '@/utils/telefone';
-import { colors, spacing, typography } from '@/theme';
+import { spacing, typography } from '@/theme';
+import { Cores } from '@/theme/palettes';
+import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 
 const PAPEIS: Papel[] = ['admin', 'ministro', 'vocal', 'membro'];
 
 export function DetalheMembroScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(criarEstilos);
   const route = useRoute<RouteProp<MainStackParamList, 'DetalheMembro'>>();
   const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();
   const { user } = useAuth();
@@ -293,7 +297,7 @@ export function DetalheMembroScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: Cores) => StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,

@@ -1,7 +1,8 @@
 import React from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
-import { colors } from '@/theme';
+import { Cores } from '@/theme/palettes';
+import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { AuthNavigator } from './AuthNavigator';
 import { MainNavigator } from './MainNavigator';
 
@@ -13,6 +14,8 @@ import { MainNavigator } from './MainNavigator';
  */
 export function RootNavigator() {
   const { isAuthenticated, isLoading } = useAuth();
+  const { colors } = useTheme();
+  const styles = useThemedStyles(criarEstilos);
 
   if (isLoading) {
     return (
@@ -25,7 +28,7 @@ export function RootNavigator() {
   return isAuthenticated ? <MainNavigator /> : <AuthNavigator />;
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: Cores) => StyleSheet.create({
   loading: {
     flex: 1,
     backgroundColor: colors.background,

@@ -15,7 +15,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { SeloPro } from '@/components/SeloPro';
 import { useOctapad } from '@/hooks/useOctapad';
 import { KIT_PADRAO, PadDef } from '@/audio/kits';
-import { colors, fonts, radius, spacing, typography } from '@/theme';
+import { fonts, radius, spacing, typography } from '@/theme';
+import { Cores } from '@/theme/palettes';
+import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 
 // Coluna do instrumento centralizada e com largura máxima (não estica no desktop).
 const MAX_LARGURA = 760;
@@ -34,6 +36,7 @@ function vibrar() {
 }
 
 function Pad({ pad, size, onHit }: { pad: PadDef; size: number; onHit: (id: string) => void }) {
+  const styles = useThemedStyles(criarEstilos);
   return (
     <Pressable style={[styles.padCelula, { width: size }]} onPressIn={() => onHit(pad.id)}>
       {({ pressed }) => (
@@ -59,6 +62,7 @@ function Pad({ pad, size, onHit }: { pad: PadDef; size: number; onHit: (id: stri
 }
 
 function Fader({ valor, onChange }: { valor: number; onChange: (v: number) => void }) {
+  const styles = useThemedStyles(criarEstilos);
   const [largura, setLargura] = useState(0);
   return (
     <Pressable
@@ -78,6 +82,8 @@ function Fader({ valor, onChange }: { valor: number; onChange: (v: number) => vo
 }
 
 export function OctapadScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(criarEstilos);
   const navigation = useNavigation();
   const { width } = useWindowDimensions();
   const { suportado, tocar } = useOctapad();
@@ -167,7 +173,7 @@ export function OctapadScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: Cores) => StyleSheet.create({
   raiz: { flex: 1, backgroundColor: colors.background },
   safe: { flex: 1 },
   container: { flex: 1, width: '100%', maxWidth: MAX_LARGURA, alignSelf: 'center' },
