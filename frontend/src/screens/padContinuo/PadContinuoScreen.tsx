@@ -11,8 +11,9 @@ import { colors, fonts, radius, spacing, typography } from '@/theme';
 // Coluna centralizada com largura máxima (não estica no desktop/PWA).
 const MAX_LARGURA = 640;
 // Fundo escuro dos pads (estilo neon: contorno/nota brilham em azul).
+// Ativo: azul bem visível (fica claro qual nota está tocando).
 const PAD_FILL = '#0A0E16';
-const PAD_FILL_ON = '#16223A';
+const PAD_FILL_ON = '#2C5AB0';
 
 /**
  * Barra de volume arrastável. Sem lib de slider no projeto — usa o sistema de toque
@@ -70,7 +71,7 @@ export function PadContinuoScreen() {
                 >
                   <View style={[styles.led, on && styles.ledOn]} />
                   <Text style={[styles.padNota, on && styles.padNotaAtiva]}>{nota}</Text>
-                  <Text style={styles.padLabel}>{NOTA_LABEL[nota]}</Text>
+                  <Text style={[styles.padLabel, on && styles.padLabelAtiva]}>{NOTA_LABEL[nota]}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -140,7 +141,7 @@ const styles = StyleSheet.create({
     backgroundColor: PAD_FILL_ON,
     borderColor: colors.primaryLight,
     shadowOpacity: 1,
-    shadowRadius: 18,
+    shadowRadius: 22,
   },
   led: {
     position: 'absolute',
@@ -167,12 +168,15 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 0 },
   },
   padNotaAtiva: {
-    color: colors.text,
+    color: colors.textInverse,
     textShadowColor: colors.primaryLight,
   },
   padLabel: {
     ...typography.caption,
     color: colors.textMuted,
+  },
+  padLabelAtiva: {
+    color: 'rgba(255,255,255,0.85)',
   },
   secao: {
     ...typography.bodySmall,
