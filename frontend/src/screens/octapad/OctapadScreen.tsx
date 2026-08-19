@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
@@ -9,6 +17,12 @@ import { useOctapad } from '@/hooks/useOctapad';
 import { KIT_PADRAO, PadDef } from '@/audio/kits';
 import { fonts, radius, spacing, typography } from '@/theme';
 import { dark } from '@/theme/dark';
+
+// Coluna do instrumento centralizada e com largura máxima (não estica no desktop).
+const MAX_LARGURA = 760;
+// A partir daqui vira 4 colunas (layout landscape do octapad real): iPad/desktop.
+const BREAKPOINT_LARGO = 640;
+const PAD_GAP = spacing.sm;
 
 // Gradientes que dão o aspecto de BORRACHA abaulada (domo): topo com leve brilho,
 // base bem escura. Ao afundar, escurece/achata.
@@ -20,9 +34,9 @@ function vibrar() {
   g.navigator?.vibrate?.(8);
 }
 
-function Pad({ pad, onHit }: { pad: PadDef; onHit: (id: string) => void }) {
+function Pad({ pad, size, onHit }: { pad: PadDef; size: number; onHit: (id: string) => void }) {
   return (
-    <Pressable style={styles.padCelula} onPressIn={() => onHit(pad.id)}>
+    <Pressable style={[styles.padCelula, { width: size }]} onPressIn={() => onHit(pad.id)}>
       {({ pressed }) => (
         <View style={[styles.padCorpo, pressed ? styles.padCorpoAfundado : styles.padCorpoRaised]}>
           <LinearGradient
@@ -31,9 +45,7 @@ function Pad({ pad, onHit }: { pad: PadDef; onHit: (id: string) => void }) {
             end={{ x: 0.8, y: 1 }}
             style={StyleSheet.absoluteFill}
           />
-          {/* brilho no topo da borracha */}
           <View style={styles.brilho} />
-          {/* LED do pad (acende ao tocar, na cor do pad) */}
           <View
             style={[
               styles.led,
@@ -68,8 +80,13 @@ function Fader({ valor, onChange }: { valor: number; onChange: (v: number) => vo
 
 export function OctapadScreen() {
   const navigation = useNavigation();
+  const { width } = useWindowDimensions();
   const { suportado, tocar } = useOctapad();
   const [volume, setVolume] = useState(0.85);
+  const [gridLargura, setGridLargura] = useState(0);
+
+  const colunas = width >= BREAKPOINT_LARGO ? 4 : 2;
+  const padSize = gridLargura > 0 ? (gridLargura - PAD_GAP * (colunas - 1)) / colunas : 0;
 
   function handlePad(id: string) {
     tocar(id, volume);
@@ -82,65 +99,70 @@ export function OctapadScreen() {
     <View style={styles.raiz}>
       <LinearGradient colors={dark.bgGradient} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-        <View style={styles.topo}>
-          <Pressable onPress={() => navigation.goBack()} hitSlop={10} style={styles.voltar}>
-            <Ionicons name="chevron-back" size={22} color={dark.text} />
-          </Pressable>
-          <View style={styles.marca}>
-            <LinearGradient
-              colors={[dark.primaryStrong, dark.primary]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.marcaBadge}
-            >
-              <Ionicons name="grid" size={16} color={dark.textInverse} />
-            </LinearGradient>
-            <View>
-              <Text style={styles.titulo}>Octapad</Text>
-              <Text style={styles.subtitulo}>Bateria eletrônica</Text>
+        <View style={styles.container}>
+          <View style={styles.topo}>
+            <Pressable onPress={() => navigation.goBack()} hitSlop={10} style={styles.voltar}>
+              <Ionicons name="chevron-back" size={22} color={dark.text} />
+            </Pressable>
+            <View style={styles.marca}>
+              <LinearGradient
+                colors={[dark.primaryStrong, dark.primary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.marcaBadge}
+              >
+                <Ionicons name="grid" size={16} color={dark.textInverse} />
+              </LinearGradient>
+              <View>
+                <Text style={styles.titulo}>Octapad</Text>
+                <Text style={styles.subtitulo}>Bateria eletrônica</Text>
+              </View>
             </View>
+            <View style={styles.voltar} />
           </View>
-          <View style={styles.voltar} />
+
+          {!suportado ? (
+            <View style={styles.aviso}>
+              <Ionicons name="musical-notes-outline" size={44} color={dark.textMuted} />
+              <Text style={styles.avisoTitulo}>Disponível na versão web</Text>
+              <Text style={styles.avisoTexto}>
+                O Octapad usa áudio de baixa latência via navegador. Abra o Deep Scales no
+                navegador pra tocar.
+              </Text>
+            </View>
+          ) : (
+            <ScrollView contentContainerStyle={styles.conteudo} showsVerticalScrollIndicator={false}>
+              <View style={styles.chassi}>
+                <View
+                  style={styles.grid}
+                  onLayout={(e) => setGridLargura(e.nativeEvent.layout.width)}
+                >
+                  {padSize > 0 &&
+                    KIT_PADRAO.map((pad) => (
+                      <Pad key={pad.id} pad={pad} size={padSize} onHit={handlePad} />
+                    ))}
+                </View>
+              </View>
+
+              <View style={styles.proCard}>
+                <Ionicons name="cloud-upload-outline" size={20} color={dark.primaryStrong} />
+                <View style={styles.proTexto}>
+                  <Text style={styles.proTitulo}>Seus samples e packs de sons</Text>
+                  <Text style={styles.proSub}>Suba seus próprios sons e presets — em breve.</Text>
+                </View>
+                <SeloPro />
+              </View>
+            </ScrollView>
+          )}
+
+          {suportado && (
+            <View style={styles.master}>
+              <Ionicons name="volume-medium" size={18} color={dark.textSecondary} />
+              <Fader valor={volume} onChange={setVolume} />
+              <Text style={styles.masterPct}>{Math.round(volume * 100)}%</Text>
+            </View>
+          )}
         </View>
-
-        {!suportado ? (
-          <View style={styles.aviso}>
-            <Ionicons name="musical-notes-outline" size={44} color={dark.textMuted} />
-            <Text style={styles.avisoTitulo}>Disponível na versão web</Text>
-            <Text style={styles.avisoTexto}>
-              O Octapad usa áudio de baixa latência via navegador. Abra o Deep Scales no
-              navegador pra tocar.
-            </Text>
-          </View>
-        ) : (
-          <ScrollView contentContainerStyle={styles.conteudo} showsVerticalScrollIndicator={false}>
-            {/* Chassi do instrumento com os 8 pads (2 x 4) */}
-            <View style={styles.chassi}>
-              <View style={styles.grid}>
-                {KIT_PADRAO.map((pad) => (
-                  <Pad key={pad.id} pad={pad} onHit={handlePad} />
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.proCard}>
-              <Ionicons name="cloud-upload-outline" size={20} color={dark.primaryStrong} />
-              <View style={styles.proTexto}>
-                <Text style={styles.proTitulo}>Seus samples e packs de sons</Text>
-                <Text style={styles.proSub}>Suba seus próprios sons e presets — em breve.</Text>
-              </View>
-              <SeloPro />
-            </View>
-          </ScrollView>
-        )}
-
-        {suportado && (
-          <View style={styles.master}>
-            <Ionicons name="volume-medium" size={18} color={dark.textSecondary} />
-            <Fader valor={volume} onChange={setVolume} />
-            <Text style={styles.masterPct}>{Math.round(volume * 100)}%</Text>
-          </View>
-        )}
       </SafeAreaView>
     </View>
   );
@@ -149,6 +171,7 @@ export function OctapadScreen() {
 const styles = StyleSheet.create({
   raiz: { flex: 1, backgroundColor: dark.bg },
   safe: { flex: 1 },
+  container: { flex: 1, width: '100%', maxWidth: MAX_LARGURA, alignSelf: 'center' },
   topo: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -163,7 +186,6 @@ const styles = StyleSheet.create({
   subtitulo: { ...typography.caption, color: dark.textMuted },
   conteudo: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, gap: spacing.lg },
 
-  // Chassi (moldura do instrumento em volta dos pads).
   chassi: {
     backgroundColor: '#0A0D12',
     borderRadius: radius.xxl,
@@ -171,8 +193,8 @@ const styles = StyleSheet.create({
     borderColor: '#05070A',
     padding: spacing.sm,
   },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: spacing.sm },
-  padCelula: { width: '48%', aspectRatio: 1.02 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: PAD_GAP },
+  padCelula: { aspectRatio: 1.02 },
   padCorpo: {
     flex: 1,
     borderRadius: 22,
@@ -198,14 +220,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     elevation: 1,
   },
-  brilho: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 2,
-    backgroundColor: 'rgba(255,255,255,0.07)',
-  },
+  brilho: { position: 'absolute', top: 0, left: 0, right: 0, height: 2, backgroundColor: 'rgba(255,255,255,0.07)' },
   led: {
     position: 'absolute',
     top: spacing.md,
