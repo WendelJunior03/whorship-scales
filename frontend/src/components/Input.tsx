@@ -8,11 +8,11 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, IconName } from '@/components/Icon';
 import { colors, spacing, typography } from '@/theme';
 
 interface InputProps extends TextInputProps {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
   isPassword?: boolean;
   containerStyle?: ViewStyle;
 }
@@ -23,7 +23,7 @@ export function Input({ icon, isPassword, containerStyle, style, onFocus, onBlur
 
   return (
     <View style={[styles.container, isFocused && styles.containerFocused, containerStyle]}>
-      <Ionicons name={icon} size={20} color={colors.textSecondary} style={styles.icon} />
+      <Icon name={icon} size={20} color={colors.textSecondary} style={styles.icon} />
       <TextInput
         style={[styles.input, style]}
         placeholderTextColor={colors.textMuted}
@@ -41,7 +41,7 @@ export function Input({ icon, isPassword, containerStyle, style, onFocus, onBlur
       />
       {isPassword && (
         <TouchableOpacity onPress={() => setHidden((prev) => !prev)} hitSlop={10}>
-          <Ionicons
+          <Icon
             name={hidden ? 'eye-outline' : 'eye-off-outline'}
             size={20}
             color={colors.textSecondary}

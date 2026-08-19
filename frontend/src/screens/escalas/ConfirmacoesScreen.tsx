@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '@/components/Icon';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -132,7 +132,7 @@ export function ConfirmacoesScreen() {
               <Text style={styles.cultoTitulo}>
                 {item.culto.tipo ?? `Culto de ${formatDiaSemana(item.culto.data_hora)}`}
               </Text>
-              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+              <Icon name="chevron-forward" size={18} color={colors.textMuted} />
             </View>
             <Text style={styles.cultoData}>
               {formatDiaCompleto(item.culto.data_hora)} · {formatHora(item.culto.data_hora)}

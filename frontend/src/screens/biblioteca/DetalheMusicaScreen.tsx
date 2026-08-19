@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '@/components/Icon';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -171,7 +171,7 @@ export function DetalheMusicaScreen() {
                         </Text>
                         {admin && (
                           <TouchableOpacity onPress={() => removerVideo(v)} hitSlop={8}>
-                            <Ionicons name="trash-outline" size={18} color={colors.error} />
+                            <Icon name="trash-outline" size={18} color={colors.error} />
                           </TouchableOpacity>
                         )}
                       </View>

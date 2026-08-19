@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, SectionList, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, IconName } from '@/components/Icon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -10,7 +10,7 @@ import { Notificacao, TipoNotificacao } from '@/types';
 import { colors, spacing, typography } from '@/theme';
 import { formatDataRelativa, formatHora } from '@/utils/date';
 
-const iconePorTipo: Record<TipoNotificacao, keyof typeof Ionicons.glyphMap> = {
+const iconePorTipo: Record<TipoNotificacao, IconName> = {
   escala: 'calendar',
   substituicao: 'swap-horizontal',
   confirmacao: 'checkmark-circle',
@@ -96,7 +96,7 @@ export function NotificacoesScreen() {
     <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.title}>Notificações</Text>
-        <Ionicons name="settings-outline" size={22} color={colors.text} />
+        <Icon name="settings-outline" size={22} color={colors.text} />
       </View>
 
       <SectionList
@@ -115,7 +115,7 @@ export function NotificacoesScreen() {
         renderItem={({ item }) => (
           <Card style={styles.item} onPress={() => handleAbrir(item)}>
             <View style={styles.itemIcon}>
-              <Ionicons name={iconePorTipo[item.tipo]} size={18} color={colors.primary} />
+              <Icon name={iconePorTipo[item.tipo]} size={18} color={colors.primary} />
             </View>
             <View style={styles.itemInfo}>
               <Text style={[styles.itemTitulo, !item.lida && styles.itemTituloNaoLido]}>

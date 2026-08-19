@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '@/components/Icon';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
@@ -63,7 +63,7 @@ export function CriarOrganizacaoScreen({ navigation }: Props) {
   return (
     <AuthScaffold>
       <TouchableOpacity style={styles.back} onPress={() => navigation.goBack()} hitSlop={10}>
-        <Ionicons name="chevron-back" size={22} color={colors.textSecondary} />
+        <Icon name="chevron-back" size={22} color={colors.textSecondary} />
         <Text style={styles.backText}>Voltar</Text>
       </TouchableOpacity>
 

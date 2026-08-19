@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '@/components/Icon';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
@@ -101,7 +101,7 @@ export function HomeScreen() {
   if (error) {
     return (
       <SafeAreaView style={[styles.screen, styles.centered]} edges={['top']}>
-        <Ionicons name="cloud-offline-outline" size={40} color={colors.textMuted} />
+        <Icon name="cloud-offline-outline" size={40} color={colors.textMuted} />
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity style={styles.retryButton} onPress={carregarDados}>
           <Text style={styles.retryText}>Tentar novamente</Text>
@@ -137,7 +137,7 @@ export function HomeScreen() {
           onPress={() => navigation.navigate('Notificacoes')}
           hitSlop={8}
         >
-          <Ionicons name="notifications-outline" size={22} color={colors.text} />
+          <Icon name="notifications-outline" size={22} color={colors.text} />
           {temNotificacaoNaoLida && <View style={styles.badgeDot} />}
         </TouchableOpacity>
       </View>
@@ -155,15 +155,15 @@ export function HomeScreen() {
           >
             <View style={styles.heroTop}>
               <View style={styles.heroIcon}>
-                <Ionicons name="musical-notes-outline" size={18} color={colors.primary} />
+                <Icon name="musical-notes-outline" size={18} color={colors.primary} />
               </View>
               <Text style={styles.heroLabel}>Próximo culto</Text>
-              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} style={styles.heroChevron} />
+              <Icon name="chevron-forward" size={18} color={colors.textMuted} style={styles.heroChevron} />
             </View>
             <Text style={styles.heroData}>{formatDiaCompleto(proximoCulto.culto.data_hora)}</Text>
             <View style={styles.heroFooter}>
               <View style={styles.heroChip}>
-                <Ionicons name="time-outline" size={14} color={colors.primary} />
+                <Icon name="time-outline" size={14} color={colors.primary} />
                 <Text style={styles.heroChipText}>{formatHora(proximoCulto.culto.data_hora)}</Text>
               </View>
               {proximoCulto.culto.tipo && <Text style={styles.heroTipo}>{proximoCulto.culto.tipo}</Text>}
@@ -185,7 +185,7 @@ export function HomeScreen() {
               onPress={() => navigation.navigate(atalho.route)}
             >
               <View style={styles.gridIcon}>
-                <Ionicons name={atalho.icon} size={20} color={colors.primary} />
+                <Icon name={atalho.icon} size={20} color={colors.primary} />
               </View>
               <Text style={styles.gridLabel}>{atalho.label}</Text>
               <Text style={styles.gridSublabel}>{atalho.sublabel}</Text>
@@ -202,7 +202,7 @@ export function HomeScreen() {
           minhaEscala.map((escala, index) => (
             <View key={`${escala.dia_semana}-${escala.funcao}-${index}`} style={styles.escalaCard}>
               <View style={styles.escalaIcon}>
-                <Ionicons name="repeat-outline" size={18} color={colors.primary} />
+                <Icon name="repeat-outline" size={18} color={colors.primary} />
               </View>
               <View>
                 <Text style={styles.escalaDia}>{capitalize(escala.dia_semana)}</Text>

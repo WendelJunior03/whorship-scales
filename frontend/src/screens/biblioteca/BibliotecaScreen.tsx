@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '@/components/Icon';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -91,7 +91,7 @@ export function BibliotecaScreen() {
         </View>
       ) : erro ? (
         <View style={styles.centro}>
-          <Ionicons name="cloud-offline-outline" size={40} color={colors.textMuted} />
+          <Icon name="cloud-offline-outline" size={40} color={colors.textMuted} />
           <Text style={styles.erroTexto}>{erro}</Text>
           <Button title="Tentar novamente" onPress={carregar} variant="outline" />
         </View>
@@ -117,7 +117,7 @@ export function BibliotecaScreen() {
               }
             >
               <View style={styles.cardIcone}>
-                <Ionicons name="musical-notes-outline" size={20} color={colors.primary} />
+                <Icon name="musical-notes-outline" size={20} color={colors.primary} />
               </View>
               <View style={styles.cardInfo}>
                 <Text style={styles.cardNome}>{item.nome}</Text>
@@ -127,7 +127,7 @@ export function BibliotecaScreen() {
                     .join(' · ') || 'Sem tom/BPM'}
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+              <Icon name="chevron-forward" size={18} color={colors.textMuted} />
             </TouchableOpacity>
           )}
         />

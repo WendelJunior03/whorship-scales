@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '@/components/Icon';
 import { Calendar, DateData } from 'react-native-calendars';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -163,7 +163,7 @@ export function EscalasScreen() {
             onPress={() => navigation.navigate('DetalhesCulto', { cultoId: item.id })}
           >
             <View style={styles.cultoIcon}>
-              <Ionicons name="musical-notes" size={18} color={colors.primary} />
+              <Icon name="musical-notes" size={18} color={colors.primary} />
             </View>
             <View style={styles.cultoInfo}>
               <Text style={styles.cultoTitulo}>
@@ -186,14 +186,14 @@ export function EscalasScreen() {
                 ]}
               />
             )}
-            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+            <Icon name="chevron-forward" size={18} color={colors.textMuted} />
           </Card>
         )}
       />
 
       {user?.papel === 'admin' && (
         <TouchableOpacity style={styles.fab} onPress={abrirNovoCulto}>
-          <Ionicons name="add" size={28} color={colors.textInverse} />
+          <Icon name="add" size={28} color={colors.textInverse} />
         </TouchableOpacity>
       )}
 

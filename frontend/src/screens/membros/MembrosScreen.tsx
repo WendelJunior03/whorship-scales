@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '@/components/Icon';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -148,7 +148,7 @@ export function MembrosScreen() {
               <Text style={styles.membroPapel}>{papelLabel[item.papel]}</Text>
             </View>
             <Badge label={papelOrgLabel[papelOrgDe(item)]} tone={papelOrgTone[papelOrgDe(item)]} />
-            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+            <Icon name="chevron-forward" size={18} color={colors.textMuted} />
           </Card>
         )}
       />
@@ -157,7 +157,7 @@ export function MembrosScreen() {
         style={styles.fab}
         onPress={() => navigation.navigate('DetalheMembro', { membroId: undefined })}
       >
-        <Ionicons name="add" size={28} color={colors.textInverse} />
+        <Icon name="add" size={28} color={colors.textInverse} />
       </TouchableOpacity>
     </SafeAreaView>
   );

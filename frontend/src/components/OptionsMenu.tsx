@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { ActivityIndicator, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, IconName } from '@/components/Icon';
 import { Button } from '@/components/Button';
 import { colors, spacing, typography } from '@/theme';
 
 export interface OptionsMenuAction {
   label: string;
-  icon?: keyof typeof Ionicons.glyphMap;
+  icon?: IconName;
   destructive?: boolean;
   onPress: () => void;
 }
@@ -30,7 +30,7 @@ export function OptionsMenu({ actions, loading }: OptionsMenuProps) {
   return (
     <>
       <TouchableOpacity onPress={() => setAberto(true)} hitSlop={10}>
-        <Ionicons name="ellipsis-vertical" size={18} color={colors.textMuted} />
+        <Icon name="ellipsis-vertical" size={18} color={colors.textMuted} />
       </TouchableOpacity>
 
       <Modal
@@ -51,7 +51,7 @@ export function OptionsMenu({ actions, loading }: OptionsMenuProps) {
                 }}
               >
                 {action.icon && (
-                  <Ionicons
+                  <Icon
                     name={action.icon}
                     size={20}
                     color={action.destructive ? colors.error : colors.text}

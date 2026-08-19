@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Alert, Modal, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, IconName } from '@/components/Icon';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Badge } from '@/components/Badge';
@@ -40,13 +40,13 @@ function RecursoProRow({
   label,
 }: {
   chave: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
   label: string;
 }) {
   const { liberado, isPro } = useRecurso(chave);
   return (
     <View style={styles.recursoRow}>
-      <Ionicons name={icon} size={18} color={colors.textSecondary} />
+      <Icon name={icon} size={18} color={colors.textSecondary} />
       <Text style={styles.recursoLabel}>{label}</Text>
       {liberado ? (
         isPro && <SeloPro />
@@ -148,7 +148,7 @@ export function PerfilScreen() {
     <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.title}>Meu Perfil</Text>
-        <Ionicons name="create-outline" size={22} color={colors.text} />
+        <Icon name="create-outline" size={22} color={colors.text} />
       </View>
 
       <ScrollView
@@ -161,7 +161,7 @@ export function PerfilScreen() {
             <Text style={styles.avatarText}>{user?.nome?.[0] ?? '?'}</Text>
           </View>
           <TouchableOpacity style={styles.cameraButton}>
-            <Ionicons name="camera" size={16} color={colors.textInverse} />
+            <Icon name="camera" size={16} color={colors.textInverse} />
           </TouchableOpacity>
         </View>
 
@@ -189,7 +189,7 @@ export function PerfilScreen() {
               onPress={compartilharCodigo}
               hitSlop={8}
             >
-              <Ionicons name="share-social-outline" size={18} color={colors.primary} />
+              <Icon name="share-social-outline" size={18} color={colors.primary} />
               <Text style={styles.conviteBotaoTexto}>Compartilhar</Text>
             </TouchableOpacity>
           </View>
@@ -218,9 +218,9 @@ export function PerfilScreen() {
               style={styles.menuItem}
               onPress={() => handleMenuPress(item.label)}
             >
-              <Ionicons name={item.icon} size={20} color={colors.textSecondary} />
+              <Icon name={item.icon} size={20} color={colors.textSecondary} />
               <Text style={styles.menuLabel}>{item.label}</Text>
-              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+              <Icon name="chevron-forward" size={18} color={colors.textMuted} />
             </TouchableOpacity>
           ))}
         </View>

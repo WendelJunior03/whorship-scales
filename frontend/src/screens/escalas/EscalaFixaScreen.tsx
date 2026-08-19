@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '@/components/Icon';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -333,7 +333,7 @@ export function EscalaFixaScreen() {
       </ScrollView>
 
       <TouchableOpacity style={styles.fab} onPress={abrirNovaEscala}>
-        <Ionicons name="add" size={28} color={colors.textInverse} />
+        <Icon name="add" size={28} color={colors.textInverse} />
       </TouchableOpacity>
 
       <Modal
@@ -369,7 +369,7 @@ export function EscalaFixaScreen() {
               style={styles.selectorInput}
               onPress={() => setMembroPickerAberto(true)}
             >
-              <Ionicons
+              <Icon
                 name="person-outline"
                 size={20}
                 color={colors.textSecondary}
@@ -381,12 +381,12 @@ export function EscalaFixaScreen() {
               >
                 {novoMembro ? novoMembro.nome : 'Selecionar membro'}
               </Text>
-              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+              <Icon name="chevron-forward" size={18} color={colors.textMuted} />
             </TouchableOpacity>
 
             <Text style={styles.formLabel}>Função</Text>
             <View style={styles.selectorInput}>
-              <Ionicons
+              <Icon
                 name="musical-notes-outline"
                 size={20}
                 color={colors.textSecondary}
