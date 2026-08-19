@@ -10,10 +10,11 @@ import { colors, fonts, radius, spacing, typography } from '@/theme';
 
 // Coluna centralizada com largura máxima (não estica no desktop/PWA).
 const MAX_LARGURA = 640;
-// Fundo escuro dos pads (estilo neon: contorno/nota brilham em azul).
-// Ativo: azul bem visível (fica claro qual nota está tocando).
+// Acento próprio da tela: roxo/violeta neon (o resto do app é azul).
+const ACENTO = '#A855F7'; // contorno + glow
+const ACENTO_CLARO = '#C084FC'; // borda ativa, nota, LED aceso
 const PAD_FILL = '#0A0E16';
-const PAD_FILL_ON = '#2C5AB0';
+const PAD_FILL_ON = '#6D28D9'; // roxo aceso (nota tocando)
 
 /**
  * Barra de volume arrastável. Sem lib de slider no projeto — usa o sistema de toque
@@ -120,18 +121,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.sm,
   },
-  // Pad neon: fundo escuro + contorno/glow azul.
+  // Pad neon: fundo escuro + contorno/glow roxo/violeta.
   pad: {
     width: '22%',
     aspectRatio: 1,
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: colors.primary,
+    borderColor: ACENTO,
     backgroundColor: PAD_FILL,
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.xs,
-    shadowColor: colors.primary,
+    shadowColor: ACENTO,
     shadowOpacity: 0.5,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 0 },
@@ -139,7 +140,7 @@ const styles = StyleSheet.create({
   },
   padAtivo: {
     backgroundColor: PAD_FILL_ON,
-    borderColor: colors.primaryLight,
+    borderColor: ACENTO_CLARO,
     shadowOpacity: 1,
     shadowRadius: 22,
   },
@@ -153,23 +154,23 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border,
   },
   ledOn: {
-    backgroundColor: colors.primaryLight,
-    shadowColor: colors.primaryLight,
+    backgroundColor: ACENTO_CLARO,
+    shadowColor: ACENTO_CLARO,
     shadowOpacity: 0.9,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 0 },
   },
   padNota: {
     ...typography.h3,
-    color: colors.primaryLight,
+    color: ACENTO_CLARO,
     fontFamily: fonts.bold,
-    textShadowColor: colors.primary,
+    textShadowColor: ACENTO,
     textShadowRadius: 8,
     textShadowOffset: { width: 0, height: 0 },
   },
   padNotaAtiva: {
     color: colors.textInverse,
-    textShadowColor: colors.primaryLight,
+    textShadowColor: ACENTO_CLARO,
   },
   padLabel: {
     ...typography.caption,
@@ -201,14 +202,14 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     borderRadius: radius.pill,
-    backgroundColor: colors.primary,
+    backgroundColor: ACENTO,
   },
   bolinha: {
     position: 'absolute',
     width: 18,
     height: 18,
     borderRadius: radius.pill,
-    backgroundColor: colors.primaryLight,
+    backgroundColor: ACENTO_CLARO,
     borderWidth: 2,
     borderColor: colors.background,
     marginLeft: -9,
