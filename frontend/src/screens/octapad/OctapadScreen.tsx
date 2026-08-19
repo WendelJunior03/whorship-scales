@@ -23,9 +23,10 @@ const MAX_LARGURA = 760;
 const BREAKPOINT_LARGO = 640;
 const PAD_GAP = spacing.sm;
 
-// Preenchimento escuro dos pads (estilo neon: contorno/label brilham na cor do pad).
-const PAD_FILL = '#0A0E16';
-const PAD_FILL_ON = '#141C2C';
+// Gradientes que dão o aspecto de BORRACHA abaulada (domo): topo com leve brilho,
+// base bem escura. Ao afundar, escurece/achata.
+const BORRACHA = ['#343A45', '#181B21'] as const;
+const BORRACHA_AFUNDADA = ['#1B1E25', '#0D0F14'] as const;
 
 function vibrar() {
   const g = globalThis as unknown as { navigator?: { vibrate?: (ms: number) => void } };
@@ -36,17 +37,21 @@ function Pad({ pad, size, onHit }: { pad: PadDef; size: number; onHit: (id: stri
   return (
     <Pressable style={[styles.padCelula, { width: size }]} onPressIn={() => onHit(pad.id)}>
       {({ pressed }) => (
-        <View
-          style={[
-            styles.padCorpo,
-            { borderColor: pad.cor, shadowColor: pad.cor },
-            pressed && styles.padCorpoOn,
-          ]}
-        >
-          <View style={[styles.led, { backgroundColor: pad.cor, shadowColor: pad.cor }]} />
-          <Text style={[styles.padNome, { color: pad.cor, textShadowColor: pad.cor }]}>
-            {pad.nome}
-          </Text>
+        <View style={[styles.padCorpo, pressed ? styles.padCorpoAfundado : styles.padCorpoRaised]}>
+          <LinearGradient
+            colors={pressed ? BORRACHA_AFUNDADA : BORRACHA}
+            start={{ x: 0.2, y: 0 }}
+            end={{ x: 0.8, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={styles.brilho} />
+          <View
+            style={[
+              styles.led,
+              pressed && { backgroundColor: pad.cor, shadowColor: pad.cor, shadowOpacity: 0.9 },
+            ]}
+          />
+          <Text style={[styles.padNome, pressed && { color: pad.cor }]}>{pad.nome}</Text>
         </View>
       )}
     </Pressable>
@@ -189,44 +194,44 @@ const styles = StyleSheet.create({
   },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: PAD_GAP },
   padCelula: { aspectRatio: 1.02 },
-  // Estilo neon: fundo escuro, contorno + glow na cor do pad.
   padCorpo: {
     flex: 1,
-    borderRadius: 16,
-    borderWidth: 2,
-    backgroundColor: PAD_FILL,
+    borderRadius: 22,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#05070A',
     alignItems: 'center',
-    justifyContent: 'center',
-    shadowOpacity: 0.65,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 0 },
+    justifyContent: 'flex-end',
+    paddingBottom: spacing.md,
+  },
+  padCorpoRaised: {
+    shadowColor: '#000',
+    shadowOpacity: 0.55,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
     elevation: 6,
   },
-  padCorpoOn: {
-    backgroundColor: PAD_FILL_ON,
-    shadowOpacity: 1,
-    shadowRadius: 22,
-    transform: [{ scale: 0.97 }],
+  padCorpoAfundado: {
+    transform: [{ scale: 0.965 }],
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
   },
-  // LED aceso no canto (cor do pad).
+  brilho: { position: 'absolute', top: 0, left: 0, right: 0, height: 2, backgroundColor: 'rgba(255,255,255,0.07)' },
   led: {
     position: 'absolute',
-    top: 8,
-    left: 8,
-    width: 8,
-    height: 8,
-    borderRadius: 2,
-    shadowOpacity: 0.9,
-    shadowRadius: 6,
+    top: spacing.md,
+    alignSelf: 'center',
+    width: 34,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#0D0F13',
+    shadowRadius: 8,
     shadowOffset: { width: 0, height: 0 },
   },
-  padNome: {
-    fontFamily: fonts.semibold,
-    fontSize: 13,
-    letterSpacing: 0.5,
-    textShadowRadius: 8,
-    textShadowOffset: { width: 0, height: 0 },
-  },
+  padNome: { ...typography.caption, color: colors.textMuted, fontFamily: fonts.semibold, letterSpacing: 0.5 },
 
   proCard: {
     flexDirection: 'row',

@@ -8,6 +8,12 @@ import { Note } from './padContinuoEngine';
 import { NOTA_LABEL } from './notasLabel';
 import { colors, fonts, radius, spacing, typography } from '@/theme';
 
+// Coluna centralizada com largura máxima (não estica no desktop/PWA).
+const MAX_LARGURA = 640;
+// Fundo escuro dos pads (estilo neon: contorno/nota brilham em azul).
+const PAD_FILL = '#0A0E16';
+const PAD_FILL_ON = '#16223A';
+
 /**
  * Barra de volume arrastável. Sem lib de slider no projeto — usa o sistema de toque
  * nativo do RN (`locationX`, relativo ao próprio elemento) em vez de medir posição na
@@ -46,34 +52,33 @@ export function PadContinuoScreen() {
     <SafeAreaView style={styles.screen} edges={['top']}>
       <Header title="Pads Contínuos" subtitle="Banco de Pads" showBack />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.aviso}>
-          <Ionicons name="information-circle-outline" size={18} color={colors.textSecondary} />
-          <Text style={styles.avisoTexto}>Toque nos pads para iniciar/parar as notas contínuas.</Text>
-        </View>
+        <View style={styles.container}>
+          <View style={styles.aviso}>
+            <Ionicons name="information-circle-outline" size={18} color={colors.textSecondary} />
+            <Text style={styles.avisoTexto}>Toque nos pads para iniciar/parar as notas contínuas.</Text>
+          </View>
 
-        <View style={styles.grid}>
-          {notas.map((nota: Note) => {
-            const on = ativos[nota];
-            return (
-              <TouchableOpacity
-                key={nota}
-                onPress={() => alternar(nota)}
-                style={[styles.pad, on && styles.padAtivo]}
-              >
-                <Text style={[styles.padNota, on && styles.padTextoAtivo]}>{nota}</Text>
-                <Text style={[styles.padLabel, on && styles.padTextoAtivo]}>{NOTA_LABEL[nota]}</Text>
-                <Ionicons
-                  name="pulse-outline"
-                  size={16}
-                  color={on ? colors.textInverse : colors.textMuted}
-                />
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+          <View style={styles.grid}>
+            {notas.map((nota: Note) => {
+              const on = ativos[nota];
+              return (
+                <TouchableOpacity
+                  key={nota}
+                  activeOpacity={0.9}
+                  onPress={() => alternar(nota)}
+                  style={[styles.pad, on && styles.padAtivo]}
+                >
+                  <View style={[styles.led, on && styles.ledOn]} />
+                  <Text style={[styles.padNota, on && styles.padNotaAtiva]}>{nota}</Text>
+                  <Text style={styles.padLabel}>{NOTA_LABEL[nota]}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
 
-        <Text style={styles.secao}>Volume geral</Text>
-        <BarraVolume valor={volumeGeral} onChange={ajustarVolumeGeral} />
+          <Text style={styles.secao}>Volume geral</Text>
+          <BarraVolume valor={volumeGeral} onChange={ajustarVolumeGeral} />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -86,13 +91,20 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.lg,
+  },
+  container: {
+    width: '100%',
+    maxWidth: MAX_LARGURA,
+    alignSelf: 'center',
     gap: spacing.lg,
   },
   aviso: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: radius.lg,
     padding: spacing.md,
   },
@@ -107,32 +119,60 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.sm,
   },
+  // Pad neon: fundo escuro + contorno/glow azul.
   pad: {
     width: '22%',
     aspectRatio: 1,
-    borderRadius: radius.xl,
+    borderRadius: 16,
     borderWidth: 2,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderColor: colors.primary,
+    backgroundColor: PAD_FILL,
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.xs,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 4,
   },
   padAtivo: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primaryDark,
+    backgroundColor: PAD_FILL_ON,
+    borderColor: colors.primaryLight,
+    shadowOpacity: 1,
+    shadowRadius: 18,
+  },
+  led: {
+    position: 'absolute',
+    top: 7,
+    left: 7,
+    width: 7,
+    height: 7,
+    borderRadius: 2,
+    backgroundColor: colors.border,
+  },
+  ledOn: {
+    backgroundColor: colors.primaryLight,
+    shadowColor: colors.primaryLight,
+    shadowOpacity: 0.9,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 0 },
   },
   padNota: {
     ...typography.h3,
-    color: colors.text,
+    color: colors.primaryLight,
     fontFamily: fonts.bold,
+    textShadowColor: colors.primary,
+    textShadowRadius: 8,
+    textShadowOffset: { width: 0, height: 0 },
+  },
+  padNotaAtiva: {
+    color: colors.text,
+    textShadowColor: colors.primaryLight,
   },
   padLabel: {
     ...typography.caption,
-    color: colors.textSecondary,
-  },
-  padTextoAtivo: {
-    color: colors.textInverse,
+    color: colors.textMuted,
   },
   secao: {
     ...typography.bodySmall,
@@ -148,7 +188,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 8,
     borderRadius: radius.pill,
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: colors.surfaceElevated,
     justifyContent: 'center',
   },
   trilhaPreenchida: {
@@ -164,10 +204,10 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: radius.pill,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryLight,
     borderWidth: 2,
-    borderColor: colors.surface,
-    marginLeft: -9, // centraliza a bolinha em cima do ponto exato do valor
+    borderColor: colors.background,
+    marginLeft: -9,
   },
   volumeTexto: {
     ...typography.bodySmall,
