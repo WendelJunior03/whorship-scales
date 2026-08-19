@@ -6,16 +6,47 @@ import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SeloPro } from '@/components/SeloPro';
 import { useOctapad } from '@/hooks/useOctapad';
-import { CATEGORIAS, KIT_PADRAO } from '@/audio/kits';
+import { KIT_PADRAO, PadDef } from '@/audio/kits';
 import { fonts, radius, spacing, typography } from '@/theme';
 import { dark } from '@/theme/dark';
+
+// Gradientes que dão o aspecto de BORRACHA abaulada (domo): topo com leve brilho,
+// base bem escura. Ao afundar, escurece/achata.
+const BORRACHA = ['#343A45', '#181B21'] as const;
+const BORRACHA_AFUNDADA = ['#1B1E25', '#0D0F14'] as const;
 
 function vibrar() {
   const g = globalThis as unknown as { navigator?: { vibrate?: (ms: number) => void } };
   g.navigator?.vibrate?.(8);
 }
 
-// Fader horizontal (o toque define o valor pela posição). Protótipo do controle "pro".
+function Pad({ pad, onHit }: { pad: PadDef; onHit: (id: string) => void }) {
+  return (
+    <Pressable style={styles.padCelula} onPressIn={() => onHit(pad.id)}>
+      {({ pressed }) => (
+        <View style={[styles.padCorpo, pressed ? styles.padCorpoAfundado : styles.padCorpoRaised]}>
+          <LinearGradient
+            colors={pressed ? BORRACHA_AFUNDADA : BORRACHA}
+            start={{ x: 0.2, y: 0 }}
+            end={{ x: 0.8, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+          {/* brilho no topo da borracha */}
+          <View style={styles.brilho} />
+          {/* LED do pad (acende ao tocar, na cor do pad) */}
+          <View
+            style={[
+              styles.led,
+              pressed && { backgroundColor: pad.cor, shadowColor: pad.cor, shadowOpacity: 0.9 },
+            ]}
+          />
+          <Text style={[styles.padNome, pressed && { color: pad.cor }]}>{pad.nome}</Text>
+        </View>
+      )}
+    </Pressable>
+  );
+}
+
 function Fader({ valor, onChange }: { valor: number; onChange: (v: number) => void }) {
   const [largura, setLargura] = useState(0);
   return (
@@ -38,7 +69,6 @@ function Fader({ valor, onChange }: { valor: number; onChange: (v: number) => vo
 export function OctapadScreen() {
   const navigation = useNavigation();
   const { suportado, tocar } = useOctapad();
-  const [ativo, setAtivo] = useState<string | null>(null);
   const [volume, setVolume] = useState(0.85);
 
   function handlePad(id: string) {
@@ -46,7 +76,6 @@ export function OctapadScreen() {
     if (Platform.OS === 'web') {
       vibrar();
     }
-    setAtivo(id);
   }
 
   return (
@@ -85,35 +114,14 @@ export function OctapadScreen() {
           </View>
         ) : (
           <ScrollView contentContainerStyle={styles.conteudo} showsVerticalScrollIndicator={false}>
-            {CATEGORIAS.map((categoria) => (
-              <View key={categoria} style={styles.grupo}>
-                <Text style={styles.grupoTitulo}>{categoria.toUpperCase()}</Text>
-                <View style={styles.grid}>
-                  {KIT_PADRAO.filter((p) => p.categoria === categoria).map((pad) => {
-                    const on = ativo === pad.id;
-                    return (
-                      <Pressable
-                        key={pad.id}
-                        onPressIn={() => handlePad(pad.id)}
-                        onPressOut={() => setAtivo((a) => (a === pad.id ? null : a))}
-                        style={[
-                          styles.pad,
-                          on && {
-                            borderColor: pad.cor,
-                            backgroundColor: dark.surfaceStrong,
-                            shadowColor: pad.cor,
-                          },
-                          on && styles.padGlow,
-                        ]}
-                      >
-                        <View style={[styles.padDot, { backgroundColor: pad.cor }]} />
-                        <Text style={styles.padNome}>{pad.nome}</Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
+            {/* Chassi do instrumento com os 8 pads (2 x 4) */}
+            <View style={styles.chassi}>
+              <View style={styles.grid}>
+                {KIT_PADRAO.map((pad) => (
+                  <Pad key={pad.id} pad={pad} onHit={handlePad} />
+                ))}
               </View>
-            ))}
+            </View>
 
             <View style={styles.proCard}>
               <Ionicons name="cloud-upload-outline" size={20} color={dark.primaryStrong} />
@@ -150,42 +158,67 @@ const styles = StyleSheet.create({
   },
   voltar: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   marca: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  marcaBadge: {
-    width: 34,
-    height: 34,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  marcaBadge: { width: 34, height: 34, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   titulo: { fontFamily: fonts.bold, fontSize: 18, color: dark.text },
   subtitulo: { ...typography.caption, color: dark.textMuted },
   conteudo: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, gap: spacing.lg },
-  grupo: { gap: spacing.sm },
-  grupoTitulo: {
-    ...typography.caption,
-    color: dark.textMuted,
-    fontFamily: fonts.semibold,
-    letterSpacing: 1.5,
+
+  // Chassi (moldura do instrumento em volta dos pads).
+  chassi: {
+    backgroundColor: '#0A0D12',
+    borderRadius: radius.xxl,
+    borderWidth: 1,
+    borderColor: '#05070A',
+    padding: spacing.sm,
   },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: spacing.sm },
-  pad: {
-    width: '31%',
-    aspectRatio: 1,
-    borderRadius: radius.xl,
+  padCelula: { width: '48%', aspectRatio: 1.02 },
+  padCorpo: {
+    flex: 1,
+    borderRadius: 22,
+    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: dark.border,
-    backgroundColor: dark.surface,
-    padding: spacing.md,
-    justifyContent: 'space-between',
+    borderColor: '#05070A',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingBottom: spacing.md,
   },
-  padGlow: {
-    shadowOpacity: 0.6,
-    shadowRadius: 16,
+  padCorpoRaised: {
+    shadowColor: '#000',
+    shadowOpacity: 0.55,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 6,
+  },
+  padCorpoAfundado: {
+    transform: [{ scale: 0.965 }],
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+  },
+  brilho: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 2,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+  },
+  led: {
+    position: 'absolute',
+    top: spacing.md,
+    alignSelf: 'center',
+    width: 34,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#0D0F13',
+    shadowRadius: 8,
     shadowOffset: { width: 0, height: 0 },
-    elevation: 8,
   },
-  padDot: { width: 12, height: 12, borderRadius: radius.pill },
-  padNome: { ...typography.bodySmall, color: dark.text, fontFamily: fonts.semibold },
+  padNome: { ...typography.caption, color: dark.textMuted, fontFamily: fonts.semibold, letterSpacing: 0.5 },
+
   proCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -199,6 +232,7 @@ const styles = StyleSheet.create({
   proTexto: { flex: 1, gap: 2 },
   proTitulo: { ...typography.bodySmall, color: dark.text, fontFamily: fonts.semibold },
   proSub: { ...typography.caption, color: dark.textMuted },
+
   master: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -210,21 +244,8 @@ const styles = StyleSheet.create({
     backgroundColor: dark.panel,
   },
   faderTrack: { flex: 1, height: 28, justifyContent: 'center' },
-  faderBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: 6,
-    borderRadius: radius.pill,
-    backgroundColor: dark.surface,
-  },
-  faderFill: {
-    position: 'absolute',
-    left: 0,
-    height: 6,
-    borderRadius: radius.pill,
-    backgroundColor: dark.primary,
-  },
+  faderBar: { position: 'absolute', left: 0, right: 0, height: 6, borderRadius: radius.pill, backgroundColor: dark.surface },
+  faderFill: { position: 'absolute', left: 0, height: 6, borderRadius: radius.pill, backgroundColor: dark.primary },
   faderThumb: {
     position: 'absolute',
     width: 20,
