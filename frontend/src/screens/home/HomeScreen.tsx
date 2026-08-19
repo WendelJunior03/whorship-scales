@@ -31,6 +31,7 @@ const ATALHOS_GESTAO = [
   { icon: 'musical-note-outline' as const, label: 'Afinador', sublabel: 'Afine o instrumento', route: 'Afinador' as const },
   { icon: 'grid-outline' as const, label: 'Octapad', sublabel: 'Pads de som', route: 'Octapad' as const },
   { icon: 'timer-outline' as const, label: 'Metrônomo', sublabel: 'BPM e tap tempo', route: 'Metronomo' as const },
+  { icon: 'videocam-outline' as const, label: 'Biblioteca', sublabel: 'Vídeos das músicas', route: 'Biblioteca' as const },
   { icon: 'pulse-outline' as const, label: 'Pads Contínuos', sublabel: 'Banco de Pads', route: 'PadContinuo' as const },
 ];
 
@@ -40,6 +41,7 @@ const ATALHOS_MEMBRO = [
   { icon: 'musical-note-outline' as const, label: 'Afinador', sublabel: 'Afine o instrumento', route: 'Afinador' as const },
   { icon: 'grid-outline' as const, label: 'Octapad', sublabel: 'Pads de som', route: 'Octapad' as const },
   { icon: 'timer-outline' as const, label: 'Metrônomo', sublabel: 'BPM e tap tempo', route: 'Metronomo' as const },
+  { icon: 'videocam-outline' as const, label: 'Biblioteca', sublabel: 'Vídeos das músicas', route: 'Biblioteca' as const },
   { icon: 'pulse-outline' as const, label: 'Pads Contínuos', sublabel: 'Banco de Pads', route: 'PadContinuo' as const },
 ];
 
