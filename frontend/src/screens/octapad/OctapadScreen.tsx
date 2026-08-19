@@ -15,8 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { SeloPro } from '@/components/SeloPro';
 import { useOctapad } from '@/hooks/useOctapad';
 import { KIT_PADRAO, PadDef } from '@/audio/kits';
-import { fonts, radius, spacing, typography } from '@/theme';
-import { dark } from '@/theme/dark';
+import { colors, fonts, radius, spacing, typography } from '@/theme';
 
 // Coluna do instrumento centralizada e com largura máxima (não estica no desktop).
 const MAX_LARGURA = 760;
@@ -97,21 +96,21 @@ export function OctapadScreen() {
 
   return (
     <View style={styles.raiz}>
-      <LinearGradient colors={dark.bgGradient} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={colors.bgGradient} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <View style={styles.container}>
           <View style={styles.topo}>
             <Pressable onPress={() => navigation.goBack()} hitSlop={10} style={styles.voltar}>
-              <Ionicons name="chevron-back" size={22} color={dark.text} />
+              <Ionicons name="chevron-back" size={22} color={colors.text} />
             </Pressable>
             <View style={styles.marca}>
               <LinearGradient
-                colors={[dark.primaryStrong, dark.primary]}
+                colors={[colors.primaryLight, colors.primary]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.marcaBadge}
               >
-                <Ionicons name="grid" size={16} color={dark.textInverse} />
+                <Ionicons name="grid" size={16} color={colors.textInverse} />
               </LinearGradient>
               <View>
                 <Text style={styles.titulo}>Octapad</Text>
@@ -123,7 +122,7 @@ export function OctapadScreen() {
 
           {!suportado ? (
             <View style={styles.aviso}>
-              <Ionicons name="musical-notes-outline" size={44} color={dark.textMuted} />
+              <Ionicons name="musical-notes-outline" size={44} color={colors.textMuted} />
               <Text style={styles.avisoTitulo}>Disponível na versão web</Text>
               <Text style={styles.avisoTexto}>
                 O Octapad usa áudio de baixa latência via navegador. Abra o Deep Scales no
@@ -145,7 +144,7 @@ export function OctapadScreen() {
               </View>
 
               <View style={styles.proCard}>
-                <Ionicons name="cloud-upload-outline" size={20} color={dark.primaryStrong} />
+                <Ionicons name="cloud-upload-outline" size={20} color={colors.primaryLight} />
                 <View style={styles.proTexto}>
                   <Text style={styles.proTitulo}>Seus samples e packs de sons</Text>
                   <Text style={styles.proSub}>Suba seus próprios sons e presets — em breve.</Text>
@@ -157,7 +156,7 @@ export function OctapadScreen() {
 
           {suportado && (
             <View style={styles.master}>
-              <Ionicons name="volume-medium" size={18} color={dark.textSecondary} />
+              <Ionicons name="volume-medium" size={18} color={colors.textSecondary} />
               <Fader valor={volume} onChange={setVolume} />
               <Text style={styles.masterPct}>{Math.round(volume * 100)}%</Text>
             </View>
@@ -169,7 +168,7 @@ export function OctapadScreen() {
 }
 
 const styles = StyleSheet.create({
-  raiz: { flex: 1, backgroundColor: dark.bg },
+  raiz: { flex: 1, backgroundColor: colors.background },
   safe: { flex: 1 },
   container: { flex: 1, width: '100%', maxWidth: MAX_LARGURA, alignSelf: 'center' },
   topo: {
@@ -182,8 +181,8 @@ const styles = StyleSheet.create({
   voltar: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   marca: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   marcaBadge: { width: 34, height: 34, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-  titulo: { fontFamily: fonts.bold, fontSize: 18, color: dark.text },
-  subtitulo: { ...typography.caption, color: dark.textMuted },
+  titulo: { fontFamily: fonts.bold, fontSize: 18, color: colors.text },
+  subtitulo: { ...typography.caption, color: colors.textMuted },
   conteudo: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, gap: spacing.lg },
 
   chassi: {
@@ -232,21 +231,21 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 0 },
   },
-  padNome: { ...typography.caption, color: dark.textMuted, fontFamily: fonts.semibold, letterSpacing: 0.5 },
+  padNome: { ...typography.caption, color: colors.textMuted, fontFamily: fonts.semibold, letterSpacing: 0.5 },
 
   proCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    backgroundColor: dark.panel,
+    backgroundColor: colors.surface,
     borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: dark.border,
+    borderColor: colors.border,
     padding: spacing.md,
   },
   proTexto: { flex: 1, gap: 2 },
-  proTitulo: { ...typography.bodySmall, color: dark.text, fontFamily: fonts.semibold },
-  proSub: { ...typography.caption, color: dark.textMuted },
+  proTitulo: { ...typography.bodySmall, color: colors.text, fontFamily: fonts.semibold },
+  proSub: { ...typography.caption, color: colors.textMuted },
 
   master: {
     flexDirection: 'row',
@@ -255,24 +254,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: dark.border,
-    backgroundColor: dark.panel,
+    borderTopColor: colors.border,
+    backgroundColor: colors.surface,
   },
   faderTrack: { flex: 1, height: 28, justifyContent: 'center' },
-  faderBar: { position: 'absolute', left: 0, right: 0, height: 6, borderRadius: radius.pill, backgroundColor: dark.surface },
-  faderFill: { position: 'absolute', left: 0, height: 6, borderRadius: radius.pill, backgroundColor: dark.primary },
+  faderBar: { position: 'absolute', left: 0, right: 0, height: 6, borderRadius: radius.pill, backgroundColor: colors.surfaceElevated },
+  faderFill: { position: 'absolute', left: 0, height: 6, borderRadius: radius.pill, backgroundColor: colors.primary },
   faderThumb: {
     position: 'absolute',
     width: 20,
     height: 20,
     marginLeft: -10,
     borderRadius: radius.pill,
-    backgroundColor: dark.primaryStrong,
+    backgroundColor: colors.primaryLight,
     borderWidth: 3,
-    borderColor: dark.bg,
+    borderColor: colors.background,
   },
-  masterPct: { ...typography.bodySmall, color: dark.textSecondary, width: 44, textAlign: 'right' },
+  masterPct: { ...typography.bodySmall, color: colors.textSecondary, width: 44, textAlign: 'right' },
   aviso: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.sm, padding: spacing.xl },
-  avisoTitulo: { ...typography.h3, color: dark.text, textAlign: 'center' },
-  avisoTexto: { ...typography.bodySmall, color: dark.textSecondary, textAlign: 'center' },
+  avisoTitulo: { ...typography.h3, color: colors.text, textAlign: 'center' },
+  avisoTexto: { ...typography.bodySmall, color: colors.textSecondary, textAlign: 'center' },
 });
