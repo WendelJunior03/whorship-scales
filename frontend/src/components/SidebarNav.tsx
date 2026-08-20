@@ -59,7 +59,7 @@ export function SidebarNav({ state, navigation, descriptors, tabIcon }: Props) {
     >
       <Pressable
         onPress={alternar}
-        style={[styles.item, styles.toggle, !expandida && styles.itemRecolhido]}
+        style={[styles.item, !expandida && styles.itemRecolhido]}
         accessibilityRole="button"
         accessibilityLabel={expandida ? 'Recolher menu' : 'Expandir menu'}
       >
@@ -138,9 +138,6 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
   },
   itemAtivo: {
     backgroundColor: colors.primarySoft,
-  },
-  toggle: {
-    alignSelf: 'flex-start',
   },
   iconWrap: {
     width: 40,
