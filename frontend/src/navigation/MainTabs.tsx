@@ -89,8 +89,8 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     fontWeight: '600',
   },
   iconWrap: {
-    width: 52,
-    height: 30,
+    width: 60,
+    height: 36,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
