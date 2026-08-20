@@ -1,10 +1,12 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createBottomTabNavigator, BottomTabBar } from '@react-navigation/bottom-tabs';
 import { Icon, IconName } from '@/components/Icon';
+import { SidebarNav } from '@/components/SidebarNav';
 import { spacing, radius } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
+import { useBreakpoint } from '@/hooks/useBreakpoint';
 import { HomeScreen } from '@/screens/home/HomeScreen';
 import { AgendaScreen } from '@/screens/escalas/AgendaScreen';
 import { RecursosScreen } from '@/screens/recursos/RecursosScreen';
@@ -32,11 +34,19 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 export function MainTabs() {
   const { colors } = useTheme();
   const styles = useThemedStyles(criarEstilos);
+  // A partir do breakpoint `lg` (desktop / tablet paisagem) as bottom tabs viram
+  // uma sidebar fixa à esquerda com botão de expandir/recolher (SidebarNav).
+  const { isDesktop } = useBreakpoint();
+
   return (
     <Tab.Navigator
+      tabBar={(props) =>
+        isDesktop ? <SidebarNav {...props} tabIcon={tabIcon} /> : <BottomTabBar {...props} />
+      }
       screenOptions={({ route }) => ({
         headerShown: false,
         sceneStyle: { flex: 1, backgroundColor: colors.background },
+        tabBarPosition: isDesktop ? 'left' : 'bottom',
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: styles.label,
@@ -79,8 +89,8 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     fontWeight: '600',
   },
   iconWrap: {
-    width: 52,
-    height: 30,
+    width: 60,
+    height: 36,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
