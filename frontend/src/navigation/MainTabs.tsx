@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon, IconName } from '@/components/Icon';
 import { spacing, radius } from '@/theme';
 import { Cores } from '@/theme/palettes';
@@ -36,6 +37,19 @@ export function MainTabs() {
   // A partir do breakpoint `lg` (desktop / tablet paisagem) as bottom tabs viram
   // uma sidebar fixa à esquerda (navigation rail do react-navigation v7).
   const { isDesktop } = useBreakpoint();
+  // `tabBarStyle` sobrescreve o padding com safe-area que o react-navigation aplica
+  // na sidebar, então reincorporamos os insets (status bar / home indicator /
+  // notch no iPad Pro) manualmente pra não colar o menu nas bordas.
+  const insets = useSafeAreaInsets();
+  const sidebarStyle = [
+    styles.sidebar,
+    {
+      width: 104 + insets.left,
+      paddingTop: spacing.lg + insets.top,
+      paddingBottom: spacing.md + insets.bottom,
+      paddingLeft: spacing.xs + insets.left,
+    },
+  ];
 
   return (
     <Tab.Navigator
@@ -47,7 +61,7 @@ export function MainTabs() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: styles.label,
-        tabBarStyle: isDesktop ? styles.sidebar : styles.bar,
+        tabBarStyle: isDesktop ? sidebarStyle : styles.bar,
         tabBarItemStyle: isDesktop ? styles.itemSidebar : styles.item,
         tabBarIcon: ({ color, focused }) => (
           <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
@@ -79,13 +93,13 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     paddingBottom: spacing.sm,
   },
   // Sidebar (desktop): rail vertical à esquerda com borda de separação.
+  // width/paddingTop/paddingBottom/paddingLeft são compostos no componente com os
+  // safe-area insets (ver `sidebarStyle`); aqui fica só o que é fixo.
   sidebar: {
     backgroundColor: colors.surface,
     borderRightColor: colors.border,
     borderRightWidth: 1,
-    width: 104,
-    paddingTop: spacing.lg,
-    paddingHorizontal: spacing.xs,
+    paddingRight: spacing.xs,
   },
   item: {
     paddingTop: 2,
