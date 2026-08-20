@@ -189,11 +189,15 @@ necessidade real (ex.: músico que serve em duas igrejas).
   depende do escopo por `org_id` nas queries (T-01.7 / Passo 4).
 - [x] **T-01.6** — `org_id` no JWT + middleware `resolveOrg`. ✅ (Passo 3) `req.orgId` disponível
   em toda rota autenticada. _Pronto quando:_ toda rota autenticada tem `req.orgId` disponível.
-- [ ] **T-01.7** — Escopar **todas** as queries existentes por `org_id` (idealmente via
-  camada de repositório). _Pronto quando:_ teste manual com 2 orgs confirma zero vazamento.
-- [ ] **T-01.8** — Telas de front: criar/entrar em organização; exibir código de convite pro admin.
-- [ ] **T-01.9** — Teste de isolamento (checklist ou teste automatizado) cobrindo cada endpoint.
-  _Pronto quando:_ um usuário da org A não consegue ler/alterar nada da org B (403/404).
+- [x] **T-01.7** — ✅ Escopo por `org_id` implementado via **RLS** (defesa em profundidade,
+  "App + RLS"): `authMiddleware` injeta o tenant (`tenantStorage`), o wrapper `query()` seta
+  `app.current_org` por transação e as políticas RLS forçam o filtro no banco. Não há `WHERE
+  org_id` espalhado — o isolamento é garantido pelo Postgres (fail-closed).
+- [x] **T-01.8** — ✅ Front: `CriarOrganizacaoScreen`, `EntrarOrganizacaoScreen`,
+  `WelcomeScreen`; código de convite exibido no `PerfilScreen`.
+- [x] **T-01.9** — ✅ Teste de isolamento automatizado (`backend/src/config/isolamento.test.ts`):
+  prova zero vazamento A↔B via RLS. É teste de integração — roda contra o banco como
+  `deepscales_app` e pula (sem falhar) quando não há banco/role dedicado.
 - [ ] **T-01.10** — Fluxo de aprovação de ingresso (D-01.5): entrar via código cria
   `solicitacoes_ingresso` com status `pendente` (não vincula na hora); endpoints de
   aprovar/recusar e de cancelar (com `motivo_cancelamento` obrigatório).

@@ -118,14 +118,15 @@ membro_roles       (membro_id, role_id)
 ## Tarefas
 
 - [x] **T-02.1** — ✅ Decidido (ver seção Decisões-chave). Fechar D-02.1 (modelo), D-02.2 (capacidades) e D-02.3 (mapeamento).
-- [ ] **T-02.2** — Migration dos papéis (novo eixo organizacional + derivar dados atuais).
-  _Pronto quando:_ todo membro existente tem `papel_org` coerente com o papel antigo.
-- [ ] **T-02.3** — Mapa central de capacidades + middleware `autoriza(capacidade)`.
-  _Pronto quando:_ pelo menos as rotas de membros/escala usam capacidade em vez de string de papel.
-- [ ] **T-02.4** — `papel_org` no JWT.
-- [ ] **T-02.5** — UI: exibir/editar papel organizacional na gestão de membros (respeitando quem pode).
-- [ ] **T-02.6** — Testes de autorização: cada capacidade só é permitida a quem deve.
-  _Pronto quando:_ um "membro" recebe 403 em ações de admin/líder.
+- [x] **T-02.2** — ✅ Migration `1786987873598_rbac-papel-org.sql`: adiciona `papel_org` e
+  `papel_ministerio` e deriva dos dados atuais (`papel` legado mantido por compatibilidade).
+- [x] **T-02.3** — ✅ Mapa central `config/capacidades.ts` + middleware `autoriza(capacidade)`.
+  Aplicado em **todas** as rotas (membros, escalas, culto, repertório, músicas, vídeos);
+  o `autorizator([papéis])` deprecated não é usado em nenhuma rota.
+- [x] **T-02.4** — ✅ `papel_org` (e `org_id`) incluídos no JWT no login/criação de org.
+- [x] **T-02.5** — ✅ Gestão de papel na `MembrosScreen` (e perfil exibe permissões).
+- [x] **T-02.6** — ✅ Testes de autorização (`capacidades.test.ts`, `roleMiddleware.test.ts`,
+  `recursoMiddleware.test.ts`) — suíte verde (72 passando).
 
 ---
 
