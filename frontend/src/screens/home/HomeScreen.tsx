@@ -23,29 +23,6 @@ import { Cores, Sombras } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { formatDiaCompleto, formatHora } from '@/utils/date';
 import { getSaudacao } from '@/utils/greeting';
-import { podeGerir, isAdmin } from '@/utils/papel';
-
-const ATALHOS_GESTAO = [
-  { icon: 'calendar-outline' as const, label: 'Escalas', sublabel: 'Ver escalas', route: 'Escalas' as const },
-  { icon: 'people-outline' as const, label: 'Membros', sublabel: 'Gerenciar', route: 'Membros' as const },
-  { icon: 'repeat-outline' as const, label: 'Escala Fixa', sublabel: 'Configurar', route: 'EscalaFixa' as const },
-  { icon: 'checkmark-done-outline' as const, label: 'Confirmações', sublabel: 'Acompanhar', route: 'Confirmacoes' as const },
-  { icon: 'musical-note-outline' as const, label: 'Afinador', sublabel: 'Afine o instrumento', route: 'Afinador' as const },
-  { icon: 'grid-outline' as const, label: 'Octapad', sublabel: 'Pads de som', route: 'Octapad' as const },
-  { icon: 'timer-outline' as const, label: 'Metrônomo', sublabel: 'BPM e tap tempo', route: 'Metronomo' as const },
-  { icon: 'videocam-outline' as const, label: 'Biblioteca', sublabel: 'Vídeos das músicas', route: 'Biblioteca' as const },
-  { icon: 'pulse-outline' as const, label: 'Pads Contínuos', sublabel: 'Banco de Pads', route: 'PadContinuo' as const },
-];
-
-const ATALHOS_MEMBRO = [
-  { icon: 'calendar-outline' as const, label: 'Escalas', sublabel: 'Ver cultos', route: 'Escalas' as const },
-  { icon: 'checkmark-done-outline' as const, label: 'Confirmar', sublabel: 'Sua presença', route: 'Agenda' as const },
-  { icon: 'musical-note-outline' as const, label: 'Afinador', sublabel: 'Afine o instrumento', route: 'Afinador' as const },
-  { icon: 'grid-outline' as const, label: 'Octapad', sublabel: 'Pads de som', route: 'Octapad' as const },
-  { icon: 'timer-outline' as const, label: 'Metrônomo', sublabel: 'BPM e tap tempo', route: 'Metronomo' as const },
-  { icon: 'videocam-outline' as const, label: 'Biblioteca', sublabel: 'Vídeos das músicas', route: 'Biblioteca' as const },
-  { icon: 'pulse-outline' as const, label: 'Pads Contínuos', sublabel: 'Banco de Pads', route: 'PadContinuo' as const },
-];
 
 export function HomeScreen() {
   const { colors } = useTheme();
@@ -115,10 +92,7 @@ export function HomeScreen() {
   }
 
   const primeiroNome = user?.nome?.split(' ')[0] ?? 'membro';
-  const atalhos =
-    user && podeGerir(user)
-      ? ATALHOS_GESTAO.filter((a) => a.label !== 'Membros' || isAdmin(user))
-      : ATALHOS_MEMBRO;
+  const musicas = proximoCulto?.repertorios ?? [];
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -179,24 +153,6 @@ export function HomeScreen() {
           </View>
         )}
 
-        <Text style={styles.sectionTitle}>Atalhos</Text>
-        <View style={styles.grid}>
-          {atalhos.map((atalho) => (
-            <TouchableOpacity
-              key={atalho.label}
-              style={styles.gridCard}
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate(atalho.route)}
-            >
-              <View style={styles.gridIcon}>
-                <Icon name={atalho.icon} size={20} color={colors.primary} />
-              </View>
-              <Text style={styles.gridLabel}>{atalho.label}</Text>
-              <Text style={styles.gridSublabel}>{atalho.sublabel}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
         <Text style={styles.sectionTitle}>Sua escala fixa</Text>
         {minhaEscala.length === 0 ? (
           <View style={styles.card}>
@@ -213,6 +169,38 @@ export function HomeScreen() {
                 <Text style={styles.escalaInfo}>{escala.funcao}</Text>
               </View>
             </View>
+          ))
+        )}
+
+        <Text style={styles.sectionTitle}>Músicas do próximo culto</Text>
+        {!proximoCulto ? (
+          <View style={styles.card}>
+            <Text style={styles.mutedText}>Sem culto agendado — nenhuma música por enquanto.</Text>
+          </View>
+        ) : musicas.length === 0 ? (
+          <View style={styles.card}>
+            <Text style={styles.mutedText}>O repertório deste culto ainda não foi definido.</Text>
+          </View>
+        ) : (
+          musicas.map((musica) => (
+            <TouchableOpacity
+              key={musica.id}
+              style={styles.musicaCard}
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('DetalhesCulto', { cultoId: proximoCulto.culto.id })}
+            >
+              <View style={styles.musicaIcon}>
+                <Icon name="musical-note-outline" size={18} color={colors.primary} />
+              </View>
+              <Text style={styles.musicaNome} numberOfLines={1}>
+                {musica.nome}
+              </Text>
+              {!!musica.tom && (
+                <View style={styles.tomChip}>
+                  <Text style={styles.tomText}>{musica.tom}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
           ))
         )}
       </ScrollView>
@@ -390,38 +378,41 @@ const criarEstilos = (colors: Cores, shadows: Sombras) => StyleSheet.create({
     color: colors.text,
     marginTop: spacing.sm,
   },
-  grid: {
+  musicaCard: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  gridCard: {
-    width: '47%',
+    alignItems: 'center',
+    gap: spacing.md,
     backgroundColor: colors.surface,
     borderRadius: radius.xl,
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.md,
-    gap: 4,
     ...shadows.sm,
   },
-  gridIcon: {
-    width: 40,
-    height: 40,
+  musicaIcon: {
+    width: 36,
+    height: 36,
     borderRadius: radius.md,
     backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.xs,
   },
-  gridLabel: {
+  musicaNome: {
     ...typography.body,
     color: colors.text,
     fontFamily: fonts.semibold,
+    flex: 1,
   },
-  gridSublabel: {
-    ...typography.caption,
-    color: colors.textSecondary,
+  tomChip: {
+    backgroundColor: colors.primarySoft,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+  },
+  tomText: {
+    ...typography.bodySmall,
+    color: colors.primary,
+    fontFamily: fonts.semibold,
   },
   escalaCard: {
     flexDirection: 'row',
