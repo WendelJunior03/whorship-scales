@@ -81,6 +81,34 @@ Exemplos da spec: `QG-83HF92`, `ADCENTRAL-92AB`.
 
 ---
 
+### D-01.5 — Fluxo de aprovação da entrada (solicitação de ingresso)
+
+Entrar via código **não** vincula o usuário na hora: gera uma **solicitação de ingresso
+pendente** que precisa ser **aprovada dentro do APP** antes de o integrante virar membro
+efetivo da organização/ministério.
+
+**Comportamento pedido (dono):**
+
+- **Estado pendente (lado do integrante):** enquanto a solicitação não é aprovada, o app
+  fica numa **tela de "solicitação pendente de aprovação"**, exibindo:
+  - o **nome da organização/igreja** para a qual pediu entrada;
+  - um botão **"Cancelar solicitação"**.
+- **Cancelamento:** ao cancelar, o app **pergunta o motivo** ("por que está cancelando a
+  solicitação?"). O motivo é **obrigatório** registrar e **fica visível para o admin**.
+- **Notificação ao admin:** quando o integrante cancela, o **admin recebe uma notificação**
+  de que a solicitação foi cancelada, **com o motivo informado**.
+
+**Decisão: ✅ Quem aprova — Administrador OU Líder.** A aprovação/recusa da solicitação
+pode ser feita pelo **Administrador** ou delegada a um **Líder** do ministério (não-admin).
+Modelar como capacidade `ingresso.aprovar` na spec 02 (RBAC), concedida a Administrador e Líder.
+
+**Decisão: ✅ Escopo — entrada em um ministério específico.** A solicitação já é
+**direcionada a um ministério** (ex.: louvor), não à organização de forma genérica — coerente
+com "integrantes do ministério". Logo `solicitacoes_ingresso.ministerio_id` é **obrigatório**,
+e a tela de pendente exibe o ministério além do nome da organização.
+
+---
+
 ## Modelo de dados (esboço)
 
 ```
@@ -103,6 +131,18 @@ excecoes       + org_id
 repertorio     + org_id
 notificacoes   + org_id
 -- (e todas as tabelas dos módulos futuros nascem com org_id)
+
+-- Solicitação de ingresso (fluxo de aprovação — D-01.5):
+solicitacoes_ingresso
+  id                    PK
+  org_id                FK -> organizacoes.id   -- org alvo (resolvida pelo código)
+  membro_id             FK -> membros.id        -- quem solicitou
+  status                text   -- 'pendente' | 'aprovada' | 'recusada' | 'cancelada'
+  motivo_cancelamento   text   -- preenchido quando status = 'cancelada' (obrigatório no cancelamento)
+  aprovada_por          FK -> membros.id  NULL  -- quem aprovou (Administrador ou Líder — D-01.5)
+  ministerio_id         FK  NOT NULL            -- ministério alvo da solicitação (entrada por ministério — D-01.5)
+  created_at            timestamptz
+  updated_at            timestamptz
 ```
 
 Observações:
@@ -154,6 +194,17 @@ necessidade real (ex.: músico que serve em duas igrejas).
 - [ ] **T-01.8** — Telas de front: criar/entrar em organização; exibir código de convite pro admin.
 - [ ] **T-01.9** — Teste de isolamento (checklist ou teste automatizado) cobrindo cada endpoint.
   _Pronto quando:_ um usuário da org A não consegue ler/alterar nada da org B (403/404).
+- [ ] **T-01.10** — Fluxo de aprovação de ingresso (D-01.5): entrar via código cria
+  `solicitacoes_ingresso` com status `pendente` (não vincula na hora); endpoints de
+  aprovar/recusar e de cancelar (com `motivo_cancelamento` obrigatório).
+  _Pronto quando:_ o integrante só vira membro efetivo após aprovação; cancelar exige motivo.
+- [ ] **T-01.11** — Front do integrante: tela de "solicitação pendente" mostrando o **nome
+  da organização** + botão **Cancelar**; ao cancelar, prompt de **motivo** obrigatório.
+  _Pronto quando:_ integrante com solicitação pendente vê a tela e consegue cancelar informando o motivo.
+- [ ] **T-01.12** — Notificação ao admin quando o integrante cancela, **exibindo o motivo**
+  informado. _Pronto quando:_ o admin recebe a notificação de cancelamento com o texto do motivo.
+- [x] **T-01.13** — ✅ Fechar D-01.5: **Administrador ou Líder** aprovam (capacidade
+  `ingresso.aprovar`); entrada é **por ministério** (`ministerio_id` obrigatório). Refletir na spec 02.
 
 ---
 

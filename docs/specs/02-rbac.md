@@ -56,7 +56,9 @@ Independente de A/B/C, a spec original pede "sistema de permissões desacoplado"
 regras estão como listas de strings nas rotas. Proposta:
 
 - Definir um mapa central de **capacidades → quem pode** (ex.: `escala.gerenciar`,
-  `lideranca.convidar`, `reuniao.agendar`, `membro.promover`).
+  `lideranca.convidar`, `reuniao.agendar`, `membro.promover`, `ingresso.aprovar`).
+  - `ingresso.aprovar` (aprovar/recusar solicitações de ingresso — ver spec 01 D-01.5):
+    concedida a **Administrador** e **Líder** do ministério.
 - Middleware `autoriza('reuniao.agendar')` em vez de `autorizator(['admin'])`.
 - Vantagem: mudar quem pode fazer o quê acontece em **um só lugar**, não em N rotas.
 
