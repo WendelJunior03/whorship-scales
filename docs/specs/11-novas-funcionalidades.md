@@ -145,10 +145,10 @@ membro_classificacao (membro_id, classificacao_id)
   membro. ⬜ **Falta** CRUD de **equipes** e **classificações** (schema pronto, endpoints a fazer).
 - [ ] **T-11.5** — UI: aba Ministério (Informações / Membros x/y), gestão de equipes/funções.
 
-> ⚠️ **Verificação:** type-check limpo e suíte verde (75 testes). A **execução das migrations
-> e os testes de isolamento não foram rodados contra o banco** (Neon inacessível deste
-> ambiente) — validar `npm run migrate:up` + `npm run seed` + `isolamento.test.ts` num
-> ambiente com banco antes de considerar o schema aplicado.
+> ✅ **Verificação:** migrations aplicadas com sucesso (schema + backfill) num banco local;
+> type-check limpo; suíte verde com **81 testes** — incluindo os 6 de isolamento (RLS) que
+> rodaram contra o banco. Backfill conferido: 1 ministério por org, membros vinculados com
+> papel derivado do `papel_org` e funções derivadas de `papel_ministerio`.
 
 ---
 
