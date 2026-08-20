@@ -1,26 +1,44 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Platform } from 'react-native';
-import { audioSuportado, criarMotorWeb, MotorAudio } from '@/audio/motor';
+import { Amostra, amostraDeArquivo, audioSuportado, criarMotorWeb, MotorAudio } from '@/audio/motor';
 import { KIT_PADRAO } from '@/audio/kits';
+import { BIBLIOTECA_DRUMS } from '@/audio/bibliotecaDrums';
 
 /**
  * Octapad (spec 05): expõe `tocar(id)` com latência mínima. Cria/retoma o AudioContext
  * no primeiro toque (exigência do iOS Safari — autoplay policy). Web-first: em nativo,
  * `suportado` é false e a tela mostra o aviso.
+ *
+ * `somPads` (spec 06 — Biblioteca de Drums): mapa padId → id de som da biblioteca,
+ * substitui a amostra sintetizada daquele pad por um arquivo real.
  */
-export function useOctapad() {
+export function useOctapad(somPads: Record<string, string> = {}) {
   const motorRef = useRef<MotorAudio | null>(null);
   const prontoRef = useRef(false);
   const suportado = Platform.OS === 'web' && audioSuportado();
 
+  if (!motorRef.current && suportado) {
+    motorRef.current = criarMotorWeb();
+  }
+
+  const amostras = useMemo<Amostra[]>(
+    () =>
+      KIT_PADRAO.map((pad) => {
+        const somId = somPads[pad.id];
+        const item = somId ? BIBLIOTECA_DRUMS.find((s) => s.id === somId) : undefined;
+        return item ? amostraDeArquivo(pad.id, `/drums/${item.arquivo}`) : pad;
+      }),
+    [somPads],
+  );
+
+  useEffect(() => {
+    motorRef.current?.carregar(amostras);
+  }, [amostras]);
+
   const tocar = useCallback(
     async (id: string, volume?: number) => {
-      if (!suportado) {
+      if (!suportado || !motorRef.current) {
         return;
-      }
-      if (!motorRef.current) {
-        motorRef.current = criarMotorWeb();
-        motorRef.current.carregar(KIT_PADRAO);
       }
       if (!prontoRef.current) {
         await motorRef.current.iniciar(); // dentro do gesto de toque

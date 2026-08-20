@@ -32,6 +32,7 @@ export interface ContextoAudio {
   createBuffer(canais: number, tamanho: number, sampleRate: number): BufferAudio;
   createBufferSource(): SourceLike;
   createGain(): GainLike;
+  decodeAudioData(dados: ArrayBuffer): Promise<BufferAudio>;
 }
 type ContextoCtor = new () => ContextoAudio;
 interface GlobalAudio {
@@ -39,10 +40,22 @@ interface GlobalAudio {
   webkitAudioContext?: ContextoCtor;
 }
 
-/** Uma amostra tocável: um id e como renderizar seu buffer (sintetizado ou, no futuro, decodificado de um arquivo). */
+/** Uma amostra tocável: um id e como renderizar seu buffer (sintetizado ou decodificado de um arquivo). */
 export interface Amostra {
   id: string;
-  render: (ctx: ContextoAudio) => BufferAudio;
+  render: (ctx: ContextoAudio) => BufferAudio | Promise<BufferAudio>;
+}
+
+/** Amostra a partir de um arquivo de áudio (spec 06 — Biblioteca de Drums). Busca e decodifica sob demanda. */
+export function amostraDeArquivo(id: string, url: string): Amostra {
+  return {
+    id,
+    render: async (ctx) => {
+      const resposta = await fetch(url);
+      const dados = await resposta.arrayBuffer();
+      return ctx.decodeAudioData(dados);
+    },
+  };
 }
 
 export interface MotorAudio {
@@ -70,7 +83,7 @@ export function criarMotorWeb(): MotorAudio {
       return;
     }
     for (const a of amostras) {
-      buffers.set(a.id, a.render(ctx));
+      Promise.resolve(a.render(ctx)).then((buffer) => buffers.set(a.id, buffer));
     }
   };
 
@@ -96,7 +109,10 @@ export function criarMotorWeb(): MotorAudio {
       if (ctx) {
         renderizar(amostras);
       } else {
-        pendentes = amostras;
+        // Mescla por id (não substitui) — senão uma 2ª chamada antes do contexto existir
+        // (ex.: recarregar só o pad que teve o som trocado) perderia as amostras anteriores.
+        const ids = new Set(amostras.map((a) => a.id));
+        pendentes = [...pendentes.filter((p) => !ids.has(p.id)), ...amostras];
       }
     },
     tocar(id, volume = 1) {

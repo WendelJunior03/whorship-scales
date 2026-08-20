@@ -8,6 +8,7 @@ import { DetalhesCultoScreen } from '@/screens/escalas/DetalhesCultoScreen';
 import { MembrosScreen } from '@/screens/membros/MembrosScreen';
 import { DetalheMembroScreen } from '@/screens/membros/DetalheMembroScreen';
 import { OctapadScreen } from '@/screens/octapad/OctapadScreen';
+import { BibliotecaDrumsScreen } from '@/screens/octapad/BibliotecaDrumsScreen';
 import { AfinadorScreen } from '@/screens/afinador/AfinadorScreen';
 import { MetronomoScreen } from '@/screens/metronomo/MetronomoScreen';
 import { BibliotecaScreen } from '@/screens/biblioteca/BibliotecaScreen';
@@ -23,6 +24,7 @@ export type MainStackParamList = {
   Membros: undefined;
   DetalheMembro: { membroId?: number };
   Octapad: undefined;
+  BibliotecaDrums: { padId?: string } | undefined;
   Afinador: undefined;
   Metronomo: { bpm?: number } | undefined;
   Biblioteca: undefined;
@@ -43,6 +45,7 @@ export function MainNavigator() {
       <Stack.Screen name="Membros" component={MembrosScreen} />
       <Stack.Screen name="DetalheMembro" component={DetalheMembroScreen} />
       <Stack.Screen name="Octapad" component={OctapadScreen} />
+      <Stack.Screen name="BibliotecaDrums" component={BibliotecaDrumsScreen} />
       <Stack.Screen name="Afinador" component={AfinadorScreen} />
       <Stack.Screen name="Metronomo" component={MetronomoScreen} />
       <Stack.Screen name="Biblioteca" component={BibliotecaScreen} />
