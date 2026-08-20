@@ -5,6 +5,7 @@ import { Icon, IconName } from '@/components/Icon';
 import { spacing, radius } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
+import { useBreakpoint } from '@/hooks/useBreakpoint';
 import { HomeScreen } from '@/screens/home/HomeScreen';
 import { AgendaScreen } from '@/screens/escalas/AgendaScreen';
 import { RecursosScreen } from '@/screens/recursos/RecursosScreen';
@@ -32,16 +33,22 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 export function MainTabs() {
   const { colors } = useTheme();
   const styles = useThemedStyles(criarEstilos);
+  // A partir do breakpoint `lg` (desktop / tablet paisagem) as bottom tabs viram
+  // uma sidebar fixa à esquerda (navigation rail do react-navigation v7).
+  const { isDesktop } = useBreakpoint();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         sceneStyle: { flex: 1, backgroundColor: colors.background },
+        tabBarPosition: isDesktop ? 'left' : 'bottom',
+        tabBarVariant: isDesktop ? 'material' : 'uikit',
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: styles.label,
-        tabBarStyle: styles.bar,
-        tabBarItemStyle: styles.item,
+        tabBarStyle: isDesktop ? styles.sidebar : styles.bar,
+        tabBarItemStyle: isDesktop ? styles.itemSidebar : styles.item,
         tabBarIcon: ({ color, focused }) => (
           <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
             <Icon name={tabIcon[route.name]} size={22} color={color} />
@@ -71,8 +78,20 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     paddingTop: spacing.xs,
     paddingBottom: spacing.sm,
   },
+  // Sidebar (desktop): rail vertical à esquerda com borda de separação.
+  sidebar: {
+    backgroundColor: colors.surface,
+    borderRightColor: colors.border,
+    borderRightWidth: 1,
+    width: 104,
+    paddingTop: spacing.lg,
+    paddingHorizontal: spacing.xs,
+  },
   item: {
     paddingTop: 2,
+  },
+  itemSidebar: {
+    paddingVertical: spacing.sm,
   },
   label: {
     fontSize: 11,

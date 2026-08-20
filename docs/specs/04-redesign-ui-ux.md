@@ -93,11 +93,14 @@ Todas as existentes + as novas da fundação:
 - [x] **T-04.1** — ✅ Decidido (ver seção Decisões-chave). Fechar D-04.1, D-04.2, D-04.3 (e definir PWA-first vs. nativo).
 - [ ] **T-04.2** — Auditoria visual da referência: extrair princípios (grid, espaçamento,
   tipografia, densidade) — **sem copiar**. Entregável: um doc curto de diretrizes.
-- [ ] **T-04.3** — Definir **design tokens** (cores, tipografia, spacing, radius, sombras,
-  estados) evoluindo o `theme/` atual. _Pronto quando:_ tokens documentados e aplicáveis.
+- [x] **T-04.3** — ✅ **Design tokens** definidos e documentados: `theme/` cobre cores
+  (por tema claro/escuro), tipografia, spacing, radius, sombras, estados; adicionado token de
+  **breakpoints** (`theme/breakpoints.ts`) e doc de referência em `frontend/src/theme/README.md`.
 - [ ] **T-04.4** — Recriar o kit de componentes base como design system (Button, Input, Card,
   Badge, Header, Menu, + novos: Tabs, Sidebar, Modal, EmptyState, Skeleton/Loading, Toast).
-- [ ] **T-04.5** — Layout responsivo (tabs no mobile / sidebar no desktop) — D-04.3.
+- [x] **T-04.5** — ✅ **Layout responsivo**: bottom tabs no mobile viram **sidebar fixa** a
+  partir de `lg` (1024px) via navigation rail do react-navigation v7 (`tabBarPosition: 'left'`
+  + `tabBarVariant: 'material'`), com hook `useBreakpoint()` — D-04.3.
 - [ ] **T-04.6** — Redesenhar o **Dashboard/Home** como vitrine do novo padrão (primeira tela).
 - [ ] **T-04.7** — Introduzir a lib de animação escolhida + micro-animações (transições,
   press states, entrada de listas). _Pronto quando:_ navegação e cards têm micro-animações suaves.

@@ -3,6 +3,7 @@ import { typography, fonts } from './typography';
 import { spacing } from './spacing';
 import { radius } from './radius';
 import { shadows } from './shadows';
+import { breakpoints } from './breakpoints';
 
 export const theme = {
   colors,
@@ -11,8 +12,10 @@ export const theme = {
   spacing,
   radius,
   shadows,
+  breakpoints,
 };
 
 export type Theme = typeof theme;
 
-export { colors, typography, fonts, spacing, radius, shadows };
+export { colors, typography, fonts, spacing, radius, shadows, breakpoints };
+export type { Breakpoint } from './breakpoints';
