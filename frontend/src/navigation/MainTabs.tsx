@@ -7,12 +7,14 @@ import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { HomeScreen } from '@/screens/home/HomeScreen';
 import { AgendaScreen } from '@/screens/escalas/AgendaScreen';
+import { RecursosScreen } from '@/screens/recursos/RecursosScreen';
 import { NotificacoesScreen } from '@/screens/notificacoes/NotificacoesScreen';
 import { PerfilScreen } from '@/screens/perfil/PerfilScreen';
 
 export type MainTabParamList = {
   Home: undefined;
   Agenda: undefined;
+  Recursos: undefined;
   Notificacoes: undefined;
   Perfil: undefined;
 };
@@ -20,6 +22,7 @@ export type MainTabParamList = {
 const tabIcon: Record<keyof MainTabParamList, IconName> = {
   Home: 'home',
   Agenda: 'calendar',
+  Recursos: 'grid',
   Notificacoes: 'notifications',
   Perfil: 'person',
 };
@@ -48,6 +51,7 @@ export function MainTabs() {
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Início' }} />
       <Tab.Screen name="Agenda" component={AgendaScreen} options={{ title: 'Agenda' }} />
+      <Tab.Screen name="Recursos" component={RecursosScreen} options={{ title: 'Recursos' }} />
       <Tab.Screen
         name="Notificacoes"
         component={NotificacoesScreen}
