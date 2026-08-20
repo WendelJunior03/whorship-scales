@@ -158,3 +158,117 @@ export async function removerFuncaoDoMembroController(req: Request, res: Respons
     }
     return res.status(200).json({ message: 'Função removida do membro!' });
 }
+
+// --- Equipes ---
+
+export async function listarEquipesController(req: Request, res: Response) {
+    return res.status(200).json(await model.listarEquipes(Number(req.params.id)));
+}
+
+export async function criarEquipeController(req: Request, res: Response) {
+    const nome = nomeValido(req.body?.nome);
+    if (!nome) {
+        return res.status(400).json({ message: 'Nome da equipe é obrigatório!' });
+    }
+    const ministerio = await model.buscarMinisterio(Number(req.params.id));
+    if (!ministerio) {
+        return res.status(404).json({ message: 'Ministério não encontrado!' });
+    }
+    const equipe = await model.criarEquipe(ministerio.id, nome);
+    return res.status(201).json(equipe);
+}
+
+export async function apagarEquipeController(req: Request, res: Response) {
+    const equipe = await model.apagarEquipe(Number(req.params.equipeId));
+    if (!equipe) {
+        return res.status(404).json({ message: 'Equipe não encontrada!' });
+    }
+    return res.status(200).json({ message: 'Equipe removida!' });
+}
+
+export async function listarMembrosEquipeController(req: Request, res: Response) {
+    const ministerioId = Number(req.params.id);
+    const equipeId = Number(req.params.equipeId);
+    if (!(await model.equipeDoMinisterio(equipeId, ministerioId))) {
+        return res.status(404).json({ message: 'Equipe não encontrada neste ministério!' });
+    }
+    return res.status(200).json(await model.listarMembrosEquipe(equipeId));
+}
+
+export async function adicionarMembroEquipeController(req: Request, res: Response) {
+    const ministerioId = Number(req.params.id);
+    const equipeId = Number(req.params.equipeId);
+    const membroId = Number(req.body?.membroId);
+    if (!Number.isInteger(membroId) || membroId <= 0) {
+        return res.status(400).json({ message: 'membroId inválido!' });
+    }
+    if (!(await model.equipeDoMinisterio(equipeId, ministerioId))) {
+        return res.status(404).json({ message: 'Equipe não encontrada neste ministério!' });
+    }
+    if (!(await model.membroEstaNoMinisterio(ministerioId, membroId))) {
+        return res.status(409).json({ message: 'Membro precisa pertencer ao ministério antes de entrar na equipe.' });
+    }
+    const vinculo = await model.adicionarMembroEquipe(equipeId, membroId);
+    return res.status(201).json(vinculo ?? { message: 'Membro já está na equipe.' });
+}
+
+export async function removerMembroEquipeController(req: Request, res: Response) {
+    const removido = await model.removerMembroEquipe(Number(req.params.equipeId), Number(req.params.membroId));
+    if (!removido) {
+        return res.status(404).json({ message: 'Vínculo não encontrado!' });
+    }
+    return res.status(200).json({ message: 'Membro removido da equipe!' });
+}
+
+// --- Classificações ---
+
+export async function listarClassificacoesController(req: Request, res: Response) {
+    return res.status(200).json(await model.listarClassificacoes(Number(req.params.id)));
+}
+
+export async function criarClassificacaoController(req: Request, res: Response) {
+    const nome = nomeValido(req.body?.nome);
+    if (!nome) {
+        return res.status(400).json({ message: 'Nome da classificação é obrigatório!' });
+    }
+    const ministerio = await model.buscarMinisterio(Number(req.params.id));
+    if (!ministerio) {
+        return res.status(404).json({ message: 'Ministério não encontrado!' });
+    }
+    const cor = req.body?.cor ? String(req.body.cor).trim() : null;
+    const classificacao = await model.criarClassificacao(ministerio.id, nome, cor);
+    return res.status(201).json(classificacao);
+}
+
+export async function apagarClassificacaoController(req: Request, res: Response) {
+    const classificacao = await model.apagarClassificacao(Number(req.params.classificacaoId));
+    if (!classificacao) {
+        return res.status(404).json({ message: 'Classificação não encontrada!' });
+    }
+    return res.status(200).json({ message: 'Classificação removida!' });
+}
+
+export async function atribuirClassificacaoController(req: Request, res: Response) {
+    const ministerioId = Number(req.params.id);
+    const membroId = Number(req.body?.membroId);
+    const classificacaoId = Number(req.body?.classificacaoId);
+    if (!Number.isInteger(membroId) || !Number.isInteger(classificacaoId)) {
+        return res.status(400).json({ message: 'membroId e classificacaoId são obrigatórios!' });
+    }
+    if (!(await model.classificacaoDoMinisterio(classificacaoId, ministerioId))) {
+        return res.status(404).json({ message: 'Classificação não encontrada neste ministério!' });
+    }
+    if (!(await model.membroEstaNoMinisterio(ministerioId, membroId))) {
+        return res.status(404).json({ message: 'Membro não pertence a este ministério!' });
+    }
+    const atribuicao = await model.atribuirClassificacao(membroId, classificacaoId);
+    return res.status(201).json(atribuicao ?? { message: 'Classificação já atribuída.' });
+}
+
+export async function removerClassificacaoDoMembroController(req: Request, res: Response) {
+    const removido = await model.removerClassificacaoDoMembro(Number(req.params.membroId), Number(req.params.classificacaoId));
+    if (!removido) {
+        return res.status(404).json({ message: 'Atribuição não encontrada!' });
+    }
+    return res.status(200).json({ message: 'Classificação removida do membro!' });
+}

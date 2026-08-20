@@ -139,10 +139,11 @@ membro_classificacao (membro_id, classificacao_id)
   inicial por org, vincula membros ativos e deriva funções de `papel_ministerio`; criação de
   org nova também nasce com ministério padrão (`organizacaoModel`). ⬜ **Falta** adicionar
   `ministerio_id` às tabelas de escala/culto/repertório (passo invasivo — ver decisão abaixo).
-- [~] **T-11.4** — Parcial. ✅ Backend de **ministério + membros + funções**
-  (`ministerioModel`/`Controller`/`Routes`, montado em `/ministerios`), capacidades
-  `ministerio.visualizar` / `.gerenciar` / `.membros.gerenciar`, limite de vagas ao adicionar
-  membro. ⬜ **Falta** CRUD de **equipes** e **classificações** (schema pronto, endpoints a fazer).
+- [x] **T-11.4** — ✅ Backend completo de **ministério + membros + funções + equipes +
+  classificações** (`ministerioModel`/`Controller`/`Routes`, montado em `/ministerios`),
+  capacidades `ministerio.visualizar` / `.gerenciar` / `.membros.gerenciar`, limite de vagas
+  ao adicionar membro, e validações de posse (equipe/classificação pertencem ao ministério;
+  membro pertence à org via RLS). Smoke test HTTP de ponta a ponta: 8/8.
 - [ ] **T-11.5** — UI: aba Ministério (Informações / Membros x/y), gestão de equipes/funções.
 
 > ✅ **Verificação:** migrations aplicadas com sucesso (schema + backfill) num banco local;

@@ -153,3 +153,121 @@ export async function removerFuncaoDoMembro(membroId: number, funcaoId: number) 
     );
     return result.rows[0];
 }
+
+// --- Equipes (agrupamento de membros dentro do ministério) ---
+
+export async function listarEquipes(ministerioId: number) {
+    const result = await query(
+        `SELECT e.*,
+                (SELECT COUNT(*)::int FROM equipe_membros em WHERE em.equipe_id = e.id) AS total_membros
+         FROM equipes e
+         WHERE e.ministerio_id = $1
+         ORDER BY e.nome ASC`,
+        [ministerioId],
+    );
+    return result.rows;
+}
+
+export async function criarEquipe(ministerioId: number, nome: string) {
+    const result = await query(
+        'INSERT INTO equipes (ministerio_id, nome) VALUES ($1, $2) RETURNING *',
+        [ministerioId, nome],
+    );
+    return result.rows[0];
+}
+
+export async function apagarEquipe(id: number) {
+    const result = await query('DELETE FROM equipes WHERE id = $1 RETURNING *', [id]);
+    return result.rows[0];
+}
+
+// Confirma que a equipe pertence ao ministério (evita cruzar equipes de outro
+// ministério da mesma org, que a RLS por org sozinha não separaria).
+export async function equipeDoMinisterio(equipeId: number, ministerioId: number): Promise<boolean> {
+    const result = await query(
+        'SELECT 1 FROM equipes WHERE id = $1 AND ministerio_id = $2',
+        [equipeId, ministerioId],
+    );
+    return (result.rowCount ?? 0) > 0;
+}
+
+export async function listarMembrosEquipe(equipeId: number) {
+    const result = await query(
+        `SELECT mb.id, mb.nome, mb.email
+         FROM equipe_membros em
+         JOIN membros mb ON mb.id = em.membro_id
+         WHERE em.equipe_id = $1 AND mb.ativo = true
+         ORDER BY mb.nome ASC`,
+        [equipeId],
+    );
+    return result.rows;
+}
+
+export async function adicionarMembroEquipe(equipeId: number, membroId: number) {
+    const result = await query(
+        `INSERT INTO equipe_membros (equipe_id, membro_id)
+         VALUES ($1, $2)
+         ON CONFLICT (equipe_id, membro_id) DO NOTHING
+         RETURNING *`,
+        [equipeId, membroId],
+    );
+    return result.rows[0];
+}
+
+export async function removerMembroEquipe(equipeId: number, membroId: number) {
+    const result = await query(
+        'DELETE FROM equipe_membros WHERE equipe_id = $1 AND membro_id = $2 RETURNING *',
+        [equipeId, membroId],
+    );
+    return result.rows[0];
+}
+
+// --- Classificações (tags do ministério: Titular, Reserva...) ---
+
+export async function listarClassificacoes(ministerioId: number) {
+    const result = await query(
+        'SELECT * FROM classificacoes WHERE ministerio_id = $1 ORDER BY nome ASC',
+        [ministerioId],
+    );
+    return result.rows;
+}
+
+export async function criarClassificacao(ministerioId: number, nome: string, cor: string | null) {
+    const result = await query(
+        'INSERT INTO classificacoes (ministerio_id, nome, cor) VALUES ($1, $2, $3) RETURNING *',
+        [ministerioId, nome, cor],
+    );
+    return result.rows[0];
+}
+
+export async function apagarClassificacao(id: number) {
+    const result = await query('DELETE FROM classificacoes WHERE id = $1 RETURNING *', [id]);
+    return result.rows[0];
+}
+
+export async function classificacaoDoMinisterio(classificacaoId: number, ministerioId: number): Promise<boolean> {
+    const result = await query(
+        'SELECT 1 FROM classificacoes WHERE id = $1 AND ministerio_id = $2',
+        [classificacaoId, ministerioId],
+    );
+    return (result.rowCount ?? 0) > 0;
+}
+
+export async function atribuirClassificacao(membroId: number, classificacaoId: number) {
+    const result = await query(
+        `INSERT INTO membro_classificacao (membro_id, classificacao_id)
+         VALUES ($1, $2)
+         ON CONFLICT (membro_id, classificacao_id) DO NOTHING
+         RETURNING *`,
+        [membroId, classificacaoId],
+    );
+    return result.rows[0];
+}
+
+export async function removerClassificacaoDoMembro(membroId: number, classificacaoId: number) {
+    const result = await query(
+        'DELETE FROM membro_classificacao WHERE membro_id = $1 AND classificacao_id = $2 RETURNING *',
+        [membroId, classificacaoId],
+    );
+    return result.rows[0];
+}
