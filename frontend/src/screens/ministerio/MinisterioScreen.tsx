@@ -184,16 +184,32 @@ export function MinisterioScreen() {
     }
   }
 
-  async function apagarItem(tipo: 'funcoes' | 'equipes' | 'classificacoes', id: number) {
+  function apagarItem(tipo: 'funcoes' | 'equipes' | 'classificacoes', id: number) {
     if (!ministerio) return;
-    try {
-      if (tipo === 'funcoes') await ministeriosService.apagarFuncao(ministerio.id, id);
-      if (tipo === 'equipes') await ministeriosService.apagarEquipe(ministerio.id, id);
-      if (tipo === 'classificacoes') await ministeriosService.apagarClassificacao(ministerio.id, id);
-      await carregar(true);
-    } catch (e) {
-      erroAlerta(e, 'Não foi possível remover.');
-    }
+    const rotulo = { funcoes: 'função', equipes: 'equipe', classificacoes: 'classificação' }[tipo];
+    const nome =
+      tipo === 'funcoes'
+        ? funcoes.find((f) => f.id === id)?.nome
+        : tipo === 'equipes'
+          ? equipes.find((e) => e.id === id)?.nome
+          : classificacoes.find((c) => c.id === id)?.nome;
+    confirmAction(
+      {
+        title: `Remover ${rotulo}`,
+        message: `Remover a ${rotulo} "${nome ?? ''}"?`,
+        confirmLabel: 'Remover',
+      },
+      async () => {
+        try {
+          if (tipo === 'funcoes') await ministeriosService.apagarFuncao(ministerio.id, id);
+          if (tipo === 'equipes') await ministeriosService.apagarEquipe(ministerio.id, id);
+          if (tipo === 'classificacoes') await ministeriosService.apagarClassificacao(ministerio.id, id);
+          await carregar(true);
+        } catch (e) {
+          erroAlerta(e, 'Não foi possível remover.');
+        }
+      },
+    );
   }
 
   // --- Render ---
