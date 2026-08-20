@@ -131,13 +131,24 @@ membro_classificacao (membro_id, classificacao_id)
 > pode ser derivado/substituído por `membro_funcoes` (decidir na implementação).
 
 **Tarefas:**
-- [ ] **T-11.1** — Migration: `ministerios` + `ministerio_membros` (RLS por org).
-- [ ] **T-11.2** — Migration: `funcoes`, `membro_funcoes`, `equipes`, `equipe_membros`,
-  `classificacoes`, `membro_classificacao`.
-- [ ] **T-11.3** — Adicionar `ministerio_id` às tabelas de escala/culto/repertório; backfill
-  para o ministério "seed" da org. _Pronto quando:_ dados atuais pertencem a um ministério.
-- [ ] **T-11.4** — CRUD de ministério/equipes/funções/classificações (só admin do ministério).
+- [x] **T-11.1** — ✅ Migration `1787200000000_ministerios-modulo1-schema.sql`: `ministerios`
+  + `ministerio_membros` (N:N) com RLS por org.
+- [x] **T-11.2** — ✅ Mesma migration: `funcoes`, `membro_funcoes`, `equipes`,
+  `equipe_membros`, `classificacoes`, `membro_classificacao` (todas com RLS + índices + grants).
+- [~] **T-11.3** — Parcial. ✅ Backfill `1787200000001_...-backfill.sql`: cria um ministério
+  inicial por org, vincula membros ativos e deriva funções de `papel_ministerio`; criação de
+  org nova também nasce com ministério padrão (`organizacaoModel`). ⬜ **Falta** adicionar
+  `ministerio_id` às tabelas de escala/culto/repertório (passo invasivo — ver decisão abaixo).
+- [~] **T-11.4** — Parcial. ✅ Backend de **ministério + membros + funções**
+  (`ministerioModel`/`Controller`/`Routes`, montado em `/ministerios`), capacidades
+  `ministerio.visualizar` / `.gerenciar` / `.membros.gerenciar`, limite de vagas ao adicionar
+  membro. ⬜ **Falta** CRUD de **equipes** e **classificações** (schema pronto, endpoints a fazer).
 - [ ] **T-11.5** — UI: aba Ministério (Informações / Membros x/y), gestão de equipes/funções.
+
+> ⚠️ **Verificação:** type-check limpo e suíte verde (75 testes). A **execução das migrations
+> e os testes de isolamento não foram rodados contra o banco** (Neon inacessível deste
+> ambiente) — validar `npm run migrate:up` + `npm run seed` + `isolamento.test.ts` num
+> ambiente com banco antes de considerar o schema aplicado.
 
 ---
 

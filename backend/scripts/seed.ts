@@ -53,6 +53,32 @@ async function seed() {
     // Marca o admin como criador da org seed (criado_por).
     await query(`UPDATE organizacoes SET criado_por = $1 WHERE id = $2`, [admin.id, orgId]);
 
+    // Ministério (spec 11, módulo 1): o backfill da migration já criou um ministério
+    // para a org seed; vincula os membros recém-criados e deriva as funções.
+    const ministerio = (await query(
+        `SELECT id FROM ministerios WHERE org_id = $1 ORDER BY id LIMIT 1`,
+        [orgId],
+    )).rows[0];
+    if (ministerio) {
+        await query(
+            `INSERT INTO ministerio_membros (ministerio_id, membro_id, org_id, papel) VALUES
+                ($1, $2, $4, 'administrador'),
+                ($1, $3, $4, 'membro'),
+                ($1, $5, $4, 'membro')
+             ON CONFLICT DO NOTHING`,
+            [ministerio.id, admin.id, orgId, vocal1.id, vocal2.id],
+        );
+        // Vocais recebem a função Vocalista (derivada do papel_ministerio).
+        await query(
+            `INSERT INTO membro_funcoes (membro_id, funcao_id, ministerio_id, org_id)
+             SELECT m.membro_id, f.id, $1, $2
+             FROM (VALUES ($3::int), ($4::int)) AS m(membro_id)
+             JOIN funcoes f ON f.ministerio_id = $1 AND f.nome = 'Vocalista'
+             ON CONFLICT DO NOTHING`,
+            [ministerio.id, orgId, vocal1.id, vocal2.id],
+        );
+    }
+
     const culto = (await query(
         `INSERT INTO cultos (data_hora, tipo, org_id)
          VALUES (NOW() + INTERVAL '3 days', $1, $2) RETURNING id`,

@@ -122,6 +122,24 @@ const capacidades: Record<string, RegraCapacidade> = {
         papelMinisterio: [],
         escopo: ['organizacao']
     },
+    //Novas funcionalidades (Ministérios — spec 11, módulo 1)
+    'ministerio.visualizar':{
+        papelOrg: ['administrador', 'lider', 'membro'],
+        papelMinisterio: [],
+        escopo: ['organizacao']
+    },
+    'ministerio.gerenciar':{
+        // Criar/editar/excluir um ministério é ação de admin da organização.
+        papelOrg: ['administrador'],
+        papelMinisterio: [],
+        escopo: ['organizacao']
+    },
+    'ministerio.membros.gerenciar':{
+        // Adicionar/remover membros e atribuir funções: admin da org ou líder.
+        papelOrg: ['administrador', 'lider'],
+        papelMinisterio: [],
+        escopo: ['organizacao', 'ministerio']
+    },
     //Novas funcionalidades (Liderança e reuniões (spec 07 — Fase D))
     'lideranca.convidar':{
         papelOrg: ['administrador'],

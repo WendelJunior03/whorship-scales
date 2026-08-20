@@ -38,6 +38,25 @@ describe('podeAcessar', () => {
   it('lança erro se a capacidade não existir no mapa', () => {
     expect(() => podeAcessar({ papelOrg: 'administrador', papelMinisterio: null }, 'capacidade.inexistente')).toThrow('Capacidade não encontrada');
   });
+
+  // Ministérios (spec 11, módulo 1)
+  it('todos os papéis org visualizam ministério', () => {
+    for (const papel of ['administrador', 'lider', 'membro'] as const) {
+      expect(podeAcessar({ papelOrg: papel, papelMinisterio: null }, 'ministerio.visualizar')).toBe(true);
+    }
+  });
+
+  it('só administrador cria/edita/exclui ministério (gerenciar)', () => {
+    expect(podeAcessar({ papelOrg: 'administrador', papelMinisterio: null }, 'ministerio.gerenciar')).toBe(true);
+    expect(podeAcessar({ papelOrg: 'lider', papelMinisterio: null }, 'ministerio.gerenciar')).toBe(false);
+    expect(podeAcessar({ papelOrg: 'membro', papelMinisterio: null }, 'ministerio.gerenciar')).toBe(false);
+  });
+
+  it('administrador e líder gerenciam membros/funções do ministério; membro comum não', () => {
+    expect(podeAcessar({ papelOrg: 'administrador', papelMinisterio: null }, 'ministerio.membros.gerenciar')).toBe(true);
+    expect(podeAcessar({ papelOrg: 'lider', papelMinisterio: null }, 'ministerio.membros.gerenciar')).toBe(true);
+    expect(podeAcessar({ papelOrg: 'membro', papelMinisterio: null }, 'ministerio.membros.gerenciar')).toBe(false);
+  });
 });
 
 describe('podeAcessar + mesmoUsuario combinados (escopo: proprio)', () => {
