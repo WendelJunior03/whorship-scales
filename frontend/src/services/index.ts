@@ -6,3 +6,4 @@ export * as escalaFixaService from './escalaFixa';
 export * as excecoesService from './excecoes';
 export * as escalaVocalService from './escalaVocal';
 export * as repertorioService from './repertorio';
+export * as ministeriosService from './ministerios';

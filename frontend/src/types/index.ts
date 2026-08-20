@@ -66,6 +66,54 @@ export interface Culto {
   tipo: string | null;
 }
 
+// --- Ministérios (spec 11, módulo 1) ---
+
+export type PapelNoMinisterio = 'administrador' | 'membro';
+
+export interface Ministerio {
+  id: number;
+  org_id?: number;
+  nome: string;
+  descricao: string | null;
+  vagas_gratis: number;
+  vagas_extras: number;
+  /** Presentes em GET /ministerios (lista) e GET /ministerios/:id. */
+  total_membros?: number;
+  vagas_total?: number;
+  created_at?: string;
+}
+
+export interface MinisterioMembro {
+  /** id do membro. */
+  id: number;
+  nome: string;
+  email: string;
+  papel: PapelNoMinisterio;
+  funcoes: string[];
+  created_at?: string;
+}
+
+export interface Funcao {
+  id: number;
+  ministerio_id: number;
+  nome: string;
+  icone: string | null;
+}
+
+export interface Equipe {
+  id: number;
+  ministerio_id: number;
+  nome: string;
+  total_membros?: number;
+}
+
+export interface Classificacao {
+  id: number;
+  ministerio_id: number;
+  nome: string;
+  cor: string | null;
+}
+
 export interface EscalaFixa {
   id: number;
   membro_id: number;

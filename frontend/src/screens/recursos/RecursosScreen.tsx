@@ -19,6 +19,7 @@ type RotaRecurso =
   | 'Biblioteca'
   | 'Escalas'
   | 'Membros'
+  | 'Ministerio'
   | 'EscalaFixa'
   | 'Confirmacoes';
 
@@ -38,6 +39,7 @@ const INSTRUMENTOS: ItemRecurso[] = [
 ];
 
 const GESTAO: (ItemRecurso & { soAdmin?: boolean })[] = [
+  { icon: 'business-outline', label: 'Ministério', sublabel: 'Equipes e funções', route: 'Ministerio' },
   { icon: 'calendar-outline', label: 'Escalas', sublabel: 'Ver escalas', route: 'Escalas' },
   { icon: 'people-outline', label: 'Membros', sublabel: 'Gerenciar', route: 'Membros', soAdmin: true },
   { icon: 'repeat-outline', label: 'Escala Fixa', sublabel: 'Configurar', route: 'EscalaFixa' },

@@ -144,7 +144,12 @@ membro_classificacao (membro_id, classificacao_id)
   capacidades `ministerio.visualizar` / `.gerenciar` / `.membros.gerenciar`, limite de vagas
   ao adicionar membro, e validações de posse (equipe/classificação pertencem ao ministério;
   membro pertence à org via RLS). Smoke test HTTP de ponta a ponta: 8/8.
-- [ ] **T-11.5** — UI: aba Ministério (Informações / Membros x/y), gestão de equipes/funções.
+- [~] **T-11.5** — Parcial. ✅ Tela **Ministério** (`MinisterioScreen`) com abas
+  **Informações** (identidade, barra de vagas x/y, contagem de equipes/funções/classificações,
+  integrações Holyrics/API como itens bloqueados) e **Membros (x/y)** (lista com papel e
+  funções). Serviço `ministeriosService` + tipos; entrada em **Recursos → Gestão** e rota na
+  stack. Read-only nesta fatia. ⬜ **Falta** as ações de **gestão pela UI** (adicionar/remover
+  membro, criar equipe/função/classificação, atribuir função) — o backend já expõe tudo.
 
 > ✅ **Verificação:** migrations aplicadas com sucesso (schema + backfill) num banco local;
 > type-check limpo; suíte verde com **81 testes** — incluindo os 6 de isolamento (RLS) que
