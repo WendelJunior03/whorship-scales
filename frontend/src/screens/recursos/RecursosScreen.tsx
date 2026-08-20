@@ -6,18 +6,27 @@ import { Icon, IconName } from '@/components/Icon';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { MainTabScreenNavigationProp } from '@/navigation/types';
-import { MainStackParamList } from '@/navigation/MainNavigator';
 import { Cores, Sombras } from '@/theme/palettes';
 import { spacing, radius, typography, fonts } from '@/theme';
 import { podeGerir, isAdmin } from '@/utils/papel';
 
-type RotaStack = keyof MainStackParamList;
+/** Só rotas da stack sem params obrigatórios — as que a aba de recursos abre direto. */
+type RotaRecurso =
+  | 'Afinador'
+  | 'Octapad'
+  | 'Metronomo'
+  | 'PadContinuo'
+  | 'Biblioteca'
+  | 'Escalas'
+  | 'Membros'
+  | 'EscalaFixa'
+  | 'Confirmacoes';
 
 interface ItemRecurso {
   icon: IconName;
   label: string;
   sublabel: string;
-  route: RotaStack;
+  route: RotaRecurso;
 }
 
 const INSTRUMENTOS: ItemRecurso[] = [
