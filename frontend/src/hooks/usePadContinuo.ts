@@ -45,5 +45,13 @@ export function usePadContinuo() {
     setVolumeGeral(valor);
   }, []);
 
-  return { notas: NOTAS, ativos, alternar, volumeGeral, ajustarVolumeGeral };
+  // Desliga qualquer pad tocando — usado ao sair da tela, pra não deixar nota presa tocando.
+  const pararTudo = useCallback(() => {
+    NOTAS.forEach((nota) => {
+      if (ativos[nota]) parar(nota);
+    });
+    setAtivos(Object.fromEntries(NOTAS.map((n) => [n, false])) as Record<Note, boolean>);
+  }, [ativos]);
+
+  return { notas: NOTAS, ativos, alternar, volumeGeral, ajustarVolumeGeral, pararTudo };
 }
