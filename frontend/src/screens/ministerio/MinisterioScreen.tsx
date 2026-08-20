@@ -4,6 +4,7 @@ import {
   Alert,
   FlatList,
   Modal,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -21,6 +22,7 @@ import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { ministeriosService, membrosService } from '@/services';
 import { ApiError } from '@/services/api';
 import { papelOrgDe } from '@/utils/papel';
+import { confirmAction } from '@/utils/confirm';
 import { Ministerio, MinisterioMembro, Funcao, Equipe, Classificacao, Membro } from '@/types';
 import { spacing, radius, typography, fonts } from '@/theme';
 import { Cores } from '@/theme/palettes';
@@ -84,8 +86,15 @@ export function MinisterioScreen() {
     carregar();
   }, [carregar]);
 
-  const erroAlerta = (e: unknown, fallback: string) =>
-    Alert.alert('Erro', e instanceof ApiError ? e.message : fallback);
+  const erroAlerta = (e: unknown, fallback: string) => {
+    const msg = e instanceof ApiError ? e.message : fallback;
+    // Alert.alert do react-native-web não exibe de forma confiável; usa window.alert no web.
+    if (Platform.OS === 'web') {
+      window.alert(msg);
+    } else {
+      Alert.alert('Erro', msg);
+    }
+  };
 
   function fecharModal() {
     setModal(null);
@@ -120,23 +129,23 @@ export function MinisterioScreen() {
   }
 
   function confirmarRemoverMembro(membro: MinisterioMembro) {
-    Alert.alert('Remover membro', `Remover ${membro.nome} deste ministério?`, [
-      { text: 'Cancelar', style: 'cancel' },
+    confirmAction(
       {
-        text: 'Remover',
-        style: 'destructive',
-        onPress: async () => {
-          if (!ministerio) return;
-          try {
-            await ministeriosService.removerMembro(ministerio.id, membro.id);
-            fecharModal();
-            await carregar(true);
-          } catch (e) {
-            erroAlerta(e, 'Não foi possível remover o membro.');
-          }
-        },
+        title: 'Remover membro',
+        message: `Remover ${membro.nome} deste ministério?`,
+        confirmLabel: 'Remover',
       },
-    ]);
+      async () => {
+        if (!ministerio) return;
+        try {
+          await ministeriosService.removerMembro(ministerio.id, membro.id);
+          fecharModal();
+          await carregar(true);
+        } catch (e) {
+          erroAlerta(e, 'Não foi possível remover o membro.');
+        }
+      },
+    );
   }
 
   async function alternarFuncao(membro: MinisterioMembro, funcao: Funcao) {
