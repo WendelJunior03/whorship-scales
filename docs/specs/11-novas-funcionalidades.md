@@ -144,12 +144,14 @@ membro_classificacao (membro_id, classificacao_id)
   capacidades `ministerio.visualizar` / `.gerenciar` / `.membros.gerenciar`, limite de vagas
   ao adicionar membro, e validações de posse (equipe/classificação pertencem ao ministério;
   membro pertence à org via RLS). Smoke test HTTP de ponta a ponta: 8/8.
-- [~] **T-11.5** — Parcial. ✅ Tela **Ministério** (`MinisterioScreen`) com abas
-  **Informações** (identidade, barra de vagas x/y, contagem de equipes/funções/classificações,
-  integrações Holyrics/API como itens bloqueados) e **Membros (x/y)** (lista com papel e
-  funções). Serviço `ministeriosService` + tipos; entrada em **Recursos → Gestão** e rota na
-  stack. Read-only nesta fatia. ⬜ **Falta** as ações de **gestão pela UI** (adicionar/remover
-  membro, criar equipe/função/classificação, atribuir função) — o backend já expõe tudo.
+- [x] **T-11.5** — ✅ Tela **Ministério** (`MinisterioScreen`) com abas **Informações**
+  (identidade, barra de vagas x/y, listas de equipes/funções/classificações, integrações
+  Holyrics/API bloqueadas) e **Membros (x/y)**. **Ações de gestão pela UI** (admin/líder):
+  adicionar/remover membro, criar/apagar função/equipe/classificação e atribuir/remover
+  função de um membro (chips). Serviço `ministeriosService` + tipos; entrada em
+  **Recursos → Gestão** + rota na stack. Type-check e lint limpos.
+  ⬜ **Falta (menor):** gerir *membros de uma equipe* e *atribuir classificação a membro* pela
+  UI (endpoints já existem no backend).
 
 > ✅ **Verificação:** migrations aplicadas com sucesso (schema + backfill) num banco local;
 > type-check limpo; suíte verde com **81 testes** — incluindo os 6 de isolamento (RLS) que
