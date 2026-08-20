@@ -61,6 +61,11 @@ isolamento por igreja e o plano PRO entrarem.
 |---|------|-----------|
 | 07 | [Reuniões da Liderança (Vídeo)](./07-reunioes-lideranca.md) | Requer infra de servidor de mídia; deixada por último por custo/complexidade |
 
+### Transversal — Paridade de produto
+| # | Spec | Observação |
+|---|------|-----------|
+| 11 | [Novas Funcionalidades](./11-novas-funcionalidades.md) | Guarda-chuva de features p/ paridade: ministérios, confirmação/roteiro/histórico/comentários de escala, indisponibilidades, aniversariantes, avisos, repertório+, integrações e vagas. Toca schema; **depende de 01/02/08** |
+
 ---
 
 ## 📌 Log de decisões (Fase A/B/C/D)
@@ -70,6 +75,7 @@ Consolidação das decisões que travam a implementação (detalhe em cada spec)
 | Spec | Decisão | Status |
 |------|---------|--------|
 | 01 | Estratégia de isolamento multi-tenant no Postgres | ✅ `org_id` por tabela; JWT; 1 org/usuário; código `PREFIXO-XXXXXX` |
+| 01 | Fluxo de aprovação de ingresso (pendente/cancelar/motivo) | ✅ Solicitação pendente; entra **por ministério**; aprova **Admin ou Líder**; cancelar exige motivo → notifica admin |
 | 02 | Modelo de permissões (enum ampliado vs. RBAC granular) | ✅ Dois eixos (papel_ministerio + papel_org); checagem por capacidade |
 | 03 | Feature flags: caseiro vs. biblioteca | ✅ Caseiro (catálogo de recursos + resolvedor por plano) |
 | 04 | Escopo do redesign: incremental vs. reescrita do design system | ✅ Design system primeiro; Moti/Reanimated; sidebar responsiva |
@@ -80,6 +86,9 @@ Consolidação das decisões que travam a implementação (detalhe em cada spec)
 | 09 | Biblioteca de detecção de pitch | ✅ pitchy (McLeod) |
 | 10 | Estratégia de descoberta automática de BPM | ✅ Manual + tap tempo (base); API GetSongBPM como sugestão; sem extrair áudio do YouTube |
 | 10 | Engine de timing do metrônomo + segundo plano | ✅ Web Audio lookahead; best-effort + Screen Wake Lock |
+| 11 | "Ministério" como entidade dentro da organização | ✅ Tabela `ministerios` sob a org; vínculo **N:N** com membros (`ministerio_membros`) |
+| 11 | Modelo de monetização: PRO vs. vagas por ministério | ✅ **Híbrido** — vagas/assentos por ministério **+** módulos PRO (spec 03 vira flags + billing de assentos) |
+| 11 | Quais integrações entram na v1 | ✅ Google Login, Apple Login, Google Agenda, WhatsApp, Holyrics, Tokens de API (segredos nunca em claro) |
 
 ---
 

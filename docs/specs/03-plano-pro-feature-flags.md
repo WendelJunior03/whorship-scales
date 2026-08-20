@@ -1,5 +1,11 @@
 # 03 — Plano PRO & Feature Flags
 
+> ⚠️ **Atualização (spec 11, D-11.2 = híbrido):** o modelo de monetização passa a ser
+> **híbrido** — além do gating de recursos por plano (esta spec), há **vagas/assentos por
+> ministério** (10 grátis + pacotes extras; ver spec 11, módulo 12). Os dois eixos são
+> **ortogonais**: uma ação pode exigir *ter vaga* **e** *plano PRO*. Esta spec segue válida
+> para a parte de **feature flags**; o billing de assentos vive na spec 11.
+
 ## Objetivo
 
 Preparar a arquitetura para **monetização futura** sem bloquear nada agora. Inicialmente
