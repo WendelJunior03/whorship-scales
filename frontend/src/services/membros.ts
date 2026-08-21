@@ -17,6 +17,11 @@ export interface AlterarSenhaInput {
   novaSenha: string;
 }
 
+export interface RedefinirSenhaInput {
+  token: string;
+  novaSenha: string;
+}
+
 export interface CadastrarMembroInput {
   name: string;
   email: string;
@@ -72,6 +77,21 @@ export async function desativarMembro(id: number): Promise<void> {
  */
 export async function alterarSenha(id: number, input: AlterarSenhaInput): Promise<void> {
   await api.put(`/membros/${id}/senha`, input);
+}
+
+/**
+ * Pede o e-mail de redefinição de senha. A resposta é sempre "sucesso" (o
+ * back-end não revela se o e-mail existe, pra evitar enumeração de contas).
+ */
+export async function esqueciSenha(email: string): Promise<void> {
+  await api.post('/membros/esqueci-senha', { email });
+}
+
+/**
+ * Redefine a senha a partir do token recebido por e-mail (válido por 30min).
+ */
+export async function redefinirSenha(input: RedefinirSenhaInput): Promise<void> {
+  await api.post('/membros/redefinir-senha', input);
 }
 
 /**
