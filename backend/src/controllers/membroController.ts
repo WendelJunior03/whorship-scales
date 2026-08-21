@@ -4,11 +4,11 @@ import { Request, Response } from 'express';
 import { createMembers, deactivateMember } from '../models/membroModel';
 import { findByEmail, findById, findAllMembers, updateMember, findByIdComSenha, updatePassword } from '../models/membroModel';
 import { assinarTokenMembro } from '../utils/token';
-import { podeAcessar, mesmoUsuario } from '../config/capacidades';
+import { podeAcessar, mesmoUsuario, PapelOrg, PapelMinisterio } from '../config/capacidades';
 
 
 export async function cadastrarUser(req: Request, res: Response) {
-    const {name, email, passwordUser, role, instrument, phone} = req.body
+    const {name, email, passwordUser, papelOrg, papelMinisterio, instruments, phone} = req.body
 
     if (!req.orgId) {
         return res.status(401).json({message: 'Não autenticado!'})
@@ -23,7 +23,7 @@ export async function cadastrarUser(req: Request, res: Response) {
     const hashPassword = await bcrypt.hash(passwordUser, 10)
 
     // Novo membro nasce na organização do admin que o cadastra.
-    await createMembers (name, phone, instrument, email, role, hashPassword, req.orgId);
+    await createMembers (name, phone, instruments ?? [], email, (papelOrg as PapelOrg) ?? 'membro', (papelMinisterio as PapelMinisterio) ?? null, hashPassword, req.orgId);
 
     return res.status(201).json({message: 'Usuario cadastrado com sucesso!'})
 }
@@ -92,7 +92,7 @@ export async function getMemberById(req: Request, res: Response) {
 
 export async function updateMemberController (req: Request, res: Response) {
     const id = Number(req.params.id);
-    const {name, phone, instrument, email, role} = req.body;
+    const {name, phone, instruments, email, papelOrg, papelMinisterio} = req.body;
 
     if ( !req.user ) {
         return res.status(401).json({message: 'Não autenticado!'})
@@ -105,8 +105,10 @@ export async function updateMemberController (req: Request, res: Response) {
         return res.status(403).json({message: 'Não autorizado!'})
     }
 
-    // Alterar o papel é exclusivo de quem tem a capacidade (administrador).
-    if (role && !podeAcessar(usuario, 'membro.papel.alterar')) {
+    // Alterar o papel (organização OU ministério) é exclusivo de quem tem a
+    // capacidade (administrador) — os dois eixos são decisões deliberadas, não
+    // algo que se deriva de outro campo (ex.: instrumentos).
+    if ((papelOrg || papelMinisterio !== undefined) && !podeAcessar(usuario, 'membro.papel.alterar')) {
         return res.status(403).json({message: 'Só admin pode alterar o papel!'})
     }
 
@@ -117,11 +119,30 @@ export async function updateMemberController (req: Request, res: Response) {
         }
     }
 
-    if (!name || !phone || !instrument || !email) {
+    if (!name || !phone || !instruments || instruments.length === 0 || !email) {
         return res.status(400).json({message: 'Todos os campos devem ser preechidos!'})
     }
 
-    await updateMember(id, name, phone, instrument, email, role);
+    // Papel na organização/ministério: o novo (se quem edita pode alterá-lo) ou o
+    // atual do membro (senão — ex.: a própria pessoa só editando os instrumentos).
+    // `papelMinisterio === undefined` = campo nem veio no corpo (não mexeu nele);
+    // `null` é um valor válido (explicitamente "nenhum").
+    let papelOrgEfetivo: PapelOrg = papelOrg;
+    let papelMinisterioEfetivo: PapelMinisterio | null = papelMinisterio ?? null;
+    if (!papelOrgEfetivo || papelMinisterio === undefined) {
+        const atual = await findById(id);
+        if (!atual) {
+            return res.status(404).json({message: 'Membro não encontrado!'})
+        }
+        if (!papelOrgEfetivo) {
+            papelOrgEfetivo = atual.papel_org;
+        }
+        if (papelMinisterio === undefined) {
+            papelMinisterioEfetivo = atual.papel_ministerio ?? null;
+        }
+    }
+
+    await updateMember(id, name, phone, instruments, email, papelOrgEfetivo, papelMinisterioEfetivo);
 
     return res.status(200).json({message: 'Alterações realizadas com sucesso!'})
 }
