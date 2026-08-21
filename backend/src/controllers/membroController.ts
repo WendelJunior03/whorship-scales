@@ -3,8 +3,9 @@ import { query } from '../config/database';
 import { Request, Response } from 'express';
 import { createMembers, deactivateMember } from '../models/membroModel';
 import { findByEmail, findById, findAllMembers, updateMember, findByIdComSenha, updatePassword } from '../models/membroModel';
-import { assinarTokenMembro } from '../utils/token';
+import { assinarTokenMembro, assinarTokenResetSenha, verificarTokenResetSenha } from '../utils/token';
 import { podeAcessar, mesmoUsuario, PapelOrg, PapelMinisterio } from '../config/capacidades';
+import { enviarEmail } from '../services/emailService';
 
 
 export async function cadastrarUser(req: Request, res: Response) {
@@ -151,6 +152,57 @@ export async function deactivateMemberController(req: Request, res: Response) {
     const id = Number(req.params.id);
     await deactivateMember(id, false)
     return res.status(200).json({message: 'Membro desativado com sucesso!'})
+}
+
+export async function esqueciSenhaController(req: Request, res: Response) {
+    const { email } = req.body;
+
+    if (!email) {
+        return res.status(400).json({ message: 'Informe o e-mail!' });
+    }
+
+    const membro = await findByEmail(email);
+
+    // Não revela se o e-mail existe ou não (evita enumeração de contas) — a
+    // resposta é sempre a mesma, o e-mail só sai se o membro existir de fato.
+    if (membro) {
+        const token = assinarTokenResetSenha(membro.id);
+        const link = `${process.env.FRONTEND_URL}/redefinir-senha?token=${token}`;
+        await enviarEmail(
+            membro.email,
+            'Redefinir senha — Deep Scales',
+            `<p>Olá, ${membro.nome}!</p>
+             <p>Clique no link abaixo para escolher uma nova senha. Ele vale por 30 minutos:</p>
+             <p><a href="${link}">${link}</a></p>
+             <p>Se você não pediu isso, pode ignorar este e-mail.</p>`,
+        );
+    }
+
+    return res.status(200).json({ message: 'Se o e-mail existir, enviamos um link de redefinição.' });
+}
+
+export async function redefinirSenhaController(req: Request, res: Response) {
+    const { token, novaSenha } = req.body;
+
+    if (!token || !novaSenha) {
+        return res.status(400).json({ message: 'Informe o token e a nova senha!' });
+    }
+
+    if (novaSenha.length < 6) {
+        return res.status(400).json({ message: 'A nova senha deve ter pelo menos 6 caracteres!' });
+    }
+
+    let dados;
+    try {
+        dados = verificarTokenResetSenha(token);
+    } catch {
+        return res.status(400).json({ message: 'Link inválido ou expirado. Peça um novo.' });
+    }
+
+    const hashPassword = await bcrypt.hash(novaSenha, 10);
+    await updatePassword(dados.id, hashPassword);
+
+    return res.status(200).json({ message: 'Senha redefinida com sucesso!' });
 }
 
 export async function updatePasswordController(req: Request, res: Response) {
