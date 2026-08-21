@@ -1,13 +1,15 @@
 import { api } from './api';
-import { Membro, Papel } from '@/types';
+import { Membro, PapelOrg, PapelMinisterio } from '@/types';
 
 export interface AtualizarMembroInput {
   name: string;
   phone: string;
-  instrument: string;
+  instruments: string[];
   email: string;
-  /** Só é aplicado de fato pelo back-end se quem chama for admin. */
-  role?: Papel;
+  /** Papel na organização — só é aplicado de fato pelo back-end se quem chama for admin. */
+  papelOrg?: PapelOrg;
+  /** Papel no ministério — mesma regra do papelOrg (só admin de fato aplica). `null` = nenhum. */
+  papelMinisterio?: PapelMinisterio | null;
 }
 
 export interface AlterarSenhaInput {
@@ -19,8 +21,9 @@ export interface CadastrarMembroInput {
   name: string;
   email: string;
   passwordUser: string;
-  role: Papel;
-  instrument: string;
+  papelOrg: PapelOrg;
+  papelMinisterio: PapelMinisterio | null;
+  instruments: string[];
   phone: string;
 }
 
