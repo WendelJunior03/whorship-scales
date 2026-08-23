@@ -99,6 +99,25 @@ export async function confirmarPresencaController (req: Request, res: Response) 
         } catch (error) {
             console.error('Erro ao criar notificação:', error);
         }
+    } else if (status === 'recusado') {
+        try {
+            const membro = await findById(req.user.id);
+            const culto = await findCultoById(escalaVocal.culto_id);
+            const admins = await findAdminsAtivos();
+            for (const admin of admins) {
+                await createNotificacao(
+                    admin.id,
+                    'substituicao',
+                    'Recusa de escala',
+                    culto
+                        ? `${membro?.nome ?? 'Um membro'} recusou a escala do culto do dia ${formatarDataHoraCurta(culto.data_hora)}. Toque para escolher um substituto.`
+                        : `${membro?.nome ?? 'Um membro'} recusou a escala.`,
+                    escalaVocal.culto_id
+                );
+            }
+        } catch (error) {
+            console.error('Erro ao criar notificação:', error);
+        }
     }
 
     return res.status(200).json({message: 'Escala vocal atualizada com sucesso!'})

@@ -75,7 +75,7 @@ export function DetalhesCultoScreen() {
   const styles = useThemedStyles(criarEstilos);
   const route = useRoute<RouteProp<MainStackParamList, 'DetalhesCulto'>>();
   const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();
-  const { cultoId } = route.params;
+  const { cultoId, abrirEdicaoVocal } = route.params;
   const { user } = useAuth();
 
   const [culto, setCulto] = useState<Culto | null>(null);
@@ -172,13 +172,13 @@ export function DetalhesCultoScreen() {
       );
       setSugestaoVocal(vocaisSugeridos);
       setSelecionadosVocal(vocaisSugeridos);
-      setModoEdicaoVocal(false);
+      setModoEdicaoVocal(Boolean(abrirEdicaoVocal));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Não foi possível carregar o culto.');
     } finally {
       setIsLoading(false);
     }
-  }, [cultoId, user]);
+  }, [cultoId, user, abrirEdicaoVocal]);
 
   useEffect(() => {
     carregarDados();

@@ -1,11 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Icon, IconName } from '@/components/Icon';
+import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import * as notificacoesService from '@/services/notificacoes';
 import { ApiError } from '@/services/api';
+import { MainTabScreenNavigationProp } from '@/navigation/types';
 import { Notificacao, TipoNotificacao } from '@/types';
 import { spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
@@ -43,6 +45,7 @@ function agruparPorData(notificacoes: Notificacao[]): Secao[] {
 export function NotificacoesScreen() {
   const { colors } = useTheme();
   const styles = useThemedStyles(criarEstilos);
+  const navigation = useNavigation<MainTabScreenNavigationProp<'Notificacoes'>>();
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -65,12 +68,16 @@ export function NotificacoesScreen() {
   }, [carregarDados]);
 
   function handleAbrir(item: Notificacao) {
-    if (item.lida) return;
+    if (!item.lida) {
+      setNotificacoes((prev) => prev.map((n) => (n.id === item.id ? { ...n, lida: true } : n)));
+      notificacoesService.marcarComoLida(item.id).catch(() => {
+        setNotificacoes((prev) => prev.map((n) => (n.id === item.id ? { ...n, lida: false } : n)));
+      });
+    }
 
-    setNotificacoes((prev) => prev.map((n) => (n.id === item.id ? { ...n, lida: true } : n)));
-    notificacoesService.marcarComoLida(item.id).catch(() => {
-      setNotificacoes((prev) => prev.map((n) => (n.id === item.id ? { ...n, lida: false } : n)));
-    });
+    if (item.tipo === 'substituicao' && item.culto_id) {
+      navigation.navigate('DetalhesCulto', { cultoId: item.culto_id, abrirEdicaoVocal: true });
+    }
   }
 
   function handleLimpar() {

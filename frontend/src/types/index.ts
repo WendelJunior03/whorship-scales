@@ -214,4 +214,5 @@ export interface Notificacao {
   descricao: string;
   lida: boolean;
   created_at: string;
+  culto_id: number | null;
 }

@@ -1,7 +1,7 @@
 import { query } from '../config/database';
 
-export async function createNotificacao(membroId: number, tipo: string, titulo: string, descricao: string) {
-    const result = await query('INSERT INTO notificacoes (membro_id, tipo, titulo, descricao) VALUES ($1, $2, $3, $4) RETURNING *', [membroId, tipo, titulo, descricao]);
+export async function createNotificacao(membroId: number, tipo: string, titulo: string, descricao: string, cultoId?: number | null) {
+    const result = await query('INSERT INTO notificacoes (membro_id, tipo, titulo, descricao, culto_id) VALUES ($1, $2, $3, $4, $5) RETURNING *', [membroId, tipo, titulo, descricao, cultoId ?? null]);
     return result.rows[0];
 }
 
