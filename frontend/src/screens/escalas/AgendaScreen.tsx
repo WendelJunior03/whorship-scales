@@ -80,6 +80,7 @@ export function AgendaScreen() {
     | { tipo: 'avulsa'; item: MinhaEscalaAvulsaItem }
     | { tipo: 'fixa'; item: MinhaEscalaFixaItem; data: string };
   const [indicacao, setIndicacao] = useState<Indicacao | null>(null);
+  const [mostrarListaCandidatos, setMostrarListaCandidatos] = useState(false);
   const [candidatos, setCandidatos] = useState<MembroCandidato[]>([]);
   const [carregandoCandidatos, setCarregandoCandidatos] = useState(false);
 
@@ -145,26 +146,14 @@ export function AgendaScreen() {
     }
   }
 
-  async function carregarCandidatos(buscar: () => Promise<MembroCandidato[]>) {
-    setCandidatos([]);
-    setCarregandoCandidatos(true);
-    try {
-      setCandidatos(await buscar());
-    } catch {
-      // sem candidatos pra indicar não impede a recusa — só some a lista
-    } finally {
-      setCarregandoCandidatos(false);
-    }
-  }
-
   function abrirIndicacaoVocal(item: MinhaEscalaVocalItem) {
     setIndicacao({ tipo: 'vocal', item });
-    carregarCandidatos(() => escalaVocalService.getCandidatosVocais(item.culto_id));
+    setMostrarListaCandidatos(false);
   }
 
   function abrirIndicacaoAvulsa(item: MinhaEscalaAvulsaItem) {
     setIndicacao({ tipo: 'avulsa', item });
-    carregarCandidatos(() => escalaAvulsaService.getCandidatosAvulsa(item.culto_id));
+    setMostrarListaCandidatos(false);
   }
 
   function abrirIndicacaoFixa(item: MinhaEscalaFixaItem) {
@@ -176,11 +165,32 @@ export function AgendaScreen() {
       return;
     }
     setIndicacao({ tipo: 'fixa', item, data: selectedDate });
-    carregarCandidatos(() => excecoesService.getCandidatosExcecao());
+    setMostrarListaCandidatos(false);
+  }
+
+  async function abrirListaCandidatos() {
+    if (!indicacao) return;
+    setMostrarListaCandidatos(true);
+    setCandidatos([]);
+    setCarregandoCandidatos(true);
+    try {
+      const buscar =
+        indicacao.tipo === 'vocal'
+          ? () => escalaVocalService.getCandidatosVocais(indicacao.item.culto_id)
+          : indicacao.tipo === 'avulsa'
+            ? () => escalaAvulsaService.getCandidatosAvulsa(indicacao.item.culto_id)
+            : () => excecoesService.getCandidatosExcecao();
+      setCandidatos(await buscar());
+    } catch {
+      // sem candidatos pra indicar não impede a recusa — só some a lista
+    } finally {
+      setCarregandoCandidatos(false);
+    }
   }
 
   function fecharIndicacao() {
     setIndicacao(null);
+    setMostrarListaCandidatos(false);
     setCandidatos([]);
   }
 
@@ -445,35 +455,50 @@ export function AgendaScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Indicar alguém pra sua vaga?</Text>
-
-            {carregandoCandidatos ? (
-              <ActivityIndicator color={colors.primary} style={styles.modalLoading} />
+            {!mostrarListaCandidatos ? (
+              <>
+                <Text style={styles.modalTitle}>Recusar presença</Text>
+                <Button title="Indicar alguém" onPress={abrirListaCandidatos} style={styles.modalButton} />
+                <Button
+                  title="Recusar sem indicar"
+                  variant="outline"
+                  onPress={() => executarRecusa(null)}
+                  style={styles.modalButton}
+                />
+                <Button title="Cancelar" variant="outline" onPress={fecharIndicacao} style={styles.modalButton} />
+              </>
             ) : (
-              <ScrollView style={styles.modalList}>
-                {candidatos.length === 0 ? (
-                  <Text style={styles.emptyText}>Nenhum candidato disponível no momento.</Text>
-                ) : (
-                  candidatos.map((candidato) => (
-                    <TouchableOpacity
-                      key={candidato.id}
-                      style={styles.modalItem}
-                      onPress={() => executarRecusa(candidato)}
-                    >
-                      <Text style={styles.modalItemText}>{candidato.nome}</Text>
-                    </TouchableOpacity>
-                  ))
-                )}
-              </ScrollView>
-            )}
+              <>
+                <Text style={styles.modalTitle}>Quem você indica pra sua vaga?</Text>
 
-            <Button
-              title="Recusar sem indicar"
-              variant="outline"
-              onPress={() => executarRecusa(null)}
-              style={styles.modalButton}
-            />
-            <Button title="Cancelar" variant="outline" onPress={fecharIndicacao} style={styles.modalButton} />
+                {carregandoCandidatos ? (
+                  <ActivityIndicator color={colors.primary} style={styles.modalLoading} />
+                ) : (
+                  <ScrollView style={styles.modalList}>
+                    {candidatos.length === 0 ? (
+                      <Text style={styles.emptyText}>Nenhum candidato disponível no momento.</Text>
+                    ) : (
+                      candidatos.map((candidato) => (
+                        <TouchableOpacity
+                          key={candidato.id}
+                          style={styles.modalItem}
+                          onPress={() => executarRecusa(candidato)}
+                        >
+                          <Text style={styles.modalItemText}>{candidato.nome}</Text>
+                        </TouchableOpacity>
+                      ))
+                    )}
+                  </ScrollView>
+                )}
+
+                <Button
+                  title="Voltar"
+                  variant="outline"
+                  onPress={() => setMostrarListaCandidatos(false)}
+                  style={styles.modalButton}
+                />
+              </>
+            )}
           </View>
         </View>
       </Modal>
