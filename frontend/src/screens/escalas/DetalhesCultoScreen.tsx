@@ -139,22 +139,28 @@ export function DetalhesCultoScreen() {
         origem: 'fixa',
         origemId: item.escala_fixa_id,
       }));
-      const equipeVocal: EquipeItem[] = escalaVocalDoCulto.map((item) => ({
-        chave: `vocal-${item.id}`,
-        nome: item.nome,
-        funcao: 'Vocal',
-        status: item.status,
-        origem: 'vocal',
-        origemId: item.id,
-      }));
-      const equipeAvulsa: EquipeItem[] = escalaAvulsaDoCulto.map((item) => ({
-        chave: `avulsa-${item.id}`,
-        nome: item.nome,
-        funcao: item.funcao,
-        status: item.status,
-        origem: 'avulsa',
-        origemId: item.id,
-      }));
+      // Quem recusou some da equipe sozinho — não precisa remover na mão (o
+      // registro continua existindo pra histórico, só não aparece mais aqui).
+      const equipeVocal: EquipeItem[] = escalaVocalDoCulto
+        .filter((item) => item.status !== 'recusado')
+        .map((item) => ({
+          chave: `vocal-${item.id}`,
+          nome: item.nome,
+          funcao: 'Vocal',
+          status: item.status,
+          origem: 'vocal',
+          origemId: item.id,
+        }));
+      const equipeAvulsa: EquipeItem[] = escalaAvulsaDoCulto
+        .filter((item) => item.status !== 'recusado')
+        .map((item) => ({
+          chave: `avulsa-${item.id}`,
+          nome: item.nome,
+          funcao: item.funcao,
+          status: item.status,
+          origem: 'avulsa',
+          origemId: item.id,
+        }));
 
       const minhaFuncaoFixa = equipeFixa.find((item) => item.nome === user?.nome);
       const minhaEscalaVocal = escalaVocalDoCulto.find(
