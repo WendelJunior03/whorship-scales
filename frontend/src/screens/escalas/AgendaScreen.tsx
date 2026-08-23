@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -60,6 +60,10 @@ function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
+// Depois de recusado, o card some sozinho da lista — só fica um tempinho pra
+// dar a confirmação visual de que a recusa foi registrada.
+const TEMPO_SOME_RECUSADO_MS = 5 * 60 * 1000;
+
 export function AgendaScreen() {
   const { colors, modo } = useTheme();
   const styles = useThemedStyles(criarEstilos);
@@ -84,6 +88,24 @@ export function AgendaScreen() {
   const [candidatos, setCandidatos] = useState<MembroCandidato[]>([]);
   const [carregandoCandidatos, setCarregandoCandidatos] = useState(false);
 
+  const timeoutsRecusadoRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  useEffect(() => {
+    return () => {
+      timeoutsRecusadoRef.current.forEach(clearTimeout);
+    };
+  }, []);
+
+  function agendarRemocaoRecusado(tipo: 'vocal' | 'avulsa', id: number) {
+    const timeout = setTimeout(() => {
+      if (tipo === 'vocal') {
+        setEscalaVocal((prev) => prev.filter((e) => e.id !== id));
+      } else {
+        setEscalaAvulsa((prev) => prev.filter((e) => e.id !== id));
+      }
+    }, TEMPO_SOME_RECUSADO_MS);
+    timeoutsRecusadoRef.current.push(timeout);
+  }
+
   const carregarDados = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -97,6 +119,8 @@ export function AgendaScreen() {
       setEscalaVocal(vocal);
       setEscalaAvulsa(avulsa);
       setEscalaFixa(fixa);
+      vocal.filter((e) => e.status === 'recusado').forEach((e) => agendarRemocaoRecusado('vocal', e.id));
+      avulsa.filter((e) => e.status === 'recusado').forEach((e) => agendarRemocaoRecusado('avulsa', e.id));
 
       const agora = new Date();
       const proximoPorDia: Partial<Record<DiaSemana, Culto>> = {};
@@ -215,11 +239,13 @@ export function AgendaScreen() {
             setEscalaVocal((prev) =>
               prev.map((e) => (e.id === atual.item.id ? { ...e, status: 'recusado' } : e)),
             );
+            agendarRemocaoRecusado('vocal', atual.item.id);
           } else if (atual.tipo === 'avulsa') {
             await escalaAvulsaService.confirmarPresencaAvulsa(atual.item.id, 'recusado', indicado?.id);
             setEscalaAvulsa((prev) =>
               prev.map((e) => (e.id === atual.item.id ? { ...e, status: 'recusado' } : e)),
             );
+            agendarRemocaoRecusado('avulsa', atual.item.id);
           } else {
             await excecoesService.criarExcecao({
               escalaFixaId: atual.item.id,
