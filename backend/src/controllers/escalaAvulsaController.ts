@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { createEscalaAvulsa, findEscalaAvulsaByCultoId, findEscalaAvulsaById, updateStatusEscalaAvulsa, findMinhaEscalaAvulsa, deleteEscalaAvulsa } from '../models/escalaAvulsaModel';
-import { findById, findAdminsAtivos } from '../models/membroModel';
+import { findById, findAdminsAtivos, findMembrosDisponiveisParaCulto } from '../models/membroModel';
 import { findCultoById } from '../models/cultoModel';
 import { createNotificacao } from '../models/notificacaoModel';
 import { enviarEmail } from '../services/emailService';
@@ -52,9 +52,23 @@ export async function getEscalaAvulsaDoCultoController(req: Request, res: Respon
     return res.status(200).json(escalaAvulsa);
 }
 
+export async function candidatosAvulsaController(req: Request, res: Response) {
+    if (!req.user) {
+        return res.status(401).json({ message: 'Não autorizado!' })
+    }
+
+    const cultoId = Number(req.query.cultoId)
+    if (!cultoId) {
+        return res.status(400).json({ message: 'cultoId é obrigatório!' })
+    }
+
+    const candidatos = await findMembrosDisponiveisParaCulto(cultoId, req.user.id)
+    return res.status(200).json(candidatos)
+}
+
 export async function confirmarPresencaAvulsaController(req: Request, res: Response) {
     const { id } = req.params
-    const { status } = req.body
+    const { status, indicadoId } = req.body
 
     if (!req.user) {
         return res.status(401).json({ message: 'Não autorizado!' })
@@ -95,17 +109,16 @@ export async function confirmarPresencaAvulsaController(req: Request, res: Respo
         try {
             const membro = await findById(req.user.id);
             const culto = await findCultoById(escalaAvulsa.culto_id);
+            const indicado = indicadoId ? await findById(Number(indicadoId)) : null;
+            const nomeMembro = membro?.nome ?? 'Um membro';
+            const dataCulto = culto ? ` do culto do dia ${formatarDataHoraCurta(culto.data_hora)}` : '';
+            const mensagem = indicado
+                ? `${nomeMembro} recusou a escala de "${escalaAvulsa.funcao}"${dataCulto} e indicou ${indicado.nome} para a escala.`
+                : `${nomeMembro} recusou a escala de "${escalaAvulsa.funcao}"${dataCulto}.`;
+
             const admins = await findAdminsAtivos();
             for (const admin of admins) {
-                await createNotificacao(
-                    admin.id,
-                    'substituicao',
-                    'Recusa de escala',
-                    culto
-                        ? `${membro?.nome ?? 'Um membro'} recusou a escala de "${escalaAvulsa.funcao}" do culto do dia ${formatarDataHoraCurta(culto.data_hora)}.`
-                        : `${membro?.nome ?? 'Um membro'} recusou a escala de "${escalaAvulsa.funcao}".`,
-                    escalaAvulsa.culto_id
-                );
+                await createNotificacao(admin.id, 'substituicao', 'Recusa de escala', mensagem, escalaAvulsa.culto_id);
             }
         } catch (error) {
             console.error('Erro ao criar notificação:', error);

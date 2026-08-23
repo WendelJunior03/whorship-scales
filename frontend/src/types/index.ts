@@ -160,6 +160,12 @@ export interface SugestaoVocal {
   ultima_vez: string | null;
 }
 
+/** Membro que dá pra indicar como substituto ao recusar uma escala. */
+export interface MembroCandidato {
+  id: number;
+  nome: string;
+}
+
 /**
  * Formato de cada item de GET /escala-vocal/culto/:cultoId — quem está
  * escalado como vocal num culto específico, com nome já resolvido via JOIN.

@@ -1,5 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { Calendar, DateData } from 'react-native-calendars';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -17,6 +26,7 @@ import { ApiError } from '@/services/api';
 import {
   Culto,
   DiaSemana,
+  MembroCandidato,
   MinhaEscalaAvulsaItem,
   MinhaEscalaFixaItem,
   MinhaEscalaVocalItem,
@@ -65,6 +75,14 @@ export function AgendaScreen() {
     {},
   );
 
+  type Indicacao =
+    | { tipo: 'vocal'; item: MinhaEscalaVocalItem }
+    | { tipo: 'avulsa'; item: MinhaEscalaAvulsaItem }
+    | { tipo: 'fixa'; item: MinhaEscalaFixaItem; data: string };
+  const [indicacao, setIndicacao] = useState<Indicacao | null>(null);
+  const [candidatos, setCandidatos] = useState<MembroCandidato[]>([]);
+  const [carregandoCandidatos, setCarregandoCandidatos] = useState(false);
+
   const carregarDados = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -103,11 +121,11 @@ export function AgendaScreen() {
     carregarDados();
   }, [carregarDados]);
 
-  async function handleAtualizarStatus(item: MinhaEscalaVocalItem, status: StatusEscalaVocal) {
+  async function handleConfirmarStatus(item: MinhaEscalaVocalItem) {
     setActionLoadingId(item.id);
     try {
-      await escalaVocalService.confirmarPresenca(item.id, status);
-      setEscalaVocal((prev) => prev.map((e) => (e.id === item.id ? { ...e, status } : e)));
+      await escalaVocalService.confirmarPresenca(item.id, 'confirmado');
+      setEscalaVocal((prev) => prev.map((e) => (e.id === item.id ? { ...e, status: 'confirmado' } : e)));
     } catch (err) {
       Alert.alert('Erro', err instanceof ApiError ? err.message : 'Não foi possível atualizar.');
     } finally {
@@ -115,11 +133,11 @@ export function AgendaScreen() {
     }
   }
 
-  async function handleAtualizarStatusAvulsa(item: MinhaEscalaAvulsaItem, status: StatusEscalaVocal) {
+  async function handleConfirmarStatusAvulsa(item: MinhaEscalaAvulsaItem) {
     setActionLoadingId(item.id);
     try {
-      await escalaAvulsaService.confirmarPresencaAvulsa(item.id, status);
-      setEscalaAvulsa((prev) => prev.map((e) => (e.id === item.id ? { ...e, status } : e)));
+      await escalaAvulsaService.confirmarPresencaAvulsa(item.id, 'confirmado');
+      setEscalaAvulsa((prev) => prev.map((e) => (e.id === item.id ? { ...e, status: 'confirmado' } : e)));
     } catch (err) {
       Alert.alert('Erro', err instanceof ApiError ? err.message : 'Não foi possível atualizar.');
     } finally {
@@ -127,7 +145,29 @@ export function AgendaScreen() {
     }
   }
 
-  function handleRecusarEscalaFixa(item: MinhaEscalaFixaItem) {
+  async function carregarCandidatos(buscar: () => Promise<MembroCandidato[]>) {
+    setCandidatos([]);
+    setCarregandoCandidatos(true);
+    try {
+      setCandidatos(await buscar());
+    } catch {
+      // sem candidatos pra indicar não impede a recusa — só some a lista
+    } finally {
+      setCarregandoCandidatos(false);
+    }
+  }
+
+  function abrirIndicacaoVocal(item: MinhaEscalaVocalItem) {
+    setIndicacao({ tipo: 'vocal', item });
+    carregarCandidatos(() => escalaVocalService.getCandidatosVocais(item.culto_id));
+  }
+
+  function abrirIndicacaoAvulsa(item: MinhaEscalaAvulsaItem) {
+    setIndicacao({ tipo: 'avulsa', item });
+    carregarCandidatos(() => escalaAvulsaService.getCandidatosAvulsa(item.culto_id));
+  }
+
+  function abrirIndicacaoFixa(item: MinhaEscalaFixaItem) {
     if (!selectedDate) {
       Alert.alert(
         'Selecione uma data',
@@ -135,26 +175,54 @@ export function AgendaScreen() {
       );
       return;
     }
+    setIndicacao({ tipo: 'fixa', item, data: selectedDate });
+    carregarCandidatos(() => excecoesService.getCandidatosExcecao());
+  }
+
+  function fecharIndicacao() {
+    setIndicacao(null);
+    setCandidatos([]);
+  }
+
+  function executarRecusa(indicado: MembroCandidato | null) {
+    if (!indicacao) return;
+    const atual = indicacao;
+    fecharIndicacao();
 
     confirmAction(
       {
         title: 'Recusar presença',
-        message: `Isso registra uma falta para "${item.funcao}" (${item.dia_semana}) no dia ${selectedDate}. O ministério vai precisar definir um substituto pra essa data. Confirmar?`,
+        message: indicado
+          ? `Recusar essa escala e indicar ${indicado.nome} pra te substituir?`
+          : 'Confirmar a recusa dessa escala?',
         confirmLabel: 'Recusar',
       },
       async () => {
-        setActionLoadingId(item.id);
+        setActionLoadingId(atual.item.id);
         try {
-          await excecoesService.criarExcecao({ escalaFixaId: item.id, data: selectedDate });
-          Alert.alert(
-            'Registrado',
-            'Sua falta foi registrada. Você será avisado quando um substituto for definido.',
-          );
+          if (atual.tipo === 'vocal') {
+            await escalaVocalService.confirmarPresenca(atual.item.id, 'recusado', indicado?.id);
+            setEscalaVocal((prev) =>
+              prev.map((e) => (e.id === atual.item.id ? { ...e, status: 'recusado' } : e)),
+            );
+          } else if (atual.tipo === 'avulsa') {
+            await escalaAvulsaService.confirmarPresencaAvulsa(atual.item.id, 'recusado', indicado?.id);
+            setEscalaAvulsa((prev) =>
+              prev.map((e) => (e.id === atual.item.id ? { ...e, status: 'recusado' } : e)),
+            );
+          } else {
+            await excecoesService.criarExcecao({
+              escalaFixaId: atual.item.id,
+              data: atual.data,
+              indicadoId: indicado?.id,
+            });
+            Alert.alert(
+              'Registrado',
+              'Sua falta foi registrada. Você será avisado quando um substituto for definido.',
+            );
+          }
         } catch (err) {
-          Alert.alert(
-            'Erro',
-            err instanceof ApiError ? err.message : 'Não foi possível registrar a falta.',
-          );
+          Alert.alert('Erro', err instanceof ApiError ? err.message : 'Não foi possível registrar a recusa.');
         } finally {
           setActionLoadingId(null);
         }
@@ -269,13 +337,13 @@ export function AgendaScreen() {
                 <View style={styles.acoes}>
                   <Button
                     title="Confirmar"
-                    onPress={() => handleAtualizarStatus(item, 'confirmado')}
+                    onPress={() => handleConfirmarStatus(item)}
                     loading={actionLoadingId === item.id}
                     style={styles.acaoBotao}
                   />
                   <Button
                     title="Recusar"
-                    onPress={() => handleAtualizarStatus(item, 'recusado')}
+                    onPress={() => abrirIndicacaoVocal(item)}
                     loading={actionLoadingId === item.id}
                     variant="outline"
                     style={styles.acaoBotao}
@@ -310,13 +378,13 @@ export function AgendaScreen() {
                 <View style={styles.acoes}>
                   <Button
                     title="Confirmar"
-                    onPress={() => handleAtualizarStatusAvulsa(item, 'confirmado')}
+                    onPress={() => handleConfirmarStatusAvulsa(item)}
                     loading={actionLoadingId === item.id}
                     style={styles.acaoBotao}
                   />
                   <Button
                     title="Recusar"
-                    onPress={() => handleAtualizarStatusAvulsa(item, 'recusado')}
+                    onPress={() => abrirIndicacaoAvulsa(item)}
                     loading={actionLoadingId === item.id}
                     variant="outline"
                     style={styles.acaoBotao}
@@ -357,7 +425,7 @@ export function AgendaScreen() {
                 </View>
                 <Button
                   title="Recusar"
-                  onPress={() => handleRecusarEscalaFixa(item)}
+                  onPress={() => abrirIndicacaoFixa(item)}
                   loading={actionLoadingId === item.id}
                   variant="outline"
                   style={styles.acaoBotaoUnico}
@@ -368,6 +436,50 @@ export function AgendaScreen() {
           </>
         )}
       </ScrollView>
+
+      <Modal
+        visible={!!indicacao}
+        animationType="slide"
+        transparent
+        onRequestClose={fecharIndicacao}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Indicar alguém pra sua vaga?</Text>
+            <Text style={styles.modalSubtitle}>
+              Opcional — o nome vai junto no aviso que o ministério recebe.
+            </Text>
+
+            {carregandoCandidatos ? (
+              <ActivityIndicator color={colors.primary} style={styles.modalLoading} />
+            ) : (
+              <ScrollView style={styles.modalList}>
+                {candidatos.length === 0 ? (
+                  <Text style={styles.emptyText}>Nenhum candidato disponível no momento.</Text>
+                ) : (
+                  candidatos.map((candidato) => (
+                    <TouchableOpacity
+                      key={candidato.id}
+                      style={styles.modalItem}
+                      onPress={() => executarRecusa(candidato)}
+                    >
+                      <Text style={styles.modalItemText}>{candidato.nome}</Text>
+                    </TouchableOpacity>
+                  ))
+                )}
+              </ScrollView>
+            )}
+
+            <Button
+              title="Recusar sem indicar"
+              variant="outline"
+              onPress={() => executarRecusa(null)}
+              style={styles.modalButton}
+            />
+            <Button title="Cancelar" variant="outline" onPress={fecharIndicacao} style={styles.modalButton} />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -457,5 +569,45 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
   acaoBotaoUnico: {
     alignSelf: 'flex-start',
     minWidth: 120,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: spacing.lg,
+    gap: spacing.md,
+    maxHeight: '70%',
+  },
+  modalTitle: {
+    ...typography.h3,
+    color: colors.text,
+  },
+  modalSubtitle: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    marginTop: -spacing.sm,
+  },
+  modalLoading: {
+    marginVertical: spacing.lg,
+  },
+  modalList: {
+    maxHeight: 280,
+  },
+  modalItem: {
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  modalItemText: {
+    ...typography.body,
+    color: colors.text,
+  },
+  modalButton: {
+    marginTop: spacing.xs,
   },
 });

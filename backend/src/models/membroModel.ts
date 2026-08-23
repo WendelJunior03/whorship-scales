@@ -89,3 +89,43 @@ export async function findAdminsAtivos() {
     const result = await query("SELECT id FROM membros WHERE papel = 'admin' AND ativo = true");
     return result.rows;
 }
+
+/**
+ * Membros ativos que dá pra indicar como substituto num culto específico —
+ * exclui quem está indicando e quem já está escalado (vocal ou avulsa, com
+ * status diferente de recusado) nesse mesmo culto. `papel` filtra por papel
+ * legado quando informado (ex.: só vocais pra indicação de escala de vocal).
+ */
+export async function findMembrosDisponiveisParaCulto(cultoId: number, excluirMembroId: number, papel?: string) {
+    const params: (number | string)[] = [cultoId, excluirMembroId];
+    let filtroPapel = '';
+    if (papel) {
+        params.push(papel);
+        filtroPapel = `AND membros.papel = $${params.length}`;
+    }
+    const result = await query(
+        `SELECT membros.id, membros.nome FROM membros
+         WHERE membros.ativo = true AND membros.id <> $2 ${filtroPapel}
+           AND membros.id NOT IN (
+             SELECT membro_id FROM escala_vocal WHERE culto_id = $1 AND status <> 'recusado'
+             UNION
+             SELECT membro_id FROM escala_avulsa WHERE culto_id = $1 AND status <> 'recusado'
+           )
+         ORDER BY membros.nome ASC`,
+        params,
+    );
+    return result.rows;
+}
+
+/**
+ * Membros ativos pra indicar como substituto numa falta de escala fixa (sem
+ * culto específico — é uma vaga semanal recorrente) — só exclui quem está
+ * indicando.
+ */
+export async function findMembrosAtivosExcluindo(excluirMembroId: number) {
+    const result = await query(
+        'SELECT id, nome FROM membros WHERE ativo = true AND id <> $1 ORDER BY nome ASC',
+        [excluirMembroId],
+    );
+    return result.rows;
+}

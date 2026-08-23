@@ -1,5 +1,5 @@
 import { api } from './api';
-import { EscalaAvulsaDoCultoItem, MinhaEscalaAvulsaItem, StatusEscalaVocal } from '@/types';
+import { EscalaAvulsaDoCultoItem, MembroCandidato, MinhaEscalaAvulsaItem, StatusEscalaVocal } from '@/types';
 
 export interface CriarEscalaAvulsaInput {
   membroId: number;
@@ -34,10 +34,26 @@ export async function deletarEscalaAvulsa(id: number): Promise<void> {
 
 /**
  * Confirma ou recusa a própria presença numa escala avulsa. Só o dono
- * do registro.
+ * do registro. Ao recusar, dá pra indicar quem poderia substituir
+ * (opcional) — o nome vai junto no aviso que o ministério recebe.
  */
-export async function confirmarPresencaAvulsa(id: number, status: StatusEscalaVocal): Promise<void> {
-  await api.put(`/escala-avulsa/${id}/status`, { status });
+export async function confirmarPresencaAvulsa(
+  id: number,
+  status: StatusEscalaVocal,
+  indicadoId?: number,
+): Promise<void> {
+  await api.put(`/escala-avulsa/${id}/status`, { status, indicadoId });
+}
+
+/**
+ * Membros ativos que dá pra indicar como substituto num culto específico
+ * (exclui quem já está escalado nele e quem está indicando).
+ */
+export async function getCandidatosAvulsa(cultoId: number): Promise<MembroCandidato[]> {
+  const response = await api.get<MembroCandidato[]>('/escala-avulsa/candidatos', {
+    params: { cultoId },
+  });
+  return response.data;
 }
 
 /**
