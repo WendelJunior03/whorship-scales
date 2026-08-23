@@ -37,56 +37,55 @@ export async function createExcecoesController(req: Request, res: Response) {
         return res.status(403).json({ message: 'Não autorizado!' })
     }
     
-    await createExcecao(escalaFixaId, data, substitutoId);
+    const dono = await findById(escalaFixa.membro_id);
+    const nomeDono = dono?.nome ?? 'Um membro';
+    // `indicadoId` (indicação no ato da recusa) já convida de verdade — vira substituto
+    // igual o admin escolhendo manualmente, pra pessoa não depender do admin agir primeiro.
+    const foiIndicacao = !substitutoId && !!indicadoId;
+    const substitutoFinalId = substitutoId ?? indicadoId;
+    await createExcecao(escalaFixaId, data, substitutoFinalId);
 
-    const substituto = substitutoId ? await findById(substitutoId) : null;
+    const substituto = substitutoFinalId ? await findById(substitutoFinalId) : null;
+
     if (substituto) {
         try {
             await enviarEmail(
-            substituto.email,
-            'Você foi escalado para um culto!',
-            `Olá ${substituto.nome}, você foi escalado para um culto no dia ${data}.`
-        );
+                substituto.email,
+                'Você foi escalado para um culto!',
+                foiIndicacao
+                    ? `Olá ${substituto.nome}, ${nomeDono} indicou você para o culto do dia ${data}.`
+                    : `Olá ${substituto.nome}, você foi escalado para um culto no dia ${data}.`
+            );
         } catch (error) {
             console.error('Erro ao enviar email:', error);
         }
         try {
             await createNotificacao(
-                substitutoId,
+                substituto.id,
                 'substituicao',
-                'Substituição registrada',
-                `Você foi escalado como substituto para o culto do dia ${data}.`
+                foiIndicacao ? 'Você foi indicado' : 'Substituição registrada',
+                foiIndicacao
+                    ? `${nomeDono} recusou a escala de "${escalaFixa.funcao}" (${escalaFixa.dia_semana}) do dia ${data} e indicou você. Confirme sua presença.`
+                    : `Você foi escalado como substituto para o culto do dia ${data}.`
             );
         } catch (error) {
             console.error('Erro ao criar notificação:', error);
         }
-    } else {
-        // Recusa sem substituto já escolhido — avisa os admins que a vaga está aberta.
-        try {
-            const dono = await findById(escalaFixa.membro_id);
-            const indicado = indicadoId ? await findById(Number(indicadoId)) : null;
-            const nomeDono = dono?.nome ?? 'Um membro';
-            const base = `${nomeDono} recusou a escala de "${escalaFixa.funcao}" (${escalaFixa.dia_semana}) do dia ${data}.`;
-            const mensagem = indicado
-                ? `${base} Indicou ${indicado.nome} para a escala.`
-                : `${base} Precisa definir um substituto.`;
-
-            const admins = await findAdminsAtivos();
-            for (const admin of admins) {
-                await createNotificacao(admin.id, 'substituicao', 'Falta registrada', mensagem);
-            }
-
-            if (indicado) {
-                await createNotificacao(
-                    indicado.id,
-                    'substituicao',
-                    'Você foi indicado',
-                    `${nomeDono} recusou a escala de "${escalaFixa.funcao}" (${escalaFixa.dia_semana}) do dia ${data} e indicou você.`
-                );
-            }
-        } catch (error) {
-            console.error('Erro ao criar notificação:', error);
-        }
     }
+
+    // Admins ficam sabendo da recusa — com ou sem indicação, a vaga preenchida ou não.
+    try {
+        const mensagem = substituto
+            ? `${nomeDono} recusou a escala de "${escalaFixa.funcao}" (${escalaFixa.dia_semana}) do dia ${data} e indicou ${substituto.nome} para a escala.`
+            : `${nomeDono} recusou a escala de "${escalaFixa.funcao}" (${escalaFixa.dia_semana}) do dia ${data}. Precisa definir um substituto.`;
+
+        const admins = await findAdminsAtivos();
+        for (const admin of admins) {
+            await createNotificacao(admin.id, 'substituicao', 'Falta registrada', mensagem);
+        }
+    } catch (error) {
+        console.error('Erro ao criar notificação:', error);
+    }
+
     return res.status(201).json({ message: 'Exceção cadastrada com sucesso!' })
 }

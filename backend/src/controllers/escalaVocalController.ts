@@ -130,11 +130,23 @@ export async function confirmarPresencaController (req: Request, res: Response) 
             }
 
             if (indicado) {
+                // Indicar já convida de verdade — cria a escala (pendente) igual o admin
+                // faria manualmente, pra pessoa não depender do admin agir primeiro.
+                await createEscalaVocal(indicado.id, escalaVocal.culto_id);
+                try {
+                    await enviarEmail(
+                        indicado.email,
+                        'Você foi escalado para um culto!',
+                        `Olá ${indicado.nome}, ${nomeMembro} indicou você para o culto${dataCulto}.`
+                    );
+                } catch (error) {
+                    console.error('Erro ao enviar email:', error);
+                }
                 await createNotificacao(
                     indicado.id,
                     'substituicao',
                     'Você foi indicado',
-                    `${nomeMembro} recusou a escala de vocal${dataCulto} e indicou você.`,
+                    `${nomeMembro} recusou a escala de vocal${dataCulto} e indicou você. Confirme sua presença.`,
                     escalaVocal.culto_id
                 );
             }
