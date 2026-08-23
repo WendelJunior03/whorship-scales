@@ -28,7 +28,7 @@ import * as membrosService from '@/services/membros';
 import { ApiError } from '@/services/api';
 import { confirmAction } from '@/utils/confirm';
 import { Culto, DiaSemana, EscalaFixaMontada, EscalaVocalDoCultoItem, Membro } from '@/types';
-import { spacing, typography } from '@/theme';
+import { LARGURA_CONTEUDO, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { formatDiaCompleto, formatDiaCurto, formatHora } from '@/utils/date';
@@ -248,6 +248,7 @@ export function EscalaFixaScreen() {
         title="Escala Fixa"
         showBack
         rightIcon="mic-outline"
+        rightIconLabel="Gerar escala de vocal"
         onRightPress={abrirGerarEscala}
       />
 
@@ -336,7 +337,12 @@ export function EscalaFixaScreen() {
         })}
       </ScrollView>
 
-      <TouchableOpacity style={styles.fab} onPress={abrirNovaEscala}>
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={abrirNovaEscala}
+        accessibilityRole="button"
+        accessibilityLabel="Criar nova escala fixa"
+      >
         <Icon name="add" size={28} color={colors.textInverse} />
       </TouchableOpacity>
 
@@ -522,6 +528,9 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     flex: 1,
   },
   content: {
+    width: '100%',
+    maxWidth: LARGURA_CONTEUDO,
+    alignSelf: 'center',
     padding: spacing.lg,
     paddingTop: spacing.sm,
     gap: spacing.md,

@@ -22,7 +22,7 @@ import {
   MinhaEscalaVocalItem,
   StatusEscalaVocal,
 } from '@/types';
-import { spacing, typography } from '@/theme';
+import { LARGURA_CONTEUDO, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { formatDiaCompleto, formatHora } from '@/utils/date';
@@ -408,6 +408,9 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     flex: 1,
   },
   content: {
+    width: '100%',
+    maxWidth: LARGURA_CONTEUDO,
+    alignSelf: 'center',
     padding: spacing.lg,
     paddingTop: 0,
     gap: spacing.md,

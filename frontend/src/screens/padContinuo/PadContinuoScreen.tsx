@@ -91,6 +91,7 @@ export function PadContinuoScreen() {
         subtitle="Banco de Pads"
         showBack
         rightIcon="settings-outline"
+        rightIconLabel="Personalizar aparência dos pads"
         onRightPress={() => setPainelAberto(true)}
       />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>

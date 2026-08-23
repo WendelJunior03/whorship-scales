@@ -22,7 +22,7 @@ import * as musicasService from '@/services/musicas';
 import { ApiError } from '@/services/api';
 import { podeGerir } from '@/utils/papel';
 import { Musica } from '@/types';
-import { fonts, radius, spacing, typography } from '@/theme';
+import { fonts, LARGURA_CONTEUDO, radius, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 
@@ -156,7 +156,7 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   centro: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.lg },
   erroTexto: { ...typography.bodySmall, color: colors.textSecondary, textAlign: 'center' },
-  lista: { padding: spacing.lg, gap: spacing.sm },
+  lista: { width: '100%', maxWidth: LARGURA_CONTEUDO, alignSelf: 'center', padding: spacing.lg, gap: spacing.sm },
   novo: { marginBottom: spacing.sm },
   vazio: { ...typography.bodySmall, color: colors.textMuted, textAlign: 'center', marginTop: spacing.xl },
   card: {

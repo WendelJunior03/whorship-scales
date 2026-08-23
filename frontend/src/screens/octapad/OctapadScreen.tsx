@@ -124,6 +124,7 @@ export function OctapadScreen() {
             subtitle="Bateria eletrônica"
             showBack
             rightIcon={suportado ? 'settings-outline' : undefined}
+            rightIconLabel="Personalizar aparência do octapad"
             onRightPress={() => setPainelAberto(true)}
           />
 

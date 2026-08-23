@@ -13,7 +13,7 @@ import { KIT_PADRAO } from '@/audio/kits';
 import { getAudioContext } from '@/audio/audioContext';
 import { BIBLIOTECA_DRUMS, CATEGORIAS_BIBLIOTECA_DRUMS, SomBiblioteca } from '@/audio/bibliotecaDrums';
 import type { MainStackParamList } from '@/navigation/MainNavigator';
-import { fonts, radius, spacing, typography } from '@/theme';
+import { fonts, LARGURA_CONTEUDO, radius, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 
@@ -115,11 +115,22 @@ export function BibliotecaDrumsScreen() {
               const tocando = tocandoId === item.id;
               return (
                 <View key={item.id} style={[styles.item, selecionado && styles.itemSelecionado]}>
-                  <TouchableOpacity onPress={() => tocarPreview(item)} hitSlop={8} style={styles.previewBotao}>
+                  <TouchableOpacity
+                    onPress={() => tocarPreview(item)}
+                    hitSlop={8}
+                    style={styles.previewBotao}
+                    accessibilityRole="button"
+                    accessibilityLabel={tocando ? `Parar prévia de ${item.nome}` : `Tocar prévia de ${item.nome}`}
+                  >
                     <Icon name={tocando ? 'stop' : 'play'} size={16} color={colors.primary} />
                   </TouchableOpacity>
                   <Text style={styles.itemNome}>{item.nome}</Text>
-                  <TouchableOpacity onPress={() => usar(item)} hitSlop={8}>
+                  <TouchableOpacity
+                    onPress={() => usar(item)}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={selecionado ? `${item.nome} selecionado` : `Usar ${item.nome}`}
+                  >
                     {selecionado ? (
                       <Icon name="checkmark-circle" size={20} color={colors.primary} />
                     ) : (
@@ -165,7 +176,14 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     color: colors.primary,
     fontFamily: fonts.semibold,
   },
-  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
+  content: {
+    width: '100%',
+    maxWidth: LARGURA_CONTEUDO,
+    alignSelf: 'center',
+    padding: spacing.lg,
+    gap: spacing.md,
+    paddingBottom: spacing.xl,
+  },
   aviso: {
     flexDirection: 'row',
     alignItems: 'center',

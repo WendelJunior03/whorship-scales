@@ -19,7 +19,7 @@ import * as repertorioService from '@/services/repertorio';
 import { ApiError } from '@/services/api';
 import { MinhaEscalaFixaItem } from '@/types';
 import { MeuProximoCulto } from '@/services/repertorio';
-import { spacing, radius, typography, fonts } from '@/theme';
+import { spacing, radius, typography, fonts, LARGURA_CONTEUDO } from '@/theme';
 import { Cores, Sombras } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { formatDiaCompleto, formatHora } from '@/utils/date';
@@ -115,6 +115,8 @@ export function HomeScreen() {
           style={styles.bell}
           onPress={() => navigation.navigate('Notificacoes')}
           hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={temNotificacaoNaoLida ? 'Notificações (não lidas)' : 'Notificações'}
         >
           <Icon name="notifications-outline" size={22} color={colors.text} />
           {temNotificacaoNaoLida && <View style={styles.badgeDot} />}
@@ -299,6 +301,9 @@ const criarEstilos = (colors: Cores, shadows: Sombras) => StyleSheet.create({
     flex: 1,
   },
   content: {
+    width: '100%',
+    maxWidth: LARGURA_CONTEUDO,
+    alignSelf: 'center',
     padding: spacing.lg,
     paddingTop: spacing.sm,
     gap: spacing.md,

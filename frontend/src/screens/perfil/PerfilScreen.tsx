@@ -15,7 +15,7 @@ import { papelOrgLabel, papelOrgTone, papelOrgDe, papelMinisterioLabel, isAdmin 
 import { SeloPro } from '@/components/SeloPro';
 import { SeletorTema } from '@/components/SeletorTema';
 import { useRecurso } from '@/hooks/useRecurso';
-import { fonts, radius, spacing, typography } from '@/theme';
+import { fonts, LARGURA_CONTEUDO, radius, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import appConfig from '../../../app.json';
@@ -168,7 +168,11 @@ export function PerfilScreen() {
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{user?.nome?.[0] ?? '?'}</Text>
           </View>
-          <TouchableOpacity style={styles.cameraButton}>
+          <TouchableOpacity
+            style={styles.cameraButton}
+            accessibilityRole="button"
+            accessibilityLabel="Alterar foto do perfil"
+          >
             <Icon name="camera" size={16} color={colors.textInverse} />
           </TouchableOpacity>
         </View>
@@ -324,6 +328,9 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     flex: 1,
   },
   content: {
+    width: '100%',
+    maxWidth: LARGURA_CONTEUDO,
+    alignSelf: 'center',
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
     gap: spacing.xs,

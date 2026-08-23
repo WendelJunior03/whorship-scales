@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { MainTabScreenNavigationProp } from '@/navigation/types';
 import { Cores, Sombras } from '@/theme/palettes';
-import { spacing, radius, typography, fonts } from '@/theme';
+import { spacing, radius, typography, fonts, LARGURA_CONTEUDO } from '@/theme';
 import { podeGerir, isAdmin } from '@/utils/papel';
 
 /** Só rotas da stack sem params obrigatórios — as que a aba de recursos abre direto. */
@@ -114,6 +114,9 @@ const criarEstilos = (colors: Cores, shadows: Sombras) =>
       flex: 1,
     },
     content: {
+      width: '100%',
+      maxWidth: LARGURA_CONTEUDO,
+      alignSelf: 'center',
       padding: spacing.lg,
       paddingTop: spacing.sm,
       gap: spacing.md,

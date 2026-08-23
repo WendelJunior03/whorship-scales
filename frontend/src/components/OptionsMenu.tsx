@@ -33,7 +33,12 @@ export function OptionsMenu({ actions, loading }: OptionsMenuProps) {
 
   return (
     <>
-      <TouchableOpacity onPress={() => setAberto(true)} hitSlop={10}>
+      <TouchableOpacity
+        onPress={() => setAberto(true)}
+        hitSlop={10}
+        accessibilityRole="button"
+        accessibilityLabel="Mais opções"
+      >
         <Icon name="ellipsis-vertical" size={18} color={colors.textMuted} />
       </TouchableOpacity>
 

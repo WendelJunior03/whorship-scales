@@ -15,7 +15,7 @@ import * as membrosService from '@/services/membros';
 import { ApiError } from '@/services/api';
 import { Membro, Papel } from '@/types';
 import { papelLabel, isAdmin, papelOrgLabel, papelOrgTone, papelOrgDe } from '@/utils/papel';
-import { spacing, typography } from '@/theme';
+import { LARGURA_CONTEUDO, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 
@@ -160,6 +160,8 @@ export function MembrosScreen() {
       <TouchableOpacity
         style={styles.fab}
         onPress={() => navigation.navigate('DetalheMembro', { membroId: undefined })}
+        accessibilityRole="button"
+        accessibilityLabel="Adicionar membro"
       >
         <Icon name="add" size={28} color={colors.textInverse} />
       </TouchableOpacity>
@@ -190,6 +192,9 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     flex: 1,
   },
   listContent: {
+    width: '100%',
+    maxWidth: LARGURA_CONTEUDO,
+    alignSelf: 'center',
     padding: spacing.lg,
     paddingTop: spacing.sm,
     gap: spacing.sm,

@@ -7,7 +7,7 @@ import { Card } from '@/components/Card';
 import * as notificacoesService from '@/services/notificacoes';
 import { ApiError } from '@/services/api';
 import { Notificacao, TipoNotificacao } from '@/types';
-import { spacing, typography } from '@/theme';
+import { LARGURA_CONTEUDO, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { formatDataRelativa, formatHora } from '@/utils/date';
@@ -173,6 +173,9 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     flex: 1,
   },
   listContent: {
+    width: '100%',
+    maxWidth: LARGURA_CONTEUDO,
+    alignSelf: 'center',
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.lg,
     gap: spacing.sm,

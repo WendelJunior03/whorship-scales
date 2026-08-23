@@ -11,10 +11,18 @@ interface HeaderProps {
   subtitle?: string;
   showBack?: boolean;
   rightIcon?: IconName;
+  rightIconLabel?: string;
   onRightPress?: () => void;
 }
 
-export function Header({ title, subtitle, showBack, rightIcon, onRightPress }: HeaderProps) {
+export function Header({
+  title,
+  subtitle,
+  showBack,
+  rightIcon,
+  rightIconLabel,
+  onRightPress,
+}: HeaderProps) {
   const navigation = useNavigation();
   const { colors } = useTheme();
   const styles = useThemedStyles(criarEstilos);
@@ -23,7 +31,12 @@ export function Header({ title, subtitle, showBack, rightIcon, onRightPress }: H
     <View style={styles.container}>
       <View style={styles.side}>
         {showBack && (
-          <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Voltar"
+          >
             <Icon name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
         )}
@@ -42,7 +55,12 @@ export function Header({ title, subtitle, showBack, rightIcon, onRightPress }: H
 
       <View style={[styles.side, styles.sideRight]}>
         {rightIcon && (
-          <TouchableOpacity onPress={onRightPress} hitSlop={10}>
+          <TouchableOpacity
+            onPress={onRightPress}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={rightIconLabel ?? 'Mais opções'}
+          >
             <Icon name={rightIcon} size={24} color={colors.text} />
           </TouchableOpacity>
         )}
