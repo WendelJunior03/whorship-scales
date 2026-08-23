@@ -1,6 +1,7 @@
 import React from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, ViewStyle } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
@@ -14,6 +15,8 @@ interface ButtonProps {
   style?: ViewStyle;
 }
 
+const PressableAnimado = Animated.createAnimatedComponent(Pressable);
+
 export function Button({
   title,
   onPress,
@@ -25,26 +28,45 @@ export function Button({
   const { colors } = useTheme();
   const styles = useThemedStyles(criarEstilos);
   const isDisabled = disabled || loading;
+  const escala = useSharedValue(1);
+  const estiloEscala = useAnimatedStyle(() => ({ transform: [{ scale: escala.value }] }));
+  const pressIn = () => {
+    escala.value = withTiming(0.97, { duration: 100 });
+  };
+  const pressOut = () => {
+    escala.value = withTiming(1, { duration: 150 });
+  };
 
   if (variant === 'outline') {
     return (
-      <TouchableOpacity
+      <PressableAnimado
         onPress={onPress}
+        onPressIn={pressIn}
+        onPressOut={pressOut}
         disabled={isDisabled}
-        style={[styles.outline, isDisabled && styles.disabled, style]}
-        activeOpacity={0.8}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: isDisabled }}
+        style={[styles.outline, isDisabled && styles.disabled, style, estiloEscala]}
       >
         {loading ? (
           <ActivityIndicator color={colors.primary} />
         ) : (
           <Text style={styles.outlineText}>{title}</Text>
         )}
-      </TouchableOpacity>
+      </PressableAnimado>
     );
   }
 
   return (
-    <TouchableOpacity onPress={onPress} disabled={isDisabled} activeOpacity={0.85} style={style}>
+    <PressableAnimado
+      onPress={onPress}
+      onPressIn={pressIn}
+      onPressOut={pressOut}
+      disabled={isDisabled}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: isDisabled }}
+      style={[style, estiloEscala]}
+    >
       <LinearGradient
         colors={isDisabled ? [colors.textMuted, colors.textMuted] : colors.primaryGradient}
         start={{ x: 0, y: 0 }}
@@ -57,7 +79,7 @@ export function Button({
           <Text style={styles.text}>{title}</Text>
         )}
       </LinearGradient>
-    </TouchableOpacity>
+    </PressableAnimado>
   );
 }
 
