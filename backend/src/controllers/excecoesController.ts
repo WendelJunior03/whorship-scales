@@ -81,6 +81,8 @@ export async function createExcecoesController(req: Request, res: Response) {
 
         const admins = await findAdminsAtivos();
         for (const admin of admins) {
+            // O substituto/indicado já recebeu o aviso pessoal acima — evita duplicar.
+            if (substituto && admin.id === substituto.id) continue;
             await createNotificacao(admin.id, 'substituicao', 'Falta registrada', mensagem);
         }
     } catch (error) {

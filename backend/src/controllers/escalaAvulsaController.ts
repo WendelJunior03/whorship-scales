@@ -118,6 +118,8 @@ export async function confirmarPresencaAvulsaController(req: Request, res: Respo
 
             const admins = await findAdminsAtivos();
             for (const admin of admins) {
+                // O indicado já recebe o aviso pessoal "Você foi indicado" abaixo — evita duplicar.
+                if (indicado && admin.id === indicado.id) continue;
                 await createNotificacao(admin.id, 'substituicao', 'Recusa de escala', mensagem, escalaAvulsa.culto_id);
             }
 

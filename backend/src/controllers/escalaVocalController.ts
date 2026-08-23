@@ -126,6 +126,8 @@ export async function confirmarPresencaController (req: Request, res: Response) 
 
             const admins = await findAdminsAtivos();
             for (const admin of admins) {
+                // O indicado já recebe o aviso pessoal "Você foi indicado" abaixo — evita duplicar.
+                if (indicado && admin.id === indicado.id) continue;
                 await createNotificacao(admin.id, 'substituicao', 'Recusa de escala', mensagem, escalaVocal.culto_id);
             }
 
