@@ -446,9 +446,6 @@ export function AgendaScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Indicar alguém pra sua vaga?</Text>
-            <Text style={styles.modalSubtitle}>
-              Opcional — o nome vai junto no aviso que o ministério recebe.
-            </Text>
 
             {carregandoCandidatos ? (
               <ActivityIndicator color={colors.primary} style={styles.modalLoading} />
@@ -586,11 +583,6 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
   modalTitle: {
     ...typography.h3,
     color: colors.text,
-  },
-  modalSubtitle: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    marginTop: -spacing.sm,
   },
   modalLoading: {
     marginVertical: spacing.lg,
