@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { createExcecao } from '../models/excecoesModel';
 import { findEscalaFixaById } from '../models/escalaFixaModel';
 import { enviarEmail } from '../services/emailService';
-import { findById } from '../models/membroModel';
+import { findAdminsAtivos, findById } from '../models/membroModel';
 import { createNotificacao } from '../models/notificacaoModel';
 import { podeAcessar, mesmoUsuario } from '../config/capacidades';
 
@@ -30,7 +30,7 @@ export async function createExcecoesController(req: Request, res: Response) {
     
     await createExcecao(escalaFixaId, data, substitutoId);
 
-    const substituto = await findById(substitutoId);
+    const substituto = substitutoId ? await findById(substitutoId) : null;
     if (substituto) {
         try {
             await enviarEmail(
@@ -48,6 +48,22 @@ export async function createExcecoesController(req: Request, res: Response) {
                 'Substituição registrada',
                 `Você foi escalado como substituto para o culto do dia ${data}.`
             );
+        } catch (error) {
+            console.error('Erro ao criar notificação:', error);
+        }
+    } else {
+        // Recusa sem substituto já escolhido — avisa os admins que a vaga está aberta.
+        try {
+            const dono = await findById(escalaFixa.membro_id);
+            const admins = await findAdminsAtivos();
+            for (const admin of admins) {
+                await createNotificacao(
+                    admin.id,
+                    'substituicao',
+                    'Falta registrada',
+                    `${dono?.nome ?? 'Um membro'} recusou a escala de "${escalaFixa.funcao}" (${escalaFixa.dia_semana}) do dia ${data}. Precisa definir um substituto.`
+                );
+            }
         } catch (error) {
             console.error('Erro ao criar notificação:', error);
         }

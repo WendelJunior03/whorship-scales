@@ -91,6 +91,25 @@ export async function confirmarPresencaAvulsaController(req: Request, res: Respo
         } catch (error) {
             console.error('Erro ao criar notificação:', error);
         }
+    } else if (status === 'recusado') {
+        try {
+            const membro = await findById(req.user.id);
+            const culto = await findCultoById(escalaAvulsa.culto_id);
+            const admins = await findAdminsAtivos();
+            for (const admin of admins) {
+                await createNotificacao(
+                    admin.id,
+                    'substituicao',
+                    'Recusa de escala',
+                    culto
+                        ? `${membro?.nome ?? 'Um membro'} recusou a escala de "${escalaAvulsa.funcao}" do culto do dia ${formatarDataHoraCurta(culto.data_hora)}.`
+                        : `${membro?.nome ?? 'Um membro'} recusou a escala de "${escalaAvulsa.funcao}".`,
+                    escalaAvulsa.culto_id
+                );
+            }
+        } catch (error) {
+            console.error('Erro ao criar notificação:', error);
+        }
     }
 
     return res.status(200).json({ message: 'Escala avulsa atualizada com sucesso!' })
