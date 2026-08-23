@@ -447,6 +447,12 @@ export function DetalhesCultoScreen() {
     (m) => m.papel === 'vocal' && !selecionadosVocal.some((s) => s.id === m.id),
   );
 
+  // Quem já está na equipe do culto (fixa, vocal ou avulsa) some da lista de
+  // adicionar — evita escalar a mesma pessoa duas vezes pro mesmo culto.
+  const membrosParaEscolher = todosMembrosAtivos.filter(
+    (m) => !equipe.some((item) => item.nome === m.nome),
+  );
+
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <Header title="Detalhes do Culto" showBack />
@@ -775,10 +781,10 @@ export function DetalhesCultoScreen() {
               <ActivityIndicator color={colors.primary} style={styles.modalLoading} />
             ) : (
               <ScrollView style={styles.modalList}>
-                {todosMembrosAtivos.length === 0 ? (
+                {membrosParaEscolher.length === 0 ? (
                   <Text style={styles.emptyText}>Nenhum membro disponível.</Text>
                 ) : (
-                  todosMembrosAtivos.map((membro) => (
+                  membrosParaEscolher.map((membro) => (
                     <TouchableOpacity
                       key={membro.id}
                       style={styles.modalItem}
