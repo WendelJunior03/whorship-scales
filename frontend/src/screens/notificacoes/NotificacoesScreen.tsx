@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, SectionList, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Icon, IconName } from '@/components/Icon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
@@ -11,6 +11,7 @@ import { spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { formatDataRelativa, formatHora } from '@/utils/date';
+import { confirmAction } from '@/utils/confirm';
 
 const iconePorTipo: Record<TipoNotificacao, IconName> = {
   escala: 'calendar',
@@ -72,6 +73,23 @@ export function NotificacoesScreen() {
     });
   }
 
+  function handleLimpar() {
+    confirmAction(
+      {
+        title: 'Limpar notificações',
+        message: 'Isso remove todas as suas notificações. Essa ação não pode ser desfeita.',
+        confirmLabel: 'Limpar',
+      },
+      () => {
+        const anteriores = notificacoes;
+        setNotificacoes([]);
+        notificacoesService.limparNotificacoes().catch(() => {
+          setNotificacoes(anteriores);
+        });
+      },
+    );
+  }
+
   if (isLoading) {
     return (
       <SafeAreaView style={[styles.screen, styles.centered]} edges={['top']}>
@@ -100,7 +118,16 @@ export function NotificacoesScreen() {
     <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.title}>Notificações</Text>
-        <Icon name="settings-outline" size={22} color={colors.text} />
+        {notificacoes.length > 0 && (
+          <TouchableOpacity
+            onPress={handleLimpar}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Limpar notificações"
+          >
+            <Icon name="trash-outline" size={22} color={colors.text} />
+          </TouchableOpacity>
+        )}
       </View>
 
       <SectionList

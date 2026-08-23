@@ -19,3 +19,8 @@ export async function marcarComoLida(id: number) {
     const result = await query('UPDATE notificacoes SET lida = true WHERE id = $1 RETURNING *', [id]);
     return result.rows[0];
 }
+
+export async function deletarMinhasNotificacoes(membroId: number) {
+    const result = await query('DELETE FROM notificacoes WHERE membro_id = $1 RETURNING id', [membroId]);
+    return result.rows;
+}
