@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { Calendar, DateData } from 'react-native-calendars';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Badge } from '@/components/Badge';
@@ -30,25 +30,12 @@ import {
   MinhaEscalaAvulsaItem,
   MinhaEscalaFixaItem,
   MinhaEscalaVocalItem,
-  StatusEscalaVocal,
 } from '@/types';
 import { spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { formatDiaCompleto, formatHora } from '@/utils/date';
 import { confirmAction } from '@/utils/confirm';
-
-const statusLabel: Record<StatusEscalaVocal, string> = {
-  pendente: 'Pendente',
-  confirmado: 'Confirmado',
-  recusado: 'Recusado',
-};
-
-const statusTone: Record<StatusEscalaVocal, 'warning' | 'success' | 'error'> = {
-  pendente: 'warning',
-  confirmado: 'success',
-  recusado: 'error',
-};
 
 const diaSemanaPorIndice: Record<number, DiaSemana> = {
   0: 'domingo',
@@ -60,10 +47,16 @@ function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-// Depois de recusado, o card some sozinho da lista — só fica um tempinho pra
-// dar a confirmação visual de que a recusa foi registrada.
-const TEMPO_SOME_RECUSADO_MS = 5 * 60 * 1000;
-
+/**
+ * Compromissos: lista TUDO que a pessoa está escalada (vocal, avulsa e
+ * fixa), sem status de pendente/confirmado/recusado — confirmar e recusar
+ * vocal/avulsa agora acontece direto na notificação de "nova escala". Quem
+ * recusou lá simplesmente já não aparece mais aqui na próxima vez que a
+ * tela carregar (por isso recarrega sempre que a aba ganha foco).
+ * Escala fixa é diferente: não tem notificação de "nova escala" (é um
+ * vínculo semanal permanente), então "Recusar" (marcar falta numa data)
+ * continua aqui mesmo.
+ */
 export function AgendaScreen() {
   const { colors, modo } = useTheme();
   const styles = useThemedStyles(criarEstilos);
@@ -79,32 +72,11 @@ export function AgendaScreen() {
     {},
   );
 
-  type Indicacao =
-    | { tipo: 'vocal'; item: MinhaEscalaVocalItem }
-    | { tipo: 'avulsa'; item: MinhaEscalaAvulsaItem }
-    | { tipo: 'fixa'; item: MinhaEscalaFixaItem; data: string };
+  type Indicacao = { item: MinhaEscalaFixaItem; data: string };
   const [indicacao, setIndicacao] = useState<Indicacao | null>(null);
   const [mostrarListaCandidatos, setMostrarListaCandidatos] = useState(false);
   const [candidatos, setCandidatos] = useState<MembroCandidato[]>([]);
   const [carregandoCandidatos, setCarregandoCandidatos] = useState(false);
-
-  const timeoutsRecusadoRef = useRef<ReturnType<typeof setTimeout>[]>([]);
-  useEffect(() => {
-    return () => {
-      timeoutsRecusadoRef.current.forEach(clearTimeout);
-    };
-  }, []);
-
-  function agendarRemocaoRecusado(tipo: 'vocal' | 'avulsa', id: number) {
-    const timeout = setTimeout(() => {
-      if (tipo === 'vocal') {
-        setEscalaVocal((prev) => prev.filter((e) => e.id !== id));
-      } else {
-        setEscalaAvulsa((prev) => prev.filter((e) => e.id !== id));
-      }
-    }, TEMPO_SOME_RECUSADO_MS);
-    timeoutsRecusadoRef.current.push(timeout);
-  }
 
   const carregarDados = useCallback(async () => {
     setIsLoading(true);
@@ -116,11 +88,9 @@ export function AgendaScreen() {
         escalaFixaService.getMinhaEscalaFixa(),
         cultosService.getTodosCultos(),
       ]);
-      setEscalaVocal(vocal);
-      setEscalaAvulsa(avulsa);
+      setEscalaVocal(vocal.filter((e) => e.status !== 'recusado'));
+      setEscalaAvulsa(avulsa.filter((e) => e.status !== 'recusado'));
       setEscalaFixa(fixa);
-      vocal.filter((e) => e.status === 'recusado').forEach((e) => agendarRemocaoRecusado('vocal', e.id));
-      avulsa.filter((e) => e.status === 'recusado').forEach((e) => agendarRemocaoRecusado('avulsa', e.id));
 
       const agora = new Date();
       const proximoPorDia: Partial<Record<DiaSemana, Culto>> = {};
@@ -142,43 +112,11 @@ export function AgendaScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    carregarDados();
-  }, [carregarDados]);
-
-  async function handleConfirmarStatus(item: MinhaEscalaVocalItem) {
-    setActionLoadingId(item.id);
-    try {
-      await escalaVocalService.confirmarPresenca(item.id, 'confirmado');
-      setEscalaVocal((prev) => prev.map((e) => (e.id === item.id ? { ...e, status: 'confirmado' } : e)));
-    } catch (err) {
-      Alert.alert('Erro', err instanceof ApiError ? err.message : 'Não foi possível atualizar.');
-    } finally {
-      setActionLoadingId(null);
-    }
-  }
-
-  async function handleConfirmarStatusAvulsa(item: MinhaEscalaAvulsaItem) {
-    setActionLoadingId(item.id);
-    try {
-      await escalaAvulsaService.confirmarPresencaAvulsa(item.id, 'confirmado');
-      setEscalaAvulsa((prev) => prev.map((e) => (e.id === item.id ? { ...e, status: 'confirmado' } : e)));
-    } catch (err) {
-      Alert.alert('Erro', err instanceof ApiError ? err.message : 'Não foi possível atualizar.');
-    } finally {
-      setActionLoadingId(null);
-    }
-  }
-
-  function abrirIndicacaoVocal(item: MinhaEscalaVocalItem) {
-    setIndicacao({ tipo: 'vocal', item });
-    setMostrarListaCandidatos(false);
-  }
-
-  function abrirIndicacaoAvulsa(item: MinhaEscalaAvulsaItem) {
-    setIndicacao({ tipo: 'avulsa', item });
-    setMostrarListaCandidatos(false);
-  }
+  useFocusEffect(
+    useCallback(() => {
+      carregarDados();
+    }, [carregarDados]),
+  );
 
   function abrirIndicacaoFixa(item: MinhaEscalaFixaItem) {
     if (!selectedDate) {
@@ -188,7 +126,7 @@ export function AgendaScreen() {
       );
       return;
     }
-    setIndicacao({ tipo: 'fixa', item, data: selectedDate });
+    setIndicacao({ item, data: selectedDate });
     setMostrarListaCandidatos(false);
   }
 
@@ -198,13 +136,7 @@ export function AgendaScreen() {
     setCandidatos([]);
     setCarregandoCandidatos(true);
     try {
-      const buscar =
-        indicacao.tipo === 'vocal'
-          ? () => escalaVocalService.getCandidatosVocais(indicacao.item.culto_id)
-          : indicacao.tipo === 'avulsa'
-            ? () => escalaAvulsaService.getCandidatosAvulsa(indicacao.item.culto_id)
-            : () => excecoesService.getCandidatosExcecao();
-      setCandidatos(await buscar());
+      setCandidatos(await excecoesService.getCandidatosExcecao());
     } catch {
       // sem candidatos pra indicar não impede a recusa — só some a lista
     } finally {
@@ -218,7 +150,7 @@ export function AgendaScreen() {
     setCandidatos([]);
   }
 
-  function executarRecusa(indicado: MembroCandidato | null) {
+  function executarRecusaFixa(indicado: MembroCandidato | null) {
     if (!indicacao) return;
     const atual = indicacao;
     fecharIndicacao();
@@ -234,29 +166,15 @@ export function AgendaScreen() {
       async () => {
         setActionLoadingId(atual.item.id);
         try {
-          if (atual.tipo === 'vocal') {
-            await escalaVocalService.confirmarPresenca(atual.item.id, 'recusado', indicado?.id);
-            setEscalaVocal((prev) =>
-              prev.map((e) => (e.id === atual.item.id ? { ...e, status: 'recusado' } : e)),
-            );
-            agendarRemocaoRecusado('vocal', atual.item.id);
-          } else if (atual.tipo === 'avulsa') {
-            await escalaAvulsaService.confirmarPresencaAvulsa(atual.item.id, 'recusado', indicado?.id);
-            setEscalaAvulsa((prev) =>
-              prev.map((e) => (e.id === atual.item.id ? { ...e, status: 'recusado' } : e)),
-            );
-            agendarRemocaoRecusado('avulsa', atual.item.id);
-          } else {
-            await excecoesService.criarExcecao({
-              escalaFixaId: atual.item.id,
-              data: atual.data,
-              indicadoId: indicado?.id,
-            });
-            Alert.alert(
-              'Registrado',
-              'Sua falta foi registrada. Você será avisado quando um substituto for definido.',
-            );
-          }
+          await excecoesService.criarExcecao({
+            escalaFixaId: atual.item.id,
+            data: atual.data,
+            indicadoId: indicado?.id,
+          });
+          Alert.alert(
+            'Registrado',
+            'Sua falta foi registrada. Você será avisado quando um substituto for definido.',
+          );
         } catch (err) {
           Alert.alert('Erro', err instanceof ApiError ? err.message : 'Não foi possível registrar a recusa.');
         } finally {
@@ -356,37 +274,24 @@ export function AgendaScreen() {
             </View>
 
             {escalaVocal.map((item) => (
-            <Card
-              key={item.id}
-              style={styles.compromisso}
-              onPress={() => navigation.navigate('DetalhesCulto', { cultoId: item.culto_id })}
-            >
-              <View style={styles.compromissoInfo}>
-                <Text style={styles.compromissoDia}>{formatDiaCompleto(item.data_hora)}</Text>
-                <Text style={styles.compromissoHora}>
-                  {formatHora(item.data_hora)}
-                  {item.tipo ? ` · ${item.tipo}` : ''}
-                </Text>
-                <Badge label={statusLabel[item.status]} tone={statusTone[item.status]} />
-              </View>
-              {item.status === 'pendente' && (
-                <View style={styles.acoes}>
-                  <Button
-                    title="Confirmar"
-                    onPress={() => handleConfirmarStatus(item)}
-                    loading={actionLoadingId === item.id}
-                    style={styles.acaoBotao}
-                  />
-                  <Button
-                    title="Recusar"
-                    onPress={() => abrirIndicacaoVocal(item)}
-                    loading={actionLoadingId === item.id}
-                    variant="outline"
-                    style={styles.acaoBotao}
-                  />
+              <Card
+                key={item.id}
+                style={styles.compromisso}
+                onPress={() => navigation.navigate('DetalhesCulto', { cultoId: item.culto_id })}
+              >
+                <View style={styles.compromissoInfo}>
+                  <Text style={styles.compromissoDia}>{formatDiaCompleto(item.data_hora)}</Text>
+                  <Text style={styles.compromissoHora}>
+                    {formatHora(item.data_hora)}
+                    {item.tipo ? ` · ${item.tipo}` : ''}
+                  </Text>
+                  {item.status === 'pendente' ? (
+                    <Badge label="Confirme na aba Notificações" tone="warning" />
+                  ) : (
+                    <Badge label="Confirmado" tone="success" />
+                  )}
                 </View>
-              )}
-            </Card>
+              </Card>
             ))}
           </>
         )}
@@ -398,36 +303,23 @@ export function AgendaScreen() {
             </View>
 
             {escalaAvulsa.map((item) => (
-            <Card
-              key={item.id}
-              style={styles.compromisso}
-              onPress={() => navigation.navigate('DetalhesCulto', { cultoId: item.culto_id })}
-            >
-              <View style={styles.compromissoInfo}>
-                <Text style={styles.compromissoDia}>{formatDiaCompleto(item.data_hora)}</Text>
-                <Text style={styles.compromissoHora}>
-                  {formatHora(item.data_hora)} · {item.funcao}
-                </Text>
-                <Badge label={statusLabel[item.status]} tone={statusTone[item.status]} />
-              </View>
-              {item.status === 'pendente' && (
-                <View style={styles.acoes}>
-                  <Button
-                    title="Confirmar"
-                    onPress={() => handleConfirmarStatusAvulsa(item)}
-                    loading={actionLoadingId === item.id}
-                    style={styles.acaoBotao}
-                  />
-                  <Button
-                    title="Recusar"
-                    onPress={() => abrirIndicacaoAvulsa(item)}
-                    loading={actionLoadingId === item.id}
-                    variant="outline"
-                    style={styles.acaoBotao}
-                  />
+              <Card
+                key={item.id}
+                style={styles.compromisso}
+                onPress={() => navigation.navigate('DetalhesCulto', { cultoId: item.culto_id })}
+              >
+                <View style={styles.compromissoInfo}>
+                  <Text style={styles.compromissoDia}>{formatDiaCompleto(item.data_hora)}</Text>
+                  <Text style={styles.compromissoHora}>
+                    {formatHora(item.data_hora)} · {item.funcao}
+                  </Text>
+                  {item.status === 'pendente' ? (
+                    <Badge label="Confirme na aba Notificações" tone="warning" />
+                  ) : (
+                    <Badge label="Confirmado" tone="success" />
+                  )}
                 </View>
-              )}
-            </Card>
+              </Card>
             ))}
           </>
         )}
@@ -488,7 +380,7 @@ export function AgendaScreen() {
                 <Button
                   title="Recusar sem indicar"
                   variant="outline"
-                  onPress={() => executarRecusa(null)}
+                  onPress={() => executarRecusaFixa(null)}
                   style={styles.modalButton}
                 />
                 <Button title="Cancelar" variant="outline" onPress={fecharIndicacao} style={styles.modalButton} />
@@ -508,7 +400,7 @@ export function AgendaScreen() {
                         <TouchableOpacity
                           key={candidato.id}
                           style={styles.modalItem}
-                          onPress={() => executarRecusa(candidato)}
+                          onPress={() => executarRecusaFixa(candidato)}
                         >
                           <Text style={styles.modalItemText}>{candidato.nome}</Text>
                         </TouchableOpacity>
@@ -606,13 +498,6 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     ...typography.caption,
     color: colors.textMuted,
     marginTop: 2,
-  },
-  acoes: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  acaoBotao: {
-    flex: 1,
   },
   acaoBotaoUnico: {
     alignSelf: 'flex-start',

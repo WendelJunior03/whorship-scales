@@ -221,4 +221,6 @@ export interface Notificacao {
   lida: boolean;
   created_at: string;
   culto_id: number | null;
+  referencia_tipo: 'escala_vocal' | 'escala_avulsa' | null;
+  referencia_id: number | null;
 }
