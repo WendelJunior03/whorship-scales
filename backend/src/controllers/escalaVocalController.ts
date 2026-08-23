@@ -14,7 +14,7 @@ export async function createEscalaVocalController(req: Request, res: Response) {
         return res.status(400).json({ message: 'Dados inválidos!' })
     }
 
-    await createEscalaVocal(membroId, cultoId);
+    const escalaCriada = await createEscalaVocal(membroId, cultoId);
     const membro = await findById(membroId)
     const culto = await findCultoById(cultoId)
     if (membro && culto) {
@@ -32,7 +32,10 @@ export async function createEscalaVocalController(req: Request, res: Response) {
                 membroId,
                 'escala',
                 'Nova escala publicada',
-                `Você foi escalado para o culto do dia ${formatarDataHoraCurta(culto.data_hora)}.`
+                `Você foi escalado para o culto do dia ${formatarDataHoraCurta(culto.data_hora)}.`,
+                cultoId,
+                'escala_vocal',
+                escalaCriada.id
             );
         } catch (error) {
             console.error('Erro ao criar notificação:', error);
@@ -134,7 +137,7 @@ export async function confirmarPresencaController (req: Request, res: Response) 
             if (indicado) {
                 // Indicar já convida de verdade — cria a escala (pendente) igual o admin
                 // faria manualmente, pra pessoa não depender do admin agir primeiro.
-                await createEscalaVocal(indicado.id, escalaVocal.culto_id);
+                const escalaCriada = await createEscalaVocal(indicado.id, escalaVocal.culto_id);
                 try {
                     await enviarEmail(
                         indicado.email,
@@ -149,7 +152,9 @@ export async function confirmarPresencaController (req: Request, res: Response) 
                     'substituicao',
                     'Você foi indicado',
                     `${nomeMembro} recusou a escala de vocal${dataCulto} e indicou você. Confirme sua presença.`,
-                    escalaVocal.culto_id
+                    escalaVocal.culto_id,
+                    'escala_vocal',
+                    escalaCriada.id
                 );
             }
         } catch (error) {

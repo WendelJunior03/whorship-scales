@@ -14,7 +14,7 @@ export async function createEscalaAvulsaController(req: Request, res: Response) 
             return res.status(400).json({ message: 'Dados inválidos!' })
         }
 
-        await createEscalaAvulsa(membroId, cultoId, funcao);
+        const escalaCriada = await createEscalaAvulsa(membroId, cultoId, funcao);
 
         const membro = await findById(membroId)
         const culto = await findCultoById(cultoId)
@@ -33,7 +33,10 @@ export async function createEscalaAvulsaController(req: Request, res: Response) 
                     membroId,
                     'escala',
                     'Nova escala publicada',
-                    `Você foi escalado como "${funcao}" para o culto do dia ${formatarDataHoraCurta(culto.data_hora)}.`
+                    `Você foi escalado como "${funcao}" para o culto do dia ${formatarDataHoraCurta(culto.data_hora)}.`,
+                    cultoId,
+                    'escala_avulsa',
+                    escalaCriada.id
                 );
             } catch (error) {
                 console.error('Erro ao criar notificação:', error);
@@ -126,7 +129,7 @@ export async function confirmarPresencaAvulsaController(req: Request, res: Respo
             if (indicado) {
                 // Indicar já convida de verdade — cria a escala (pendente) igual o admin
                 // faria manualmente, pra pessoa não depender do admin agir primeiro.
-                await createEscalaAvulsa(indicado.id, escalaAvulsa.culto_id, escalaAvulsa.funcao);
+                const escalaCriada = await createEscalaAvulsa(indicado.id, escalaAvulsa.culto_id, escalaAvulsa.funcao);
                 try {
                     await enviarEmail(
                         indicado.email,
@@ -141,7 +144,9 @@ export async function confirmarPresencaAvulsaController(req: Request, res: Respo
                     'substituicao',
                     'Você foi indicado',
                     `${nomeMembro} recusou a escala de "${escalaAvulsa.funcao}"${dataCulto} e indicou você. Confirme sua presença.`,
-                    escalaAvulsa.culto_id
+                    escalaAvulsa.culto_id,
+                    'escala_avulsa',
+                    escalaCriada.id
                 );
             }
         } catch (error) {
