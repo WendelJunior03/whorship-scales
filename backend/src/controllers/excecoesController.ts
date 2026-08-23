@@ -75,6 +75,15 @@ export async function createExcecoesController(req: Request, res: Response) {
             for (const admin of admins) {
                 await createNotificacao(admin.id, 'substituicao', 'Falta registrada', mensagem);
             }
+
+            if (indicado) {
+                await createNotificacao(
+                    indicado.id,
+                    'substituicao',
+                    'Você foi indicado',
+                    `${nomeDono} recusou a escala de "${escalaFixa.funcao}" (${escalaFixa.dia_semana}) do dia ${data} e indicou você.`
+                );
+            }
         } catch (error) {
             console.error('Erro ao criar notificação:', error);
         }

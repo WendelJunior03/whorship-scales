@@ -120,6 +120,16 @@ export async function confirmarPresencaAvulsaController(req: Request, res: Respo
             for (const admin of admins) {
                 await createNotificacao(admin.id, 'substituicao', 'Recusa de escala', mensagem, escalaAvulsa.culto_id);
             }
+
+            if (indicado) {
+                await createNotificacao(
+                    indicado.id,
+                    'substituicao',
+                    'Você foi indicado',
+                    `${nomeMembro} recusou a escala de "${escalaAvulsa.funcao}"${dataCulto} e indicou você.`,
+                    escalaAvulsa.culto_id
+                );
+            }
         } catch (error) {
             console.error('Erro ao criar notificação:', error);
         }
