@@ -11,17 +11,18 @@ import {
 } from 'react-native';
 import { Calendar, DateData } from 'react-native-calendars';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
-import { MainStackParamList } from '@/navigation/MainNavigator';
+import { Icon } from '@/components/Icon';
+import { MainTabScreenNavigationProp } from '@/navigation/types';
 import * as cultosService from '@/services/cultos';
 import * as escalaAvulsaService from '@/services/escalaAvulsa';
 import * as escalaFixaService from '@/services/escalaFixa';
 import * as escalaVocalService from '@/services/escalaVocal';
 import * as excecoesService from '@/services/excecoes';
+import * as notificacoesService from '@/services/notificacoes';
 import { ApiError } from '@/services/api';
 import {
   Culto,
@@ -31,8 +32,8 @@ import {
   MinhaEscalaFixaItem,
   MinhaEscalaVocalItem,
 } from '@/types';
-import { spacing, typography } from '@/theme';
-import { Cores } from '@/theme/palettes';
+import { radius, spacing, typography } from '@/theme';
+import { Cores, Sombras } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { formatDiaCompleto, formatHora } from '@/utils/date';
 import { confirmAction } from '@/utils/confirm';
@@ -60,7 +61,7 @@ function capitalize(text: string): string {
 export function AgendaScreen() {
   const { colors, modo } = useTheme();
   const styles = useThemedStyles(criarEstilos);
-  const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();
+  const navigation = useNavigation<MainTabScreenNavigationProp<'Agenda'>>();
   const [escalaVocal, setEscalaVocal] = useState<MinhaEscalaVocalItem[]>([]);
   const [escalaAvulsa, setEscalaAvulsa] = useState<MinhaEscalaAvulsaItem[]>([]);
   const [escalaFixa, setEscalaFixa] = useState<MinhaEscalaFixaItem[]>([]);
@@ -71,6 +72,7 @@ export function AgendaScreen() {
   const [proximoCultoPorDia, setProximoCultoPorDia] = useState<Partial<Record<DiaSemana, Culto>>>(
     {},
   );
+  const [temNotificacaoNaoLida, setTemNotificacaoNaoLida] = useState(false);
 
   type Indicacao = { item: MinhaEscalaFixaItem; data: string };
   const [indicacao, setIndicacao] = useState<Indicacao | null>(null);
@@ -116,6 +118,17 @@ export function AgendaScreen() {
     useCallback(() => {
       carregarDados();
     }, [carregarDados]),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      notificacoesService
+        .getMinhasNotificacoes()
+        .then((notificacoes) => setTemNotificacaoNaoLida(notificacoes.some((n) => !n.lida)))
+        .catch(() => {
+          // o sino não é crítico pra tela funcionar, falha aqui é silenciosa
+        });
+    }, []),
   );
 
   function abrirIndicacaoFixa(item: MinhaEscalaFixaItem) {
@@ -229,8 +242,20 @@ export function AgendaScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>Minha Agenda</Text>
-        <Text style={styles.subtitle}>Seus próximos compromissos</Text>
+        <View style={styles.headerTextos}>
+          <Text style={styles.title}>Minha Agenda</Text>
+          <Text style={styles.subtitle}>Seus próximos compromissos</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.bell}
+          onPress={() => navigation.navigate('Notificacoes')}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={temNotificacaoNaoLida ? 'Notificações (não lidas)' : 'Notificações'}
+        >
+          <Icon name="notifications-outline" size={22} color={colors.text} />
+          {temNotificacaoNaoLida && <View style={styles.badgeDot} />}
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -424,7 +449,7 @@ export function AgendaScreen() {
   );
 }
 
-const criarEstilos = (colors: Cores) => StyleSheet.create({
+const criarEstilos = (colors: Cores, shadows: Sombras) => StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
@@ -444,9 +469,35 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     minWidth: 200,
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
     paddingBottom: spacing.md,
+  },
+  headerTextos: {
+    flex: 1,
+  },
+  bell: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.sm,
+  },
+  badgeDot: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.error,
   },
   title: {
     ...typography.h1,
