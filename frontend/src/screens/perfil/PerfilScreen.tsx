@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
 import { Input } from '@/components/Input';
 import { useAuth } from '@/contexts/AuthContext';
 import { MainTabScreenNavigationProp } from '@/navigation/types';
@@ -186,7 +187,7 @@ export function PerfilScreen() {
         <Text style={styles.igreja}>{org?.nome ?? 'Minha igreja'}</Text>
 
         {ehAdmin && org?.codigo && (
-          <View style={styles.conviteCard}>
+          <Card style={styles.conviteCard}>
             <View style={styles.conviteInfo}>
               <Text style={styles.conviteLabel}>Código de convite</Text>
               <Text style={styles.conviteCodigo}>{org.codigo}</Text>
@@ -199,10 +200,10 @@ export function PerfilScreen() {
               <Icon name="share-social-outline" size={18} color={colors.primary} />
               <Text style={styles.conviteBotaoTexto}>Compartilhar</Text>
             </TouchableOpacity>
-          </View>
+          </Card>
         )}
 
-        <View style={styles.planoCard}>
+        <Card style={styles.planoCard}>
           <View style={styles.planoHeader}>
             <Text style={styles.planoTitulo}>Seu plano</Text>
             <Badge
@@ -216,7 +217,7 @@ export function PerfilScreen() {
           {RECURSOS_PRO.map((r) => (
             <RecursoProRow key={r.chave} chave={r.chave} icon={r.icon} label={r.label} />
           ))}
-        </View>
+        </Card>
 
         <View style={styles.temaBloco}>
           <Text style={styles.temaTitulo}>Aparência</Text>
@@ -378,11 +379,7 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.surface,
     borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
     marginBottom: spacing.lg,
   },
   conviteInfo: {
@@ -409,11 +406,7 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
   },
   planoCard: {
     width: '100%',
-    backgroundColor: colors.surface,
     borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
     marginBottom: spacing.lg,
     gap: spacing.sm,
   },

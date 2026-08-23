@@ -1,7 +1,8 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { Card } from '@/components/Card';
 import { Icon, IconName } from '@/components/Icon';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
@@ -54,18 +55,13 @@ export function RecursosScreen() {
   const gestao = GESTAO.filter((item) => !item.soAdmin || (user && isAdmin(user)));
 
   const renderCard = (item: ItemRecurso) => (
-    <TouchableOpacity
-      key={item.label}
-      style={styles.card}
-      activeOpacity={0.8}
-      onPress={() => navigation.navigate(item.route)}
-    >
+    <Card key={item.label} style={styles.card} onPress={() => navigation.navigate(item.route)}>
       <View style={styles.cardIcon}>
         <Icon name={item.icon} size={20} color={colors.primary} />
       </View>
       <Text style={styles.cardLabel}>{item.label}</Text>
       <Text style={styles.cardSublabel}>{item.sublabel}</Text>
-    </TouchableOpacity>
+    </Card>
   );
 
   return (
@@ -134,11 +130,7 @@ const criarEstilos = (colors: Cores, shadows: Sombras) =>
     },
     card: {
       width: '47%',
-      backgroundColor: colors.surface,
       borderRadius: radius.xl,
-      borderWidth: 1,
-      borderColor: colors.border,
-      padding: spacing.md,
       gap: 4,
       ...shadows.sm,
     },

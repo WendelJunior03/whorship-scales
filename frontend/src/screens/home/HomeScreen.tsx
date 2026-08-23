@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Card } from '@/components/Card';
 import { Icon } from '@/components/Icon';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -126,8 +127,7 @@ export function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         {proximoCulto ? (
-          <TouchableOpacity
-            activeOpacity={0.85}
+          <Card
             onPress={() => navigation.navigate('DetalhesCulto', { cultoId: proximoCulto.culto.id })}
             style={styles.hero}
           >
@@ -146,21 +146,21 @@ export function HomeScreen() {
               </View>
               {proximoCulto.culto.tipo && <Text style={styles.heroTipo}>{proximoCulto.culto.tipo}</Text>}
             </View>
-          </TouchableOpacity>
+          </Card>
         ) : (
-          <View style={styles.card}>
+          <Card style={styles.card}>
             <Text style={styles.mutedText}>Nenhum culto agendado pra você no momento.</Text>
-          </View>
+          </Card>
         )}
 
         <Text style={styles.sectionTitle}>Sua escala fixa</Text>
         {minhaEscala.length === 0 ? (
-          <View style={styles.card}>
+          <Card style={styles.card}>
             <Text style={styles.mutedText}>Você ainda não tem uma escala fixa cadastrada.</Text>
-          </View>
+          </Card>
         ) : (
           minhaEscala.map((escala, index) => (
-            <View key={`${escala.dia_semana}-${escala.funcao}-${index}`} style={styles.escalaCard}>
+            <Card key={`${escala.dia_semana}-${escala.funcao}-${index}`} style={styles.escalaCard}>
               <View style={styles.escalaIcon}>
                 <Icon name="repeat-outline" size={18} color={colors.primary} />
               </View>
@@ -168,25 +168,24 @@ export function HomeScreen() {
                 <Text style={styles.escalaDia}>{capitalize(escala.dia_semana)}</Text>
                 <Text style={styles.escalaInfo}>{escala.funcao}</Text>
               </View>
-            </View>
+            </Card>
           ))
         )}
 
         <Text style={styles.sectionTitle}>Músicas do próximo culto</Text>
         {!proximoCulto ? (
-          <View style={styles.card}>
+          <Card style={styles.card}>
             <Text style={styles.mutedText}>Sem culto agendado — nenhuma música por enquanto.</Text>
-          </View>
+          </Card>
         ) : musicas.length === 0 ? (
-          <View style={styles.card}>
+          <Card style={styles.card}>
             <Text style={styles.mutedText}>O repertório deste culto ainda não foi definido.</Text>
-          </View>
+          </Card>
         ) : (
           musicas.map((musica) => (
-            <TouchableOpacity
+            <Card
               key={musica.id}
               style={styles.musicaCard}
-              activeOpacity={0.8}
               onPress={() => navigation.navigate('DetalhesCulto', { cultoId: proximoCulto.culto.id })}
             >
               <View style={styles.musicaIcon}>
@@ -200,7 +199,7 @@ export function HomeScreen() {
                   <Text style={styles.tomText}>{musica.tom}</Text>
                 </View>
               )}
-            </TouchableOpacity>
+            </Card>
           ))
         )}
       </ScrollView>
@@ -305,10 +304,7 @@ const criarEstilos = (colors: Cores, shadows: Sombras) => StyleSheet.create({
     gap: spacing.md,
   },
   hero: {
-    backgroundColor: colors.surface,
     borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
     padding: spacing.lg,
     ...shadows.md,
   },
@@ -362,11 +358,7 @@ const criarEstilos = (colors: Cores, shadows: Sombras) => StyleSheet.create({
     color: colors.textSecondary,
   },
   card: {
-    backgroundColor: colors.surface,
     borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
     ...shadows.sm,
   },
   mutedText: {
@@ -382,11 +374,7 @@ const criarEstilos = (colors: Cores, shadows: Sombras) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    backgroundColor: colors.surface,
     borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
     ...shadows.sm,
   },
   musicaIcon: {
@@ -418,11 +406,7 @@ const criarEstilos = (colors: Cores, shadows: Sombras) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    backgroundColor: colors.surface,
     borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
     ...shadows.sm,
   },
   escalaIcon: {

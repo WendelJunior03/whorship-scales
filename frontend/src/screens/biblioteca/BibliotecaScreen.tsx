@@ -6,7 +6,6 @@ import {
   Modal,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { Icon } from '@/components/Icon';
@@ -15,6 +14,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
 import { Input } from '@/components/Input';
 import { useAuth } from '@/contexts/AuthContext';
 import { MainStackParamList } from '@/navigation/MainNavigator';
@@ -113,9 +113,8 @@ export function BibliotecaScreen() {
             <Text style={styles.vazio}>Nenhuma música cadastrada ainda.</Text>
           }
           renderItem={({ item }) => (
-            <TouchableOpacity
+            <Card
               style={styles.card}
-              activeOpacity={0.8}
               onPress={() =>
                 navigation.navigate('DetalheMusica', { musicaId: item.id, nome: item.nome })
               }
@@ -132,7 +131,7 @@ export function BibliotecaScreen() {
                 </Text>
               </View>
               <Icon name="chevron-forward" size={18} color={colors.textMuted} />
-            </TouchableOpacity>
+            </Card>
           )}
         />
       )}
@@ -164,11 +163,7 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    backgroundColor: colors.surface,
     borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
   },
   cardIcone: {
     width: 40,

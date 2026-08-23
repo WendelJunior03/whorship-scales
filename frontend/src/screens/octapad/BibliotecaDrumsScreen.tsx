@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Card } from '@/components/Card';
 import { Header } from '@/components/Header';
 import { Icon } from '@/components/Icon';
 import { SeloPro } from '@/components/SeloPro';
@@ -88,14 +89,14 @@ export function BibliotecaDrumsScreen() {
         })}
       </ScrollView>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.aviso}>
+        <Card style={styles.aviso}>
           <SeloPro />
           <Text style={styles.avisoTexto}>
             {liberado
               ? 'Escolha um som pronto da biblioteca pra este pad, no lugar do som sintetizado padrão.'
               : 'Recurso disponível no plano PRO.'}
           </Text>
-        </View>
+        </Card>
 
         <TouchableOpacity
           style={[styles.item, somAtualId === null && styles.itemSelecionado]}
@@ -169,11 +170,7 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: radius.lg,
-    padding: spacing.md,
   },
   avisoTexto: {
     ...typography.caption,
