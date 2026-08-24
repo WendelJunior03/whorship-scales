@@ -135,10 +135,15 @@ membro_classificacao (membro_id, classificacao_id)
   + `ministerio_membros` (N:N) com RLS por org.
 - [x] **T-11.2** — ✅ Mesma migration: `funcoes`, `membro_funcoes`, `equipes`,
   `equipe_membros`, `classificacoes`, `membro_classificacao` (todas com RLS + índices + grants).
-- [~] **T-11.3** — Parcial. ✅ Backfill `1787200000001_...-backfill.sql`: cria um ministério
+- [x] **T-11.3** — ✅ Backfill `1787200000001_...-backfill.sql`: cria um ministério
   inicial por org, vincula membros ativos e deriva funções de `papel_ministerio`; criação de
-  org nova também nasce com ministério padrão (`organizacaoModel`). ⬜ **Falta** adicionar
-  `ministerio_id` às tabelas de escala/culto/repertório (passo invasivo — ver decisão abaixo).
+  org nova também nasce com ministério padrão (`organizacaoModel`). ✅ `ministerio_id` nas
+  tabelas de escala/culto/repertório e `funcao_id` (FK) em `escala_fixa`/`escala_avulsa` via
+  `1787200000002_...-escala-ministerio-id-schema.sql` (colunas nullable + índices) +
+  `1787200000003_...-escala-ministerio-id-backfill.sql` (liga ao ministério seed da org,
+  cria funções faltantes a partir do `funcao` texto legado e preenche `funcao_id`). Coluna
+  `funcao` (texto) mantida como legado (remoção seria destrutiva). NOT NULL adiado até os
+  fluxos de escala passarem a gravar as colunas novas.
 - [x] **T-11.4** — ✅ Backend completo de **ministério + membros + funções + equipes +
   classificações** (`ministerioModel`/`Controller`/`Routes`, montado em `/ministerios`),
   capacidades `ministerio.visualizar` / `.gerenciar` / `.membros.gerenciar`, limite de vagas
