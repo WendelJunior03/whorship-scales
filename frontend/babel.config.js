@@ -13,6 +13,8 @@ module.exports = function (api) {
           extensions: ['.ios.ts', '.android.ts', '.ts', '.ios.tsx', '.android.tsx', '.tsx', '.jsx', '.js', '.json'],
         },
       ],
+      // Precisa ser o último plugin da lista (exigência do próprio reanimated).
+      'react-native-reanimated/plugin',
     ],
   };
 };

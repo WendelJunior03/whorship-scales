@@ -44,7 +44,12 @@ export function Input({ icon, isPassword, containerStyle, style, onFocus, onBlur
         }}
       />
       {isPassword && (
-        <TouchableOpacity onPress={() => setHidden((prev) => !prev)} hitSlop={10}>
+        <TouchableOpacity
+          onPress={() => setHidden((prev) => !prev)}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel={hidden ? 'Mostrar senha' : 'Ocultar senha'}
+        >
           <Icon
             name={hidden ? 'eye-outline' : 'eye-off-outline'}
             size={20}

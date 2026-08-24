@@ -31,6 +31,8 @@ export function PlayerYoutube({ videoId }: { videoId: string }) {
       style={styles.thumbWrap}
       activeOpacity={0.85}
       onPress={() => Linking.openURL(`https://youtu.be/${videoId}`)}
+      accessibilityRole="button"
+      accessibilityLabel="Reproduzir vídeo"
     >
       <Image
         source={{ uri: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` }}

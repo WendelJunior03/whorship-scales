@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
 import { Input } from '@/components/Input';
 import { useAuth } from '@/contexts/AuthContext';
 import { MainTabScreenNavigationProp } from '@/navigation/types';
@@ -14,7 +15,7 @@ import { papelOrgLabel, papelOrgTone, papelOrgDe, papelMinisterioLabel, isAdmin 
 import { SeloPro } from '@/components/SeloPro';
 import { SeletorTema } from '@/components/SeletorTema';
 import { useRecurso } from '@/hooks/useRecurso';
-import { fonts, radius, spacing, typography } from '@/theme';
+import { fonts, LARGURA_CONTEUDO, radius, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import appConfig from '../../../app.json';
@@ -167,7 +168,11 @@ export function PerfilScreen() {
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{user?.nome?.[0] ?? '?'}</Text>
           </View>
-          <TouchableOpacity style={styles.cameraButton}>
+          <TouchableOpacity
+            style={styles.cameraButton}
+            accessibilityRole="button"
+            accessibilityLabel="Alterar foto do perfil"
+          >
             <Icon name="camera" size={16} color={colors.textInverse} />
           </TouchableOpacity>
         </View>
@@ -186,7 +191,7 @@ export function PerfilScreen() {
         <Text style={styles.igreja}>{org?.nome ?? 'Minha igreja'}</Text>
 
         {ehAdmin && org?.codigo && (
-          <View style={styles.conviteCard}>
+          <Card style={styles.conviteCard}>
             <View style={styles.conviteInfo}>
               <Text style={styles.conviteLabel}>Código de convite</Text>
               <Text style={styles.conviteCodigo}>{org.codigo}</Text>
@@ -199,10 +204,10 @@ export function PerfilScreen() {
               <Icon name="share-social-outline" size={18} color={colors.primary} />
               <Text style={styles.conviteBotaoTexto}>Compartilhar</Text>
             </TouchableOpacity>
-          </View>
+          </Card>
         )}
 
-        <View style={styles.planoCard}>
+        <Card style={styles.planoCard}>
           <View style={styles.planoHeader}>
             <Text style={styles.planoTitulo}>Seu plano</Text>
             <Badge
@@ -216,7 +221,7 @@ export function PerfilScreen() {
           {RECURSOS_PRO.map((r) => (
             <RecursoProRow key={r.chave} chave={r.chave} icon={r.icon} label={r.label} />
           ))}
-        </View>
+        </Card>
 
         <View style={styles.temaBloco}>
           <Text style={styles.temaTitulo}>Aparência</Text>
@@ -323,6 +328,9 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     flex: 1,
   },
   content: {
+    width: '100%',
+    maxWidth: LARGURA_CONTEUDO,
+    alignSelf: 'center',
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
     gap: spacing.xs,
@@ -378,11 +386,7 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.surface,
     borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
     marginBottom: spacing.lg,
   },
   conviteInfo: {
@@ -409,11 +413,7 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
   },
   planoCard: {
     width: '100%',
-    backgroundColor: colors.surface,
     borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
     marginBottom: spacing.lg,
     gap: spacing.sm,
   },

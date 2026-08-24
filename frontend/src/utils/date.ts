@@ -9,8 +9,10 @@ export function formatDiaCompleto(isoDate: string): string {
     month: 'long',
   }).format(date);
 
-  // Intl devolve "domingo, 25 de maio" (minúsculo) — capitaliza cada palavra relevante
-  return formatted.replace(/(^\w|de \w)/g, (match) => match.toUpperCase());
+  // Intl devolve "domingo, 25 de maio" (minúsculo) — capitaliza o dia da semana e o mês,
+  // mantendo a preposição "de" em minúsculo.
+  const comMesCapitalizado = formatted.replace(/ de (\w)/, (_, letra: string) => ` de ${letra.toUpperCase()}`);
+  return comMesCapitalizado.charAt(0).toUpperCase() + comMesCapitalizado.slice(1);
 }
 
 /**

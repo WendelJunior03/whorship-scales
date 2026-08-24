@@ -18,7 +18,17 @@ interface PainelPersonalizarPadsProps {
   restaurarPadrao: () => void;
 }
 
-function Amostra({ corReal, selecionada, onPress }: { corReal: string; selecionada: boolean; onPress: () => void }) {
+function Amostra({
+  corReal,
+  nome,
+  selecionada,
+  onPress,
+}: {
+  corReal: string;
+  nome: string;
+  selecionada: boolean;
+  onPress: () => void;
+}) {
   const styles = useThemedStyles(criarEstilos);
   const corCheck = corEhClara(corReal) ? '#1E2340' : '#FFFFFF';
   return (
@@ -26,6 +36,8 @@ function Amostra({ corReal, selecionada, onPress }: { corReal: string; seleciona
       onPress={onPress}
       style={[styles.amostra, { backgroundColor: corReal }, selecionada && styles.amostraSelecionada]}
       activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityLabel={selecionada ? `${nome} (selecionada)` : nome}
     >
       {selecionada && <Icon name="checkmark" size={16} color={corCheck} />}
     </TouchableOpacity>
@@ -43,7 +55,12 @@ export function PainelPersonalizarPads({ visible, onClose, aparencia, atualizar,
         <View style={styles.sheet}>
           <View style={styles.cabecalho}>
             <Text style={styles.titulo}>Aparência dos pads</Text>
-            <TouchableOpacity onPress={onClose} hitSlop={10}>
+            <TouchableOpacity
+              onPress={onClose}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel="Fechar painel de aparência"
+            >
               <Icon name="close-circle" size={24} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
@@ -54,6 +71,7 @@ export function PainelPersonalizarPads({ visible, onClose, aparencia, atualizar,
               <Amostra
                 key={opcao.label}
                 corReal={opcao.cor ?? colors.surfaceElevated}
+                nome={opcao.label}
                 selecionada={aparencia.corInativo === opcao.cor}
                 onPress={() => atualizar({ corInativo: opcao.cor })}
               />
@@ -66,6 +84,7 @@ export function PainelPersonalizarPads({ visible, onClose, aparencia, atualizar,
               <Amostra
                 key={opcao.label}
                 corReal={opcao.cor ?? colors.primary}
+                nome={opcao.label}
                 selecionada={aparencia.corAtivo === opcao.cor}
                 onPress={() => atualizar({ corAtivo: opcao.cor })}
               />
