@@ -42,7 +42,7 @@ import {
   StatusEscalaVocal,
   SugestaoVocal,
 } from '@/types';
-import { spacing, typography } from '@/theme';
+import { LARGURA_CONTEUDO, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { formatDiaCompleto, formatDiaCurto, formatDiaSemana, formatHora } from '@/utils/date';
@@ -480,7 +480,11 @@ export function DetalhesCultoScreen() {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Repertório</Text>
           {user && podeGerir(user) && (
-            <TouchableOpacity onPress={abrirRepertorioModal}>
+            <TouchableOpacity
+              onPress={abrirRepertorioModal}
+              accessibilityRole="button"
+              accessibilityLabel="Adicionar música ao repertório"
+            >
               <Icon name="add-circle-outline" size={22} color={colors.primary} />
             </TouchableOpacity>
           )}
@@ -528,7 +532,11 @@ export function DetalhesCultoScreen() {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Equipe</Text>
           {user && podeGerir(user) && (
-            <TouchableOpacity onPress={abrirEquipeModal}>
+            <TouchableOpacity
+              onPress={abrirEquipeModal}
+              accessibilityRole="button"
+              accessibilityLabel="Adicionar membro à equipe"
+            >
               <Icon name="add-circle-outline" size={22} color={colors.primary} />
             </TouchableOpacity>
           )}
@@ -611,10 +619,17 @@ export function DetalhesCultoScreen() {
                         <TouchableOpacity
                           onPress={() => abrirPickerVocalParaTrocar(index)}
                           hitSlop={8}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Trocar vocal ${vocal.nome}`}
                         >
                           <Icon name="swap-horizontal" size={20} color={colors.primary} />
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => removerVocal(index)} hitSlop={8}>
+                        <TouchableOpacity
+                          onPress={() => removerVocal(index)}
+                          hitSlop={8}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Remover vocal ${vocal.nome}`}
+                        >
                           <Icon name="close-circle" size={20} color={colors.error} />
                         </TouchableOpacity>
                       </View>
@@ -871,6 +886,9 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     flex: 1,
   },
   content: {
+    width: '100%',
+    maxWidth: LARGURA_CONTEUDO,
+    alignSelf: 'center',
     padding: spacing.lg,
     paddingTop: spacing.sm,
     gap: spacing.md,
