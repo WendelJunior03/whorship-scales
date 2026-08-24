@@ -21,7 +21,7 @@ import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import appConfig from '../../../app.json';
 
 const MENU_ITEMS = [
-  { icon: 'person-outline' as const, label: 'Informações pessoais' },
+  { icon: 'person-outline' as const, label: 'Informações' },
   { icon: 'notifications-outline' as const, label: 'Notificações' },
   { icon: 'shield-checkmark-outline' as const, label: 'Segurança' },
   { icon: 'help-circle-outline' as const, label: 'Ajuda e suporte' },
@@ -101,7 +101,7 @@ export function PerfilScreen() {
 
   function handleMenuPress(label: (typeof MENU_ITEMS)[number]['label']) {
     switch (label) {
-      case 'Informações pessoais':
+      case 'Informações':
         if (user) navigation.navigate('DetalheMembro', { membroId: user.id });
         return;
       case 'Notificações':

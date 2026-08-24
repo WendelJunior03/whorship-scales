@@ -75,7 +75,7 @@ export function DetalhesCultoScreen() {
   const styles = useThemedStyles(criarEstilos);
   const route = useRoute<RouteProp<MainStackParamList, 'DetalhesCulto'>>();
   const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();
-  const { cultoId } = route.params;
+  const { cultoId, abrirEdicaoVocal } = route.params;
   const { user } = useAuth();
 
   const [culto, setCulto] = useState<Culto | null>(null);
@@ -139,22 +139,28 @@ export function DetalhesCultoScreen() {
         origem: 'fixa',
         origemId: item.escala_fixa_id,
       }));
-      const equipeVocal: EquipeItem[] = escalaVocalDoCulto.map((item) => ({
-        chave: `vocal-${item.id}`,
-        nome: item.nome,
-        funcao: 'Vocal',
-        status: item.status,
-        origem: 'vocal',
-        origemId: item.id,
-      }));
-      const equipeAvulsa: EquipeItem[] = escalaAvulsaDoCulto.map((item) => ({
-        chave: `avulsa-${item.id}`,
-        nome: item.nome,
-        funcao: item.funcao,
-        status: item.status,
-        origem: 'avulsa',
-        origemId: item.id,
-      }));
+      // Quem recusou some da equipe sozinho — não precisa remover na mão (o
+      // registro continua existindo pra histórico, só não aparece mais aqui).
+      const equipeVocal: EquipeItem[] = escalaVocalDoCulto
+        .filter((item) => item.status !== 'recusado')
+        .map((item) => ({
+          chave: `vocal-${item.id}`,
+          nome: item.nome,
+          funcao: 'Vocal',
+          status: item.status,
+          origem: 'vocal',
+          origemId: item.id,
+        }));
+      const equipeAvulsa: EquipeItem[] = escalaAvulsaDoCulto
+        .filter((item) => item.status !== 'recusado')
+        .map((item) => ({
+          chave: `avulsa-${item.id}`,
+          nome: item.nome,
+          funcao: item.funcao,
+          status: item.status,
+          origem: 'avulsa',
+          origemId: item.id,
+        }));
 
       const minhaFuncaoFixa = equipeFixa.find((item) => item.nome === user?.nome);
       const minhaEscalaVocal = escalaVocalDoCulto.find(
@@ -172,13 +178,13 @@ export function DetalhesCultoScreen() {
       );
       setSugestaoVocal(vocaisSugeridos);
       setSelecionadosVocal(vocaisSugeridos);
-      setModoEdicaoVocal(false);
+      setModoEdicaoVocal(Boolean(abrirEdicaoVocal));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Não foi possível carregar o culto.');
     } finally {
       setIsLoading(false);
     }
-  }, [cultoId, user]);
+  }, [cultoId, user, abrirEdicaoVocal]);
 
   useEffect(() => {
     carregarDados();
@@ -445,6 +451,12 @@ export function DetalhesCultoScreen() {
 
   const vocaisParaEscolher = todosMembrosAtivos.filter(
     (m) => m.papel === 'vocal' && !selecionadosVocal.some((s) => s.id === m.id),
+  );
+
+  // Quem já está na equipe do culto (fixa, vocal ou avulsa) some da lista de
+  // adicionar — evita escalar a mesma pessoa duas vezes pro mesmo culto.
+  const membrosParaEscolher = todosMembrosAtivos.filter(
+    (m) => !equipe.some((item) => item.nome === m.nome),
   );
 
   return (
@@ -790,10 +802,10 @@ export function DetalhesCultoScreen() {
               <ActivityIndicator color={colors.primary} style={styles.modalLoading} />
             ) : (
               <ScrollView style={styles.modalList}>
-                {todosMembrosAtivos.length === 0 ? (
+                {membrosParaEscolher.length === 0 ? (
                   <Text style={styles.emptyText}>Nenhum membro disponível.</Text>
                 ) : (
-                  todosMembrosAtivos.map((membro) => (
+                  membrosParaEscolher.map((membro) => (
                     <TouchableOpacity
                       key={membro.id}
                       style={styles.modalItem}

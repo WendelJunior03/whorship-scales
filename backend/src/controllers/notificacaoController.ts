@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { findMinhasNotificacoes, findNotificacaoById, marcarComoLida } from '../models/notificacaoModel';
+import { deletarMinhasNotificacoes, findMinhasNotificacoes, findNotificacaoById, marcarComoLida } from '../models/notificacaoModel';
 
 export async function getMinhasNotificacoesController(req: Request, res: Response) {
     if (!req.user) {
@@ -27,4 +27,13 @@ export async function marcarComoLidaController(req: Request, res: Response) {
 
     await marcarComoLida(Number(id));
     return res.status(200).json({ message: 'Notificação marcada como lida!' })
+}
+
+export async function limparNotificacoesController(req: Request, res: Response) {
+    if (!req.user) {
+        return res.status(401).json({ message: 'Não autorizado!' })
+    }
+
+    await deletarMinhasNotificacoes(req.user.id);
+    return res.status(200).json({ message: 'Notificações removidas!' })
 }

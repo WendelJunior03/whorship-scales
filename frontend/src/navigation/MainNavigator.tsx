@@ -20,7 +20,7 @@ export type MainStackParamList = {
   Escalas: undefined;
   EscalaFixa: undefined;
   Confirmacoes: undefined;
-  DetalhesCulto: { cultoId: number };
+  DetalhesCulto: { cultoId: number; abrirEdicaoVocal?: boolean };
   Membros: undefined;
   DetalheMembro: { membroId?: number };
   Octapad: undefined;
