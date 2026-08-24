@@ -70,14 +70,29 @@ function NomeEditavel({ nomeAtual, onConfirmar }: NomeEditavelProps) {
   return (
     <View style={styles.nomeLinha}>
       <Text style={styles.secao}>{nomeAtual}</Text>
-      <TouchableOpacity onPress={() => setEditando(true)} hitSlop={8}>
+      <TouchableOpacity
+        onPress={() => setEditando(true)}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel={`Editar nome do pad ${nomeAtual}`}
+      >
         <Icon name="create-outline" size={14} color={colors.textMuted} />
       </TouchableOpacity>
     </View>
   );
 }
 
-function Amostra({ corReal, selecionada, onPress }: { corReal: string; selecionada: boolean; onPress: () => void }) {
+function Amostra({
+  corReal,
+  nome,
+  selecionada,
+  onPress,
+}: {
+  corReal: string;
+  nome: string;
+  selecionada: boolean;
+  onPress: () => void;
+}) {
   const styles = useThemedStyles(criarEstilos);
   const corCheck = corEhClara(corReal) ? '#1E2340' : '#FFFFFF';
   return (
@@ -85,6 +100,8 @@ function Amostra({ corReal, selecionada, onPress }: { corReal: string; seleciona
       onPress={onPress}
       style={[styles.amostra, { backgroundColor: corReal }, selecionada && styles.amostraSelecionada]}
       activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityLabel={selecionada ? `${nome} (selecionada)` : nome}
     >
       {selecionada && <Icon name="checkmark" size={14} color={corCheck} />}
     </TouchableOpacity>
@@ -116,7 +133,12 @@ export function PainelPersonalizarOctapad({
         <View style={styles.sheet}>
           <View style={styles.cabecalho}>
             <Text style={styles.titulo}>Aparência do Octapad</Text>
-            <TouchableOpacity onPress={onClose} hitSlop={10}>
+            <TouchableOpacity
+              onPress={onClose}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel="Fechar painel de aparência"
+            >
               <Icon name="close-circle" size={24} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
@@ -137,6 +159,7 @@ export function PainelPersonalizarOctapad({
                       <Amostra
                         key={opcao.label}
                         corReal={opcao.cor ?? pad.cor}
+                        nome={opcao.label}
                         selecionada={corSelecionada === opcao.cor}
                         onPress={() => definirCorPad(pad.id, opcao.cor)}
                       />

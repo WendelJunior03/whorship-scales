@@ -25,7 +25,7 @@ import { PapelOrg, PapelMinisterio } from '@/types';
 import { papelOrgLabel, papelMinisterioLabel, isAdmin } from '@/utils/papel';
 import { confirmAction } from '@/utils/confirm';
 import { formatTelefone } from '@/utils/telefone';
-import { spacing, typography } from '@/theme';
+import { LARGURA_CONTEUDO, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 
@@ -367,6 +367,9 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     flex: 1,
   },
   content: {
+    width: '100%',
+    maxWidth: LARGURA_CONTEUDO,
+    alignSelf: 'center',
     padding: spacing.lg,
     paddingTop: spacing.sm,
   },

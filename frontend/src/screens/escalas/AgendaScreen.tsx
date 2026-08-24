@@ -32,7 +32,7 @@ import {
   MinhaEscalaFixaItem,
   MinhaEscalaVocalItem,
 } from '@/types';
-import { radius, spacing, typography } from '@/theme';
+import { LARGURA_CONTEUDO, radius, spacing, typography } from '@/theme';
 import { Cores, Sombras } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { formatDiaCompleto, formatHora } from '@/utils/date';
@@ -511,6 +511,9 @@ const criarEstilos = (colors: Cores, shadows: Sombras) => StyleSheet.create({
     flex: 1,
   },
   content: {
+    width: '100%',
+    maxWidth: LARGURA_CONTEUDO,
+    alignSelf: 'center',
     padding: spacing.lg,
     paddingTop: 0,
     gap: spacing.md,

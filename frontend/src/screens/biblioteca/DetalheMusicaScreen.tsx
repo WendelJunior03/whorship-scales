@@ -25,7 +25,7 @@ import { ApiError } from '@/services/api';
 import { isAdmin } from '@/utils/papel';
 import { extrairVideoIdYoutube } from '@/utils/youtube';
 import { CategoriaVideo, Musica, Video } from '@/types';
-import { fonts, radius, spacing, typography } from '@/theme';
+import { fonts, LARGURA_CONTEUDO, radius, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 
@@ -174,7 +174,12 @@ export function DetalheMusicaScreen() {
                           {v.titulo || 'Vídeo'}
                         </Text>
                         {admin && (
-                          <TouchableOpacity onPress={() => removerVideo(v)} hitSlop={8}>
+                          <TouchableOpacity
+                            onPress={() => removerVideo(v)}
+                            hitSlop={8}
+                            accessibilityRole="button"
+                            accessibilityLabel="Remover vídeo"
+                          >
                             <Icon name="trash-outline" size={18} color={colors.error} />
                           </TouchableOpacity>
                         )}
@@ -225,7 +230,7 @@ export function DetalheMusicaScreen() {
 const criarEstilos = (colors: Cores) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   centro: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  conteudo: { padding: spacing.lg, gap: spacing.md },
+  conteudo: { width: '100%', maxWidth: LARGURA_CONTEUDO, alignSelf: 'center', padding: spacing.lg, gap: spacing.md },
   cabecalho: { gap: spacing.sm },
   meta: { ...typography.body, color: colors.textSecondary },
   add: { marginTop: spacing.xs },
