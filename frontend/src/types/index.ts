@@ -90,7 +90,15 @@ export interface MinisterioMembro {
   email: string;
   papel: PapelNoMinisterio;
   funcoes: string[];
+  classificacoes: string[];
   created_at?: string;
+}
+
+/** Membro dentro de uma equipe (subconjunto de dados). */
+export interface EquipeMembro {
+  id: number;
+  nome: string;
+  email: string;
 }
 
 export interface Funcao {

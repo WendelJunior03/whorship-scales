@@ -155,8 +155,10 @@ membro_classificacao (membro_id, classificacao_id)
   adicionar/remover membro, criar/apagar função/equipe/classificação e atribuir/remover
   função de um membro (chips). Serviço `ministeriosService` + tipos; entrada em
   **Recursos → Gestão** + rota na stack. Type-check e lint limpos.
-  ⬜ **Falta (menor):** gerir *membros de uma equipe* e *atribuir classificação a membro* pela
-  UI (endpoints já existem no backend).
+  ✅ **Completo:** gerir *membros de uma equipe* (modal ao tocar na equipe: adiciona/remove
+  membros do ministério) e *atribuir/remover classificação de um membro* pela UI (chips no
+  modal do membro, espelhando as funções). Backend passou a devolver `classificacoes` do
+  membro em `listarMembros`.
 
 > ✅ **Verificação:** migrations aplicadas com sucesso (schema + backfill) num banco local;
 > type-check limpo; suíte verde com **81 testes** — incluindo os 6 de isolamento (RLS) que

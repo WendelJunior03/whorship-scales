@@ -22,12 +22,19 @@ import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { ministeriosService, membrosService } from '@/services';
 import { ApiError } from '@/services/api';
 import { papelOrgDe } from '@/utils/papel';
-import { Ministerio, MinisterioMembro, Funcao, Equipe, Classificacao, Membro } from '@/types';
+import { Ministerio, MinisterioMembro, Funcao, Equipe, Classificacao, Membro, EquipeMembro } from '@/types';
 import { spacing, radius, typography, fonts } from '@/theme';
 import { Cores } from '@/theme/palettes';
 
 type Aba = 'info' | 'membros';
-type ModalAberto = 'addMembro' | 'membroAcoes' | 'funcoes' | 'equipes' | 'classificacoes' | null;
+type ModalAberto =
+  | 'addMembro'
+  | 'membroAcoes'
+  | 'funcoes'
+  | 'equipes'
+  | 'equipeMembros'
+  | 'classificacoes'
+  | null;
 
 export function MinisterioScreen() {
   const { colors } = useTheme();
@@ -50,6 +57,8 @@ export function MinisterioScreen() {
 
   const [modal, setModal] = useState<ModalAberto>(null);
   const [membroSelecionadoId, setMembroSelecionadoId] = useState<number | null>(null);
+  const [equipeSelecionadaId, setEquipeSelecionadaId] = useState<number | null>(null);
+  const [membrosEquipe, setMembrosEquipe] = useState<EquipeMembro[]>([]);
   const [membrosOrg, setMembrosOrg] = useState<Membro[]>([]);
   const [novoNome, setNovoNome] = useState('');
   const [novaCor, setNovaCor] = useState('');
@@ -107,6 +116,8 @@ export function MinisterioScreen() {
     setNovoNome('');
     setNovaCor('');
     setMembroSelecionadoId(null);
+    setEquipeSelecionadaId(null);
+    setMembrosEquipe([]);
   }
 
   // --- Ações ---
@@ -165,6 +176,54 @@ export function MinisterioScreen() {
       await carregar(true);
     } catch (e) {
       erroAlerta(e, 'Não foi possível atualizar a função.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function alternarClassificacao(membro: MinisterioMembro, classificacao: Classificacao) {
+    if (!ministerio) return;
+    const tem = membro.classificacoes.includes(classificacao.nome);
+    setBusy(true);
+    try {
+      if (tem) {
+        await ministeriosService.removerClassificacaoDoMembro(ministerio.id, membro.id, classificacao.id);
+      } else {
+        await ministeriosService.atribuirClassificacao(ministerio.id, membro.id, classificacao.id);
+      }
+      await carregar(true);
+    } catch (e) {
+      erroAlerta(e, 'Não foi possível atualizar a classificação.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function abrirEquipeMembros(equipe: Equipe) {
+    if (!ministerio) return;
+    setEquipeSelecionadaId(equipe.id);
+    setModal('equipeMembros');
+    setMembrosEquipe([]);
+    try {
+      setMembrosEquipe(await ministeriosService.listarMembrosEquipe(ministerio.id, equipe.id));
+    } catch (e) {
+      erroAlerta(e, 'Não foi possível carregar os membros da equipe.');
+    }
+  }
+
+  async function alternarMembroNaEquipe(membroId: number, naEquipe: boolean) {
+    if (!ministerio || equipeSelecionadaId == null) return;
+    setBusy(true);
+    try {
+      if (naEquipe) {
+        await ministeriosService.removerMembroEquipe(ministerio.id, equipeSelecionadaId, membroId);
+      } else {
+        await ministeriosService.adicionarMembroEquipe(ministerio.id, equipeSelecionadaId, membroId);
+      }
+      setMembrosEquipe(await ministeriosService.listarMembrosEquipe(ministerio.id, equipeSelecionadaId));
+      await carregar(true);
+    } catch (e) {
+      erroAlerta(e, 'Não foi possível atualizar a equipe.');
     } finally {
       setBusy(false);
     }
@@ -248,6 +307,8 @@ export function MinisterioScreen() {
   const vagasTotal = ministerio.vagas_total ?? ministerio.vagas_gratis + ministerio.vagas_extras;
   const membroSelecionado = membros.find((m) => m.id === membroSelecionadoId) ?? null;
   const membrosDisponiveis = membrosOrg.filter((mo) => !membros.some((mm) => mm.id === mo.id));
+  const equipeSelecionada = equipes.find((e) => e.id === equipeSelecionadaId) ?? null;
+  const idsNaEquipe = new Set(membrosEquipe.map((m) => m.id));
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -446,6 +507,28 @@ export function MinisterioScreen() {
             })
           )}
         </View>
+        <Text style={styles.modalSub}>Classificações</Text>
+        <View style={styles.chips}>
+          {classificacoes.length === 0 ? (
+            <Text style={styles.emptyText}>
+              Nenhuma classificação criada. Crie em Informações → Classificações.
+            </Text>
+          ) : (
+            classificacoes.map((c) => {
+              const ativo = !!membroSelecionado && membroSelecionado.classificacoes.includes(c.nome);
+              return (
+                <TouchableOpacity
+                  key={c.id}
+                  style={[styles.chip, ativo && styles.chipAtivo]}
+                  disabled={busy || !membroSelecionado}
+                  onPress={() => membroSelecionado && alternarClassificacao(membroSelecionado, c)}
+                >
+                  <Text style={[styles.chipText, ativo && styles.chipTextAtivo]}>{c.nome}</Text>
+                </TouchableOpacity>
+              );
+            })
+          )}
+        </View>
         <Button
           title="Remover do ministério"
           variant="outline"
@@ -480,6 +563,10 @@ export function MinisterioScreen() {
         setNovoNome={setNovoNome}
         onCriar={() => criarItem('equipes')}
         onApagar={(id) => apagarItem('equipes', id)}
+        onSelecionar={(id) => {
+          const eq = equipes.find((e) => e.id === id);
+          if (eq) abrirEquipeMembros(eq);
+        }}
         busy={busy}
         styles={styles}
         colors={colors}
@@ -498,6 +585,44 @@ export function MinisterioScreen() {
         styles={styles}
         colors={colors}
       />
+
+      {/* Modal: membros de uma equipe */}
+      <ModalSheet
+        visible={modal === 'equipeMembros'}
+        onClose={() => setModal('equipes')}
+        styles={styles}
+        titulo={equipeSelecionada ? `Equipe ${equipeSelecionada.nome}` : 'Equipe'}
+      >
+        <Text style={styles.modalSub}>Membros da equipe</Text>
+        {membros.length === 0 ? (
+          <Text style={styles.emptyText}>Nenhum membro no ministério para adicionar.</Text>
+        ) : (
+          <FlatList
+            data={membros}
+            keyExtractor={(m) => String(m.id)}
+            style={styles.modalLista}
+            renderItem={({ item }) => {
+              const naEquipe = idsNaEquipe.has(item.id);
+              return (
+                <TouchableOpacity
+                  style={styles.pickRow}
+                  disabled={busy}
+                  onPress={() => alternarMembroNaEquipe(item.id, naEquipe)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.pickNome}>{item.nome}</Text>
+                  <Icon
+                    name={naEquipe ? 'checkmark-circle' : 'add-circle-outline'}
+                    size={22}
+                    color={naEquipe ? colors.primary : colors.textMuted}
+                  />
+                </TouchableOpacity>
+              );
+            }}
+          />
+        )}
+        <Button title="Voltar" variant="outline" onPress={() => setModal('equipes')} style={styles.modalBtn} />
+      </ModalSheet>
 
       {/* Dialog de confirmação (in-app, sem Alert/confirm nativo) */}
       <Modal
@@ -631,6 +756,7 @@ function ModalListaGerenciavel({
   setNovoNome,
   onCriar,
   onApagar,
+  onSelecionar,
   busy,
   styles,
   colors,
@@ -644,6 +770,7 @@ function ModalListaGerenciavel({
   setNovoNome: (v: string) => void;
   onCriar: () => void;
   onApagar: (id: number) => void;
+  onSelecionar?: (id: number) => void;
   busy: boolean;
   styles: ReturnType<typeof criarEstilos>;
   colors: Cores;
@@ -656,10 +783,20 @@ function ModalListaGerenciavel({
         <View style={styles.modalLista}>
           {itens.map((it) => (
             <View key={it.id} style={styles.pickRow}>
-              <View style={{ flex: 1 }}>
+              <TouchableOpacity
+                style={{ flex: 1 }}
+                disabled={!onSelecionar}
+                onPress={() => onSelecionar?.(it.id)}
+                activeOpacity={0.7}
+              >
                 <Text style={styles.pickNome}>{it.nome}</Text>
                 {it.meta ? <Text style={styles.linhaDescricao}>{it.meta}</Text> : null}
-              </View>
+              </TouchableOpacity>
+              {onSelecionar ? (
+                <TouchableOpacity onPress={() => onSelecionar(it.id)} hitSlop={8}>
+                  <Icon name="people-outline" size={20} color={colors.primary} />
+                </TouchableOpacity>
+              ) : null}
               <TouchableOpacity onPress={() => onApagar(it.id)} hitSlop={8}>
                 <Icon name="trash-outline" size={20} color={colors.textMuted} />
               </TouchableOpacity>

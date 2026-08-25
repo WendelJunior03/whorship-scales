@@ -1,5 +1,5 @@
 import { api } from './api';
-import { Ministerio, MinisterioMembro, Funcao, Equipe, Classificacao } from '@/types';
+import { Ministerio, MinisterioMembro, Funcao, Equipe, Classificacao, EquipeMembro } from '@/types';
 
 export async function listarMinisterios(): Promise<Ministerio[]> {
   const { data } = await api.get<Ministerio[]>('/ministerios');
@@ -75,6 +75,19 @@ export async function apagarEquipe(id: number, equipeId: number): Promise<void> 
   await api.delete(`/ministerios/${id}/equipes/${equipeId}`);
 }
 
+export async function listarMembrosEquipe(id: number, equipeId: number): Promise<EquipeMembro[]> {
+  const { data } = await api.get<EquipeMembro[]>(`/ministerios/${id}/equipes/${equipeId}/membros`);
+  return data;
+}
+
+export async function adicionarMembroEquipe(id: number, equipeId: number, membroId: number): Promise<void> {
+  await api.post(`/ministerios/${id}/equipes/${equipeId}/membros`, { membroId });
+}
+
+export async function removerMembroEquipe(id: number, equipeId: number, membroId: number): Promise<void> {
+  await api.delete(`/ministerios/${id}/equipes/${equipeId}/membros/${membroId}`);
+}
+
 // --- Classificações ---
 
 export async function criarClassificacao(id: number, nome: string, cor?: string | null): Promise<Classificacao> {
@@ -84,4 +97,16 @@ export async function criarClassificacao(id: number, nome: string, cor?: string 
 
 export async function apagarClassificacao(id: number, classificacaoId: number): Promise<void> {
   await api.delete(`/ministerios/${id}/classificacoes/${classificacaoId}`);
+}
+
+export async function atribuirClassificacao(id: number, membroId: number, classificacaoId: number): Promise<void> {
+  await api.post(`/ministerios/${id}/membro-classificacoes`, { membroId, classificacaoId });
+}
+
+export async function removerClassificacaoDoMembro(
+  id: number,
+  membroId: number,
+  classificacaoId: number,
+): Promise<void> {
+  await api.delete(`/ministerios/${id}/membros/${membroId}/classificacoes/${classificacaoId}`);
 }

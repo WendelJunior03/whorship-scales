@@ -62,7 +62,14 @@ export async function listarMembros(ministerioId: number) {
                      JOIN funcoes f ON f.id = mf.funcao_id
                      WHERE mf.membro_id = mb.id AND mf.ministerio_id = mm.ministerio_id),
                     ARRAY[]::text[]
-                ) AS funcoes
+                ) AS funcoes,
+                COALESCE(
+                    (SELECT array_agg(c.nome ORDER BY c.nome)
+                     FROM membro_classificacao mc
+                     JOIN classificacoes c ON c.id = mc.classificacao_id
+                     WHERE mc.membro_id = mb.id AND c.ministerio_id = mm.ministerio_id),
+                    ARRAY[]::text[]
+                ) AS classificacoes
          FROM ministerio_membros mm
          JOIN membros mb ON mb.id = mm.membro_id
          WHERE mm.ministerio_id = $1 AND mb.ativo = true
