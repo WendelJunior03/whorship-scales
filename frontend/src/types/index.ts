@@ -152,6 +152,16 @@ export interface Repertorio {
   link_musica: string;
 }
 
+/** Comentário na thread de um culto/escala (spec 11, módulo 4). */
+export interface Comentario {
+  id: number;
+  culto_id: number;
+  membro_id: number;
+  texto: string;
+  created_at: string;
+  autor_nome: string;
+}
+
 export interface LoginResponse {
   token: string;
   message: string;
@@ -268,6 +278,7 @@ export type TipoNotificacao =
   | 'substituicao'
   | 'confirmacao'
   | 'falta'
+  | 'comentario'
   | 'repertorio'
   | 'lembrete';
 
