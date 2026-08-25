@@ -47,18 +47,20 @@ import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { formatDiaCompleto, formatDiaCurto, formatDiaSemana, formatHora } from '@/utils/date';
 import { podeGerir, papelLabel } from '@/utils/papel';
-import { confirmAction } from '@/utils/confirm';
+import { confirmAction, notifyAction } from '@/utils/confirm';
 
 const statusLabel: Record<StatusEscalaVocal, string> = {
   pendente: 'Pendente',
   confirmado: 'Confirmado',
   recusado: 'Recusado',
+  falta: 'Falta',
 };
 
 const statusTone: Record<StatusEscalaVocal, 'warning' | 'success' | 'error'> = {
   pendente: 'warning',
   confirmado: 'success',
   recusado: 'error',
+  falta: 'error',
 };
 
 interface EquipeItem {
@@ -354,6 +356,31 @@ export function DetalhesCultoScreen() {
     );
   }
 
+  function handleRegistrarFalta(item: EquipeItem) {
+    confirmAction(
+      {
+        title: 'Registrar falta',
+        message: `Marcar falta de "${item.nome}" (${item.funcao}) neste culto? Ele será notificado.`,
+        confirmLabel: 'Registrar falta',
+      },
+      async () => {
+        setExcluindoEquipeChave(item.chave);
+        try {
+          if (item.origem === 'vocal') {
+            await escalaVocalService.registrarFalta(item.origemId);
+          } else if (item.origem === 'avulsa') {
+            await escalaAvulsaService.registrarFalta(item.origemId);
+          }
+          await carregarDados();
+        } catch (err) {
+          notifyAction('Erro', err instanceof ApiError ? err.message : 'Não foi possível registrar a falta.');
+        } finally {
+          setExcluindoEquipeChave(null);
+        }
+      },
+    );
+  }
+
   function ativarModoEdicaoVocal() {
     setModoEdicaoVocal(true);
     garantirMembrosCarregados();
@@ -399,7 +426,7 @@ export function DetalhesCultoScreen() {
 
   async function publicarEscalaVocal() {
     if (selecionadosVocal.length === 0) {
-      Alert.alert('Nada para publicar', 'Adicione ao menos um vocal antes de publicar.');
+      notifyAction('Nada para publicar', 'Adicione ao menos um vocal antes de publicar.');
       return;
     }
 
@@ -409,22 +436,23 @@ export function DetalhesCultoScreen() {
         escalaVocalService.criarEscalaVocal({ membroId: vocal.id, cultoId }),
       ),
     );
+    const total = selecionadosVocal.length;
     setIsPublicandoVocal(false);
+    setModoEdicaoVocal(false);
+    await carregarDados();
 
     const falhas = resultados.filter((r) => r.status === 'rejected').length;
     if (falhas === 0) {
-      Alert.alert(
+      notifyAction(
         'Escala publicada',
         'A escala de vocais foi publicada. Cada vocal escalado recebe uma notificação por e-mail.',
       );
     } else {
-      Alert.alert(
+      notifyAction(
         'Publicado com ressalvas',
-        `${selecionadosVocal.length - falhas} de ${selecionadosVocal.length} vocais foram escalados. Os demais podem já estar nessa escala.`,
+        `${total - falhas} de ${total} vocais foram escalados. Os demais podem já estar nessa escala.`,
       );
     }
-    setModoEdicaoVocal(false);
-    await carregarDados();
   }
 
   if (isLoading) {
@@ -458,6 +486,11 @@ export function DetalhesCultoScreen() {
   const membrosParaEscolher = todosMembrosAtivos.filter(
     (m) => !equipe.some((item) => item.nome === m.nome),
   );
+
+  // "Confirmados x de y" considera só quem tem status (vocal/avulsa); a escala
+  // fixa não tem confirmação por culto (ausência dela vira exceção).
+  const equipeConfirmavel = equipe.filter((item) => item.status !== undefined);
+  const totalConfirmados = equipeConfirmavel.filter((item) => item.status === 'confirmado').length;
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -541,6 +574,11 @@ export function DetalhesCultoScreen() {
             </TouchableOpacity>
           )}
         </View>
+        {equipeConfirmavel.length > 0 && (
+          <Text style={styles.sectionSubtitle}>
+            Confirmados {totalConfirmados} de {equipeConfirmavel.length}
+          </Text>
+        )}
         {equipe.length === 0 ? (
           <Card>
             <Text style={styles.emptyText}>Nenhum membro escalado ainda.</Text>
@@ -575,9 +613,20 @@ export function DetalhesCultoScreen() {
                     <OptionsMenu
                       loading={excluindoEquipeChave === membro.chave}
                       actions={[
+                        // Registrar falta só faz sentido pra vocal/avulsa (têm status);
+                        // a ausência de fixa é tratada por "Remover" (vira exceção).
+                        ...(membro.status && membro.status !== 'falta'
+                          ? [
+                              {
+                                label: 'Registrar falta',
+                                icon: 'alert-circle-outline' as const,
+                                onPress: () => handleRegistrarFalta(membro),
+                              },
+                            ]
+                          : []),
                         {
                           label: 'Remover da equipe',
-                          icon: 'trash-outline',
+                          icon: 'trash-outline' as const,
                           destructive: true,
                           onPress: () => handleExcluirDaEquipe(membro),
                         },
@@ -650,11 +699,13 @@ export function DetalhesCultoScreen() {
 
             {!modoEdicaoVocal ? (
               <View style={styles.vocalBotoes}>
-                <Button
-                  title="Aceitar Sugestão"
-                  onPress={publicarEscalaVocal}
-                  loading={isPublicandoVocal}
-                />
+                {selecionadosVocal.length > 0 && (
+                  <Button
+                    title="Aceitar Sugestão"
+                    onPress={publicarEscalaVocal}
+                    loading={isPublicandoVocal}
+                  />
+                )}
                 <Button
                   title="Editar Manualmente"
                   onPress={ativarModoEdicaoVocal}

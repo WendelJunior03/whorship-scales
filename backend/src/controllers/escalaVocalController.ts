@@ -165,6 +165,33 @@ export async function confirmarPresencaController (req: Request, res: Response) 
     return res.status(200).json({message: 'Escala vocal atualizada com sucesso!'})
 }
 
+export async function registrarFaltaVocalController(req: Request, res: Response) {
+    const { id } = req.params;
+
+    const escalaVocal = await findEscalaVocalById(Number(id));
+    if (!escalaVocal) {
+        return res.status(404).json({ message: 'Escala vocal não encontrada!' });
+    }
+
+    await updateStatusEscalaVocal(Number(id), 'falta');
+
+    try {
+        const culto = await findCultoById(escalaVocal.culto_id);
+        const dataCulto = culto ? ` do culto do dia ${formatarDataHoraCurta(culto.data_hora)}` : '';
+        await createNotificacao(
+            escalaVocal.membro_id,
+            'falta',
+            'Falta registrada',
+            `O líder registrou sua falta na escala de vocal${dataCulto}.`,
+            escalaVocal.culto_id,
+        );
+    } catch (error) {
+        console.error('Erro ao criar notificação:', error);
+    }
+
+    return res.status(200).json({ message: 'Falta registrada com sucesso!' });
+}
+
 export async function getEscalaVocalDoCultoController(req: Request, res: Response) {
     const { cultoId } = req.params;
 

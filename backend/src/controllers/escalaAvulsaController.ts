@@ -165,6 +165,33 @@ export async function getMinhaEscalaAvulsaController(req: Request, res: Response
     return res.status(200).json(escalaAvulsa);
 }
 
+export async function registrarFaltaAvulsaController(req: Request, res: Response) {
+    const { id } = req.params;
+
+    const escalaAvulsa = await findEscalaAvulsaById(Number(id));
+    if (!escalaAvulsa) {
+        return res.status(404).json({ message: 'Escala avulsa não encontrada!' })
+    }
+
+    await updateStatusEscalaAvulsa(Number(id), 'falta');
+
+    try {
+        const culto = await findCultoById(escalaAvulsa.culto_id);
+        const dataCulto = culto ? ` do culto do dia ${formatarDataHoraCurta(culto.data_hora)}` : '';
+        await createNotificacao(
+            escalaAvulsa.membro_id,
+            'falta',
+            'Falta registrada',
+            `O líder registrou sua falta na escala${dataCulto}.`,
+            escalaAvulsa.culto_id,
+        );
+    } catch (error) {
+        console.error('Erro ao criar notificação:', error);
+    }
+
+    return res.status(200).json({ message: 'Falta registrada com sucesso!' })
+}
+
 export async function deleteEscalaAvulsaController(req: Request, res: Response) {
     const { id } = req.params;
 
