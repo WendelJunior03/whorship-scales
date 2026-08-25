@@ -16,7 +16,14 @@ export async function findEscalaAvulsaById(id: number) {
 }
 
 export async function updateStatusEscalaAvulsa(id: number, status: string) {
-    const result = await query('UPDATE escala_avulsa SET status = $1 WHERE id = $2 RETURNING *', [status, id]);
+    // Mesma regra da vocal: confirmado_em só fica preenchido enquanto status = 'confirmado'.
+    const result = await query(
+        `UPDATE escala_avulsa
+            SET status = $1,
+                confirmado_em = CASE WHEN $1 = 'confirmado' THEN now() ELSE NULL END
+          WHERE id = $2 RETURNING *`,
+        [status, id],
+    );
     return result.rows[0];
 }
 

@@ -182,9 +182,16 @@ confirmado_em   timestamptz NULL
 > **Impacto:** notificação ao membro pedindo confirmação (usa `notificacoes`).
 
 **Tarefas:**
-- [ ] **T-11.6** — Migration: `CHECK` de status + `confirmado_em` nas duas tabelas de escala.
-- [ ] **T-11.7** — Endpoints confirmar/recusar (membro) e registrar falta (líder) + notificações.
-- [ ] **T-11.8** — UI: botão Confirmar na escala; painel "Confirmados x de y"; Registrar faltas.
+- [x] **T-11.6** — ✅ Migration `1787600000000_escala-confirmacao-presenca-modulo2.sql`:
+  `CHECK (status IN ('pendente','confirmado','recusado','falta'))` + `confirmado_em` nas duas
+  tabelas de escala.
+- [x] **T-11.7** — ✅ Confirmar/recusar (membro) já existiam da fase B; agora `updateStatus*`
+  seta/limpa `confirmado_em`, e há **novo endpoint `POST /escala-vocal|escala-avulsa/:id/falta`**
+  (líder registra falta → status `falta` + notificação tipo `falta` ao membro), protegido por
+  `escala.gerenciar`. Sem notificação nova de "confirme presença": a de "nova escala publicada"
+  (com `referencia_tipo/id`) já habilita Confirmar/Recusar na aba de Notificações.
+- [~] **T-11.8** — UI: painel "Confirmados x de y" + ação Registrar falta na `DetalhesCultoScreen`;
+  status `falta` no app (badge/ícone). *(em andamento)*
 
 ---
 
