@@ -358,24 +358,25 @@ export function AgendaScreen() {
             {escalaFixa.map((item) => {
               const proximoCulto = proximoCultoPorDia[item.dia_semana];
               return (
-              <Card
-                key={item.id}
-                style={styles.compromisso}
-                onPress={
-                  proximoCulto
-                    ? () => navigation.navigate('DetalhesCulto', { cultoId: proximoCulto.id })
-                    : undefined
-                }
-              >
-                <View style={styles.compromissoInfo}>
-                  <Text style={styles.compromissoDia}>{capitalize(item.dia_semana)}</Text>
-                  <Text style={styles.compromissoHora}>{item.funcao}</Text>
-                  {!proximoCulto && (
+              <Card key={item.id} style={styles.compromisso}>
+                {proximoCulto ? (
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate('DetalhesCulto', { cultoId: proximoCulto.id })}
+                  >
+                    <View style={styles.compromissoInfo}>
+                      <Text style={styles.compromissoDia}>{capitalize(item.dia_semana)}</Text>
+                      <Text style={styles.compromissoHora}>{item.funcao}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.compromissoInfo}>
+                    <Text style={styles.compromissoDia}>{capitalize(item.dia_semana)}</Text>
+                    <Text style={styles.compromissoHora}>{item.funcao}</Text>
                     <Text style={styles.semCultoTexto}>
                       Nenhum culto futuro criado ainda pra esse dia
                     </Text>
-                  )}
-                </View>
+                  </View>
+                )}
                 <Button
                   title="Recusar"
                   onPress={() => abrirIndicacaoFixa(item)}
