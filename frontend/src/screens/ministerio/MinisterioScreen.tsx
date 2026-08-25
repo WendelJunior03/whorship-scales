@@ -1,10 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Modal,
-  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -21,6 +19,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { ministeriosService, membrosService } from '@/services';
 import { ApiError } from '@/services/api';
+import { confirmAction, notifyAction } from '@/utils/confirm';
 import { papelOrgDe } from '@/utils/papel';
 import { Ministerio, MinisterioMembro, Funcao, Equipe, Classificacao, Membro, EquipeMembro } from '@/types';
 import { spacing, radius, typography, fonts } from '@/theme';
@@ -63,13 +62,6 @@ export function MinisterioScreen() {
   const [novoNome, setNovoNome] = useState('');
   const [novaCor, setNovaCor] = useState('');
   const [busy, setBusy] = useState(false);
-  // Confirmação in-app (dialog próprio, sem Alert/confirm nativo do web).
-  const [confirmacao, setConfirmacao] = useState<{
-    titulo: string;
-    mensagem: string;
-    confirmLabel: string;
-    onConfirm: () => void;
-  } | null>(null);
 
   const carregar = useCallback(async (silencioso = false) => {
     if (!silencioso) setIsLoading(true);
@@ -102,13 +94,7 @@ export function MinisterioScreen() {
   }, [carregar]);
 
   const erroAlerta = (e: unknown, fallback: string) => {
-    const msg = e instanceof ApiError ? e.message : fallback;
-    // Alert.alert do react-native-web não exibe de forma confiável; usa window.alert no web.
-    if (Platform.OS === 'web') {
-      window.alert(msg);
-    } else {
-      Alert.alert('Erro', msg);
-    }
+    notifyAction('Erro', e instanceof ApiError ? e.message : fallback);
   };
 
   function fecharModal() {
@@ -146,11 +132,13 @@ export function MinisterioScreen() {
   }
 
   function confirmarRemoverMembro(membro: MinisterioMembro) {
-    setConfirmacao({
-      titulo: 'Remover membro',
-      mensagem: `Remover ${membro.nome} deste ministério?`,
-      confirmLabel: 'Remover',
-      onConfirm: async () => {
+    confirmAction(
+      {
+        title: 'Remover membro',
+        message: `Remover ${membro.nome} deste ministério?`,
+        confirmLabel: 'Remover',
+      },
+      async () => {
         if (!ministerio) return;
         try {
           await ministeriosService.removerMembro(ministerio.id, membro.id);
@@ -160,7 +148,7 @@ export function MinisterioScreen() {
           erroAlerta(e, 'Não foi possível remover o membro.');
         }
       },
-    });
+    );
   }
 
   async function alternarFuncao(membro: MinisterioMembro, funcao: Funcao) {
@@ -256,11 +244,13 @@ export function MinisterioScreen() {
         : tipo === 'equipes'
           ? equipes.find((e) => e.id === id)?.nome
           : classificacoes.find((c) => c.id === id)?.nome;
-    setConfirmacao({
-      titulo: `Remover ${rotulo}`,
-      mensagem: `Remover a ${rotulo} "${nome ?? ''}"?`,
-      confirmLabel: 'Remover',
-      onConfirm: async () => {
+    confirmAction(
+      {
+        title: `Remover ${rotulo}`,
+        message: `Remover a ${rotulo} "${nome ?? ''}"?`,
+        confirmLabel: 'Remover',
+      },
+      async () => {
         try {
           if (tipo === 'funcoes') await ministeriosService.apagarFuncao(ministerio.id, id);
           if (tipo === 'equipes') await ministeriosService.apagarEquipe(ministerio.id, id);
@@ -270,7 +260,7 @@ export function MinisterioScreen() {
           erroAlerta(e, 'Não foi possível remover.');
         }
       },
-    });
+    );
   }
 
   // --- Render ---
@@ -623,38 +613,6 @@ export function MinisterioScreen() {
         )}
         <Button title="Voltar" variant="outline" onPress={() => setModal('equipes')} style={styles.modalBtn} />
       </ModalSheet>
-
-      {/* Dialog de confirmação (in-app, sem Alert/confirm nativo) */}
-      <Modal
-        visible={!!confirmacao}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setConfirmacao(null)}
-      >
-        <View style={styles.confirmOverlay}>
-          <View style={styles.confirmCard}>
-            <Text style={styles.confirmTitulo}>{confirmacao?.titulo}</Text>
-            <Text style={styles.confirmMensagem}>{confirmacao?.mensagem}</Text>
-            <View style={styles.confirmBotoes}>
-              <Button
-                title="Cancelar"
-                variant="outline"
-                onPress={() => setConfirmacao(null)}
-                style={styles.confirmBotao}
-              />
-              <Button
-                title={confirmacao?.confirmLabel ?? 'Confirmar'}
-                onPress={() => {
-                  const fn = confirmacao?.onConfirm;
-                  setConfirmacao(null);
-                  fn?.();
-                }}
-                style={styles.confirmBotao}
-              />
-            </View>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -936,24 +894,4 @@ const criarEstilos = (colors: Cores) =>
     chipAtivo: { backgroundColor: colors.primary, borderColor: colors.primary },
     chipText: { ...typography.bodySmall, color: colors.textSecondary },
     chipTextAtivo: { color: colors.textInverse, fontFamily: fonts.semibold },
-    // Dialog de confirmação (centralizado)
-    confirmOverlay: {
-      flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.6)',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: spacing.lg,
-    },
-    confirmCard: {
-      width: '100%',
-      maxWidth: 380,
-      backgroundColor: colors.surface,
-      borderRadius: radius.xl,
-      padding: spacing.lg,
-      gap: spacing.sm,
-    },
-    confirmTitulo: { ...typography.h3, color: colors.text },
-    confirmMensagem: { ...typography.body, color: colors.textSecondary },
-    confirmBotoes: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
-    confirmBotao: { flex: 1 },
   });

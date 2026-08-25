@@ -12,6 +12,7 @@ import {
   PlusJakartaSans_700Bold,
 } from '@expo-google-fonts/plus-jakarta-sans';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { ConfirmDialogHost } from '@/components/ConfirmDialogHost';
 import { RootNavigator } from '@/navigation/RootNavigator';
 import { linking } from '@/navigation/linking';
 import { NAVIGATION_PERSISTENCE_KEY } from '@/navigation/persistence';
@@ -97,6 +98,7 @@ function RaizApp({ pronto, initialState }: { pronto: boolean; initialState?: Ini
       }
     >
       <RootNavigator />
+      <ConfirmDialogHost />
       <StatusBar style={modo === 'escuro' ? 'light' : 'dark'} />
     </NavigationContainer>
   );

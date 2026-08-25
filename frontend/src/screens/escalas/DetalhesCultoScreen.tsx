@@ -19,7 +19,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
-import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Header } from '@/components/Header';
 import { OptionsMenu } from '@/components/OptionsMenu';
 import { SeletorFuncao } from '@/components/SeletorFuncao';
@@ -48,7 +47,7 @@ import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { formatDiaCompleto, formatDiaCurto, formatDiaSemana, formatHora } from '@/utils/date';
 import { podeGerir, papelLabel } from '@/utils/papel';
-import { confirmAction } from '@/utils/confirm';
+import { confirmAction, notifyAction } from '@/utils/confirm';
 
 const statusLabel: Record<StatusEscalaVocal, string> = {
   pendente: 'Pendente',
@@ -104,16 +103,6 @@ export function DetalhesCultoScreen() {
   const [carregandoMembros, setCarregandoMembros] = useState(false);
   const [salvandoEquipe, setSalvandoEquipe] = useState(false);
   const [excluindoEquipeChave, setExcluindoEquipeChave] = useState<string | null>(null);
-
-  // Diálogos in-app (bonitos) no lugar de Alert.alert/window.confirm, que no web
-  // não exibem de forma confiável.
-  const [confirmacao, setConfirmacao] = useState<{
-    titulo: string;
-    mensagem: string;
-    confirmLabel: string;
-    onConfirm: () => void;
-  } | null>(null);
-  const [aviso, setAviso] = useState<{ titulo: string; mensagem: string } | null>(null);
 
   const [sugestaoVocal, setSugestaoVocal] = useState<SugestaoVocal[]>([]);
   const [selecionadosVocal, setSelecionadosVocal] = useState<SugestaoVocal[]>([]);
@@ -368,11 +357,13 @@ export function DetalhesCultoScreen() {
   }
 
   function handleRegistrarFalta(item: EquipeItem) {
-    setConfirmacao({
-      titulo: 'Registrar falta',
-      mensagem: `Marcar falta de "${item.nome}" (${item.funcao}) neste culto? Ele será notificado.`,
-      confirmLabel: 'Registrar falta',
-      onConfirm: async () => {
+    confirmAction(
+      {
+        title: 'Registrar falta',
+        message: `Marcar falta de "${item.nome}" (${item.funcao}) neste culto? Ele será notificado.`,
+        confirmLabel: 'Registrar falta',
+      },
+      async () => {
         setExcluindoEquipeChave(item.chave);
         try {
           if (item.origem === 'vocal') {
@@ -382,15 +373,12 @@ export function DetalhesCultoScreen() {
           }
           await carregarDados();
         } catch (err) {
-          setAviso({
-            titulo: 'Erro',
-            mensagem: err instanceof ApiError ? err.message : 'Não foi possível registrar a falta.',
-          });
+          notifyAction('Erro', err instanceof ApiError ? err.message : 'Não foi possível registrar a falta.');
         } finally {
           setExcluindoEquipeChave(null);
         }
       },
-    });
+    );
   }
 
   function ativarModoEdicaoVocal() {
@@ -438,7 +426,7 @@ export function DetalhesCultoScreen() {
 
   async function publicarEscalaVocal() {
     if (selecionadosVocal.length === 0) {
-      setAviso({ titulo: 'Nada para publicar', mensagem: 'Adicione ao menos um vocal antes de publicar.' });
+      notifyAction('Nada para publicar', 'Adicione ao menos um vocal antes de publicar.');
       return;
     }
 
@@ -455,15 +443,15 @@ export function DetalhesCultoScreen() {
 
     const falhas = resultados.filter((r) => r.status === 'rejected').length;
     if (falhas === 0) {
-      setAviso({
-        titulo: 'Escala publicada',
-        mensagem: 'A escala de vocais foi publicada. Cada vocal escalado recebe uma notificação por e-mail.',
-      });
+      notifyAction(
+        'Escala publicada',
+        'A escala de vocais foi publicada. Cada vocal escalado recebe uma notificação por e-mail.',
+      );
     } else {
-      setAviso({
-        titulo: 'Publicado com ressalvas',
-        mensagem: `${total - falhas} de ${total} vocais foram escalados. Os demais podem já estar nessa escala.`,
-      });
+      notifyAction(
+        'Publicado com ressalvas',
+        `${total - falhas} de ${total} vocais foram escalados. Os demais podem já estar nessa escala.`,
+      );
     }
   }
 
@@ -922,30 +910,6 @@ export function DetalhesCultoScreen() {
           </View>
         </View>
       </Modal>
-
-      {/* Confirmação (ex.: registrar falta) */}
-      <ConfirmDialog
-        visible={!!confirmacao}
-        titulo={confirmacao?.titulo ?? ''}
-        mensagem={confirmacao?.mensagem ?? ''}
-        confirmLabel={confirmacao?.confirmLabel}
-        onConfirm={() => {
-          const fn = confirmacao?.onConfirm;
-          setConfirmacao(null);
-          fn?.();
-        }}
-        onCancel={() => setConfirmacao(null)}
-      />
-
-      {/* Aviso (feedback de publicar escala / erros) */}
-      <ConfirmDialog
-        visible={!!aviso}
-        titulo={aviso?.titulo ?? ''}
-        mensagem={aviso?.mensagem ?? ''}
-        confirmLabel="OK"
-        cancelLabel={null}
-        onConfirm={() => setAviso(null)}
-      />
     </SafeAreaView>
   );
 }
