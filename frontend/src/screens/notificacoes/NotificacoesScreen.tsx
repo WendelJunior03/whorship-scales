@@ -37,6 +37,7 @@ const iconePorTipo: Record<TipoNotificacao, IconName> = {
   escala: 'calendar',
   substituicao: 'swap-horizontal',
   confirmacao: 'checkmark-circle',
+  falta: 'alert-circle-outline',
   repertorio: 'musical-notes',
   lembrete: 'alarm',
 };

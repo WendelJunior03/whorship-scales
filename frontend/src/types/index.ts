@@ -44,7 +44,7 @@ export interface Video {
   musica_nome?: string;
 }
 
-export type StatusEscalaVocal = 'pendente' | 'confirmado' | 'recusado';
+export type StatusEscalaVocal = 'pendente' | 'confirmado' | 'recusado' | 'falta';
 
 export interface Membro {
   id: number;
@@ -263,7 +263,13 @@ export interface MinhaEscalaAvulsaItem {
  * Tipos de notificação que o back-end gera hoje. 'repertorio' e
  * 'lembrete' ainda não têm gatilho — reservados pro futuro.
  */
-export type TipoNotificacao = 'escala' | 'substituicao' | 'confirmacao' | 'repertorio' | 'lembrete';
+export type TipoNotificacao =
+  | 'escala'
+  | 'substituicao'
+  | 'confirmacao'
+  | 'falta'
+  | 'repertorio'
+  | 'lembrete';
 
 /**
  * Formato de cada item de GET /notificacoes/me.

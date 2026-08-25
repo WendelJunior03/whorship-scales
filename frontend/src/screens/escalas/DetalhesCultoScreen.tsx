@@ -53,12 +53,14 @@ const statusLabel: Record<StatusEscalaVocal, string> = {
   pendente: 'Pendente',
   confirmado: 'Confirmado',
   recusado: 'Recusado',
+  falta: 'Falta',
 };
 
 const statusTone: Record<StatusEscalaVocal, 'warning' | 'success' | 'error'> = {
   pendente: 'warning',
   confirmado: 'success',
   recusado: 'error',
+  falta: 'error',
 };
 
 interface EquipeItem {
@@ -354,6 +356,34 @@ export function DetalhesCultoScreen() {
     );
   }
 
+  function handleRegistrarFalta(item: EquipeItem) {
+    confirmAction(
+      {
+        title: 'Registrar falta',
+        message: `Marcar falta de "${item.nome}" (${item.funcao}) neste culto? Ele será notificado.`,
+        confirmLabel: 'Registrar falta',
+      },
+      async () => {
+        setExcluindoEquipeChave(item.chave);
+        try {
+          if (item.origem === 'vocal') {
+            await escalaVocalService.registrarFalta(item.origemId);
+          } else if (item.origem === 'avulsa') {
+            await escalaAvulsaService.registrarFalta(item.origemId);
+          }
+          await carregarDados();
+        } catch (err) {
+          Alert.alert(
+            'Erro',
+            err instanceof ApiError ? err.message : 'Não foi possível registrar a falta.',
+          );
+        } finally {
+          setExcluindoEquipeChave(null);
+        }
+      },
+    );
+  }
+
   function ativarModoEdicaoVocal() {
     setModoEdicaoVocal(true);
     garantirMembrosCarregados();
@@ -459,6 +489,11 @@ export function DetalhesCultoScreen() {
     (m) => !equipe.some((item) => item.nome === m.nome),
   );
 
+  // "Confirmados x de y" considera só quem tem status (vocal/avulsa); a escala
+  // fixa não tem confirmação por culto (ausência dela vira exceção).
+  const equipeConfirmavel = equipe.filter((item) => item.status !== undefined);
+  const totalConfirmados = equipeConfirmavel.filter((item) => item.status === 'confirmado').length;
+
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <Header title="Detalhes do Culto" showBack />
@@ -541,6 +576,11 @@ export function DetalhesCultoScreen() {
             </TouchableOpacity>
           )}
         </View>
+        {equipeConfirmavel.length > 0 && (
+          <Text style={styles.sectionSubtitle}>
+            Confirmados {totalConfirmados} de {equipeConfirmavel.length}
+          </Text>
+        )}
         {equipe.length === 0 ? (
           <Card>
             <Text style={styles.emptyText}>Nenhum membro escalado ainda.</Text>
@@ -575,9 +615,20 @@ export function DetalhesCultoScreen() {
                     <OptionsMenu
                       loading={excluindoEquipeChave === membro.chave}
                       actions={[
+                        // Registrar falta só faz sentido pra vocal/avulsa (têm status);
+                        // a ausência de fixa é tratada por "Remover" (vira exceção).
+                        ...(membro.status && membro.status !== 'falta'
+                          ? [
+                              {
+                                label: 'Registrar falta',
+                                icon: 'alert-circle-outline' as const,
+                                onPress: () => handleRegistrarFalta(membro),
+                              },
+                            ]
+                          : []),
                         {
                           label: 'Remover da equipe',
-                          icon: 'trash-outline',
+                          icon: 'trash-outline' as const,
                           destructive: true,
                           onPress: () => handleExcluirDaEquipe(membro),
                         },

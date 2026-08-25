@@ -16,7 +16,15 @@ export async function sugerirVocais(quantidade: number, cultoId: number) {
 }
 
 export async function updateStatusEscalaVocal(id: number, status: string) {
-    const alteracoes = await query('UPDATE escala_vocal SET status = $1 WHERE id = $2 RETURNING *', [status, id]);
+    // confirmado_em guarda o momento da confirmação; ao sair de 'confirmado' (recusa/falta/
+    // pendente) o rastro é limpo pra não ficar inconsistente.
+    const alteracoes = await query(
+        `UPDATE escala_vocal
+            SET status = $1,
+                confirmado_em = CASE WHEN $1 = 'confirmado' THEN now() ELSE NULL END
+          WHERE id = $2 RETURNING *`,
+        [status, id],
+    );
     return alteracoes.rows[0];
 }
 
