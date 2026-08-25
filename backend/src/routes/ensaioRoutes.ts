@@ -9,6 +9,7 @@ import {
     addParticipanteController,
     removeParticipanteController,
     confirmarPresencaEnsaioController,
+    getMinhasParticipacoesEnsaioController,
     registrarFaltaEnsaioController,
 } from '../controllers/ensaioController';
 
@@ -16,6 +17,7 @@ const router = Router();
 
 router.post('/', authMiddleware, autoriza('ensaio.gerenciar'), createEnsaioController)
 router.get('/culto/:cultoId', authMiddleware, getEnsaioDoCultoController)
+router.get('/participantes/me', authMiddleware, getMinhasParticipacoesEnsaioController)
 router.put('/:id', authMiddleware, autoriza('ensaio.gerenciar'), updateEnsaioController)
 router.delete('/:id', authMiddleware, autoriza('ensaio.gerenciar'), deleteEnsaioController)
 router.post('/:id/participantes', authMiddleware, autoriza('ensaio.gerenciar'), addParticipanteController)

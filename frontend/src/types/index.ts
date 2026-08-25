@@ -152,6 +152,36 @@ export interface Repertorio {
   link_musica: string;
 }
 
+/** Ensaio vinculado 1:1 a um culto — opcional, criação manual. */
+export interface Ensaio {
+  id: number;
+  culto_id: number;
+  data_hora: string;
+  observacoes: string | null;
+}
+
+export interface EnsaioParticipante {
+  id: number;
+  membro_id: number;
+  nome: string;
+  status: StatusEscalaVocal;
+}
+
+export interface EnsaioDoCulto {
+  ensaio: Ensaio | null;
+  participantes: EnsaioParticipante[];
+}
+
+/** Uma participação (minha) num ensaio, já com os dados do ensaio embutidos. */
+export interface MinhaParticipacaoEnsaio {
+  id: number;
+  status: StatusEscalaVocal;
+  ensaio_id: number;
+  data_hora: string;
+  observacoes: string | null;
+  culto_id: number;
+}
+
 export interface LoginResponse {
   token: string;
   message: string;
@@ -269,6 +299,7 @@ export type TipoNotificacao =
   | 'confirmacao'
   | 'falta'
   | 'repertorio'
+  | 'ensaio'
   | 'lembrete';
 
 /**
@@ -283,6 +314,6 @@ export interface Notificacao {
   lida: boolean;
   created_at: string;
   culto_id: number | null;
-  referencia_tipo: 'escala_vocal' | 'escala_avulsa' | null;
+  referencia_tipo: 'escala_vocal' | 'escala_avulsa' | 'ensaio_participante' | null;
   referencia_id: number | null;
 }

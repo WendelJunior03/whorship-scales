@@ -10,6 +10,7 @@ import {
     findEnsaioParticipanteById,
     updateStatusEnsaioParticipante,
     deleteEnsaioParticipante,
+    findMinhasParticipacoesEnsaio,
 } from '../models/ensaioModel';
 import { findCultoById } from '../models/cultoModel';
 import { findById, findAdminsAtivos } from '../models/membroModel';
@@ -110,7 +111,9 @@ export async function addParticipanteController(req: Request, res: Response) {
                     'ensaio',
                     'Você foi convidado para um ensaio',
                     `Ensaio marcado para o dia ${formatarDataHoraCurta(ensaio.data_hora)}. Confirme sua presença.`,
-                    ensaio.culto_id
+                    ensaio.culto_id,
+                    'ensaio_participante',
+                    participante.id
                 );
             } catch (error) {
                 console.error('Erro ao criar notificação:', error);
@@ -175,6 +178,14 @@ export async function confirmarPresencaEnsaioController(req: Request, res: Respo
     }
 
     return res.status(200).json({ message: 'Presença atualizada com sucesso!' })
+}
+
+export async function getMinhasParticipacoesEnsaioController(req: Request, res: Response) {
+    if (!req.user) {
+        return res.status(401).json({ message: 'Não autorizado!' })
+    }
+    const participacoes = await findMinhasParticipacoesEnsaio(req.user.id);
+    return res.status(200).json(participacoes)
 }
 
 export async function registrarFaltaEnsaioController(req: Request, res: Response) {

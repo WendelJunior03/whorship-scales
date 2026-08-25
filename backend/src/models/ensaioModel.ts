@@ -63,3 +63,16 @@ export async function deleteEnsaioParticipante(id: number) {
     const result = await query('DELETE FROM ensaio_participantes WHERE id = $1 RETURNING *', [id]);
     return result.rows[0];
 }
+
+export async function findMinhasParticipacoesEnsaio(membroId: number) {
+    const result = await query(
+        `SELECT ensaio_participantes.id, ensaio_participantes.status,
+                ensaios.id AS ensaio_id, ensaios.data_hora, ensaios.observacoes, ensaios.culto_id
+           FROM ensaio_participantes
+           JOIN ensaios ON ensaio_participantes.ensaio_id = ensaios.id
+          WHERE ensaio_participantes.membro_id = $1
+          ORDER BY ensaios.data_hora ASC`,
+        [membroId],
+    );
+    return result.rows;
+}
