@@ -12,6 +12,7 @@ import notificacaoRoutes from './routes/notificacaoRoutes'
 import organizacaoRoutes from './routes/organizacaoRoutes'
 import musicaRoutes from './routes/musicaRoutes'
 import videoRoutes from './routes/videoRoutes'
+import ministerioRoutes from './routes/ministerioRoutes'
 
 // App Express montado (sem escutar porta) — index.ts faz o listen; os testes de
 // integração importam este `app` direto (supertest), sem subir servidor.
@@ -38,5 +39,6 @@ app.use('/escala-avulsa', escalaAvulsaRoutes)
 app.use('/notificacoes', notificacaoRoutes)
 app.use('/musicas', musicaRoutes)
 app.use('/videos', videoRoutes)
+app.use('/ministerios', ministerioRoutes)
 
 export default app

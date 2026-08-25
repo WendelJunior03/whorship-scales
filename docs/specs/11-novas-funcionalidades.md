@@ -131,13 +131,39 @@ membro_classificacao (membro_id, classificacao_id)
 > pode ser derivado/substituído por `membro_funcoes` (decidir na implementação).
 
 **Tarefas:**
-- [ ] **T-11.1** — Migration: `ministerios` + `ministerio_membros` (RLS por org).
-- [ ] **T-11.2** — Migration: `funcoes`, `membro_funcoes`, `equipes`, `equipe_membros`,
-  `classificacoes`, `membro_classificacao`.
-- [ ] **T-11.3** — Adicionar `ministerio_id` às tabelas de escala/culto/repertório; backfill
-  para o ministério "seed" da org. _Pronto quando:_ dados atuais pertencem a um ministério.
-- [ ] **T-11.4** — CRUD de ministério/equipes/funções/classificações (só admin do ministério).
-- [ ] **T-11.5** — UI: aba Ministério (Informações / Membros x/y), gestão de equipes/funções.
+- [x] **T-11.1** — ✅ Migration `1787200000000_ministerios-modulo1-schema.sql`: `ministerios`
+  + `ministerio_membros` (N:N) com RLS por org.
+- [x] **T-11.2** — ✅ Mesma migration: `funcoes`, `membro_funcoes`, `equipes`,
+  `equipe_membros`, `classificacoes`, `membro_classificacao` (todas com RLS + índices + grants).
+- [x] **T-11.3** — ✅ Backfill `1787200000001_...-backfill.sql`: cria um ministério
+  inicial por org, vincula membros ativos e deriva funções de `papel_ministerio`; criação de
+  org nova também nasce com ministério padrão (`organizacaoModel`). ✅ `ministerio_id` nas
+  tabelas de escala/culto/repertório e `funcao_id` (FK) em `escala_fixa`/`escala_avulsa` via
+  `1787200000002_...-escala-ministerio-id-schema.sql` (colunas nullable + índices) +
+  `1787200000003_...-escala-ministerio-id-backfill.sql` (liga ao ministério seed da org,
+  cria funções faltantes a partir do `funcao` texto legado e preenche `funcao_id`). Coluna
+  `funcao` (texto) mantida como legado (remoção seria destrutiva). NOT NULL adiado até os
+  fluxos de escala passarem a gravar as colunas novas.
+- [x] **T-11.4** — ✅ Backend completo de **ministério + membros + funções + equipes +
+  classificações** (`ministerioModel`/`Controller`/`Routes`, montado em `/ministerios`),
+  capacidades `ministerio.visualizar` / `.gerenciar` / `.membros.gerenciar`, limite de vagas
+  ao adicionar membro, e validações de posse (equipe/classificação pertencem ao ministério;
+  membro pertence à org via RLS). Smoke test HTTP de ponta a ponta: 8/8.
+- [x] **T-11.5** — ✅ Tela **Ministério** (`MinisterioScreen`) com abas **Informações**
+  (identidade, barra de vagas x/y, listas de equipes/funções/classificações, integrações
+  Holyrics/API bloqueadas) e **Membros (x/y)**. **Ações de gestão pela UI** (admin/líder):
+  adicionar/remover membro, criar/apagar função/equipe/classificação e atribuir/remover
+  função de um membro (chips). Serviço `ministeriosService` + tipos; entrada em
+  **Recursos → Gestão** + rota na stack. Type-check e lint limpos.
+  ✅ **Completo:** gerir *membros de uma equipe* (modal ao tocar na equipe: adiciona/remove
+  membros do ministério) e *atribuir/remover classificação de um membro* pela UI (chips no
+  modal do membro, espelhando as funções). Backend passou a devolver `classificacoes` do
+  membro em `listarMembros`.
+
+> ✅ **Verificação:** migrations aplicadas com sucesso (schema + backfill) num banco local;
+> type-check limpo; suíte verde com **81 testes** — incluindo os 6 de isolamento (RLS) que
+> rodaram contra o banco. Backfill conferido: 1 ministério por org, membros vinculados com
+> papel derivado do `papel_org` e funções derivadas de `papel_ministerio`.
 
 ---
 

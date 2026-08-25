@@ -73,6 +73,27 @@ export async function criarOrganizacaoComAdmin(dados: NovaOrgComAdmin) {
 
         await client.query('UPDATE organizacoes SET criado_por = $1 WHERE id = $2', [membro.id, org.id]);
 
+        // Toda org nasce com um ministério padrão (mesma estrutura do backfill do
+        // módulo 1). O criador entra como administrador do ministério e as funções-base
+        // já ficam disponíveis para as escalas.
+        const ministerio = (await client.query(
+            `INSERT INTO ministerios (org_id, nome, descricao)
+             VALUES ($1, $2, 'Ministério principal') RETURNING id`,
+            [org.id, dados.nomeOrg],
+        )).rows[0];
+
+        await client.query(
+            `INSERT INTO ministerio_membros (ministerio_id, membro_id, org_id, papel)
+             VALUES ($1, $2, $3, 'administrador')`,
+            [ministerio.id, membro.id, org.id],
+        );
+
+        await client.query(
+            `INSERT INTO funcoes (org_id, ministerio_id, nome)
+             SELECT $1, $2, nome FROM (VALUES ('Ministro'), ('Vocalista'), ('Instrumentista')) AS f(nome)`,
+            [org.id, ministerio.id],
+        );
+
         return { org: { ...org, criado_por: membro.id }, membro };
     });
 }
