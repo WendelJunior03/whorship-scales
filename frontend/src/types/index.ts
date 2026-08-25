@@ -162,6 +162,24 @@ export interface Comentario {
   autor_nome: string;
 }
 
+export type AcaoHistorico =
+  | 'adicionou_membro'
+  | 'removeu_membro'
+  | 'confirmou'
+  | 'recusou'
+  | 'falta';
+
+/** Evento do histórico (audit log) de um culto (spec 11, módulo 5). */
+export interface HistoricoItem {
+  id: number;
+  culto_id: number;
+  ator_id: number | null;
+  acao: AcaoHistorico;
+  detalhe: { membro_nome?: string; funcao?: string };
+  created_at: string;
+  ator_nome: string | null;
+}
+
 export interface LoginResponse {
   token: string;
   message: string;
