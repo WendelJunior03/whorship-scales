@@ -32,6 +32,11 @@ export async function deletarEscalaAvulsa(id: number): Promise<void> {
   await api.delete(`/escala-avulsa/${id}`);
 }
 
+/** Líder registra a falta de um membro avulso (status -> 'falta'); notifica o membro. */
+export async function registrarFalta(id: number): Promise<void> {
+  await api.post(`/escala-avulsa/${id}/falta`);
+}
+
 /**
  * Confirma ou recusa a própria presença numa escala avulsa. Só o dono
  * do registro. Ao recusar, dá pra indicar quem poderia substituir

@@ -78,3 +78,8 @@ export async function getEscalaVocalDoCulto(cultoId: number): Promise<EscalaVoca
 export async function deletarEscalaVocal(id: number): Promise<void> {
   await api.delete(`/escala-vocal/${id}`);
 }
+
+/** Líder registra a falta de um vocal (status -> 'falta'); notifica o membro. */
+export async function registrarFalta(id: number): Promise<void> {
+  await api.post(`/escala-vocal/${id}/falta`);
+}

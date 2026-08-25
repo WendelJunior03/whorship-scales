@@ -190,8 +190,11 @@ confirmado_em   timestamptz NULL
   (líder registra falta → status `falta` + notificação tipo `falta` ao membro), protegido por
   `escala.gerenciar`. Sem notificação nova de "confirme presença": a de "nova escala publicada"
   (com `referencia_tipo/id`) já habilita Confirmar/Recusar na aba de Notificações.
-- [~] **T-11.8** — UI: painel "Confirmados x de y" + ação Registrar falta na `DetalhesCultoScreen`;
-  status `falta` no app (badge/ícone). *(em andamento)*
+- [x] **T-11.8** — ✅ UI: painel **"Confirmados x de y"** sob o cabeçalho de Equipe na
+  `DetalhesCultoScreen` (conta vocal/avulsa; fixa não tem confirmação por culto) e ação
+  **"Registrar falta"** no menu do membro (vocal/avulsa, admin/ministro). Status `falta`
+  no app: `StatusEscalaVocal`/`TipoNotificacao` ganham `'falta'`, badge tom `error` e ícone
+  na aba de Notificações. Confirmar/recusar do membro segue nas Notificações (fase B).
 
 ---
 
