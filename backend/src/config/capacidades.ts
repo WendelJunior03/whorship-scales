@@ -86,6 +86,11 @@ const capacidades: Record<string, RegraCapacidade> = {
         papelMinisterio: ['ministro'],
         escopo: ['organizacao']
     },
+    'ensaio.gerenciar':{
+        papelOrg: ['administrador'],
+        papelMinisterio: ['ministro'],
+        escopo: ['organizacao']
+    },
     'repertorio.visualizar':{
         papelOrg: ['administrador', 'lider', 'membro'],
         papelMinisterio: [],
