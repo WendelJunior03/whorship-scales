@@ -1,44 +1,42 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { Calendar, DateData } from 'react-native-calendars';
-import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
-import { MainStackParamList } from '@/navigation/MainNavigator';
+import { Icon } from '@/components/Icon';
+import { MainTabScreenNavigationProp } from '@/navigation/types';
 import * as cultosService from '@/services/cultos';
 import * as escalaAvulsaService from '@/services/escalaAvulsa';
 import * as escalaFixaService from '@/services/escalaFixa';
 import * as escalaVocalService from '@/services/escalaVocal';
 import * as excecoesService from '@/services/excecoes';
+import * as notificacoesService from '@/services/notificacoes';
 import { ApiError } from '@/services/api';
 import {
   Culto,
   DiaSemana,
+  MembroCandidato,
   MinhaEscalaAvulsaItem,
   MinhaEscalaFixaItem,
   MinhaEscalaVocalItem,
-  StatusEscalaVocal,
 } from '@/types';
-import { spacing, typography } from '@/theme';
-import { Cores } from '@/theme/palettes';
+import { LARGURA_CONTEUDO, radius, spacing, typography } from '@/theme';
+import { Cores, Sombras } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { formatDiaCompleto, formatHora } from '@/utils/date';
 import { confirmAction } from '@/utils/confirm';
-
-const statusLabel: Record<StatusEscalaVocal, string> = {
-  pendente: 'Pendente',
-  confirmado: 'Confirmado',
-  recusado: 'Recusado',
-};
-
-const statusTone: Record<StatusEscalaVocal, 'warning' | 'success' | 'error'> = {
-  pendente: 'warning',
-  confirmado: 'success',
-  recusado: 'error',
-};
 
 const diaSemanaPorIndice: Record<number, DiaSemana> = {
   0: 'domingo',
@@ -50,10 +48,20 @@ function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
+/**
+ * Compromissos: lista TUDO que a pessoa está escalada (vocal, avulsa e
+ * fixa), sem status de pendente/confirmado/recusado — confirmar e recusar
+ * vocal/avulsa agora acontece direto na notificação de "nova escala". Quem
+ * recusou lá simplesmente já não aparece mais aqui na próxima vez que a
+ * tela carregar (por isso recarrega sempre que a aba ganha foco).
+ * Escala fixa é diferente: não tem notificação de "nova escala" (é um
+ * vínculo semanal permanente), então "Recusar" (marcar falta numa data)
+ * continua aqui mesmo.
+ */
 export function AgendaScreen() {
-  const { colors } = useTheme();
+  const { colors, modo } = useTheme();
   const styles = useThemedStyles(criarEstilos);
-  const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();
+  const navigation = useNavigation<MainTabScreenNavigationProp<'Agenda'>>();
   const [escalaVocal, setEscalaVocal] = useState<MinhaEscalaVocalItem[]>([]);
   const [escalaAvulsa, setEscalaAvulsa] = useState<MinhaEscalaAvulsaItem[]>([]);
   const [escalaFixa, setEscalaFixa] = useState<MinhaEscalaFixaItem[]>([]);
@@ -64,6 +72,13 @@ export function AgendaScreen() {
   const [proximoCultoPorDia, setProximoCultoPorDia] = useState<Partial<Record<DiaSemana, Culto>>>(
     {},
   );
+  const [temNotificacaoNaoLida, setTemNotificacaoNaoLida] = useState(false);
+
+  type Indicacao = { item: MinhaEscalaFixaItem; data: string };
+  const [indicacao, setIndicacao] = useState<Indicacao | null>(null);
+  const [mostrarListaCandidatos, setMostrarListaCandidatos] = useState(false);
+  const [candidatos, setCandidatos] = useState<MembroCandidato[]>([]);
+  const [carregandoCandidatos, setCarregandoCandidatos] = useState(false);
 
   const carregarDados = useCallback(async () => {
     setIsLoading(true);
@@ -75,8 +90,8 @@ export function AgendaScreen() {
         escalaFixaService.getMinhaEscalaFixa(),
         cultosService.getTodosCultos(),
       ]);
-      setEscalaVocal(vocal);
-      setEscalaAvulsa(avulsa);
+      setEscalaVocal(vocal.filter((e) => e.status !== 'recusado'));
+      setEscalaAvulsa(avulsa.filter((e) => e.status !== 'recusado'));
       setEscalaFixa(fixa);
 
       const agora = new Date();
@@ -99,35 +114,24 @@ export function AgendaScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    carregarDados();
-  }, [carregarDados]);
+  useFocusEffect(
+    useCallback(() => {
+      carregarDados();
+    }, [carregarDados]),
+  );
 
-  async function handleAtualizarStatus(item: MinhaEscalaVocalItem, status: StatusEscalaVocal) {
-    setActionLoadingId(item.id);
-    try {
-      await escalaVocalService.confirmarPresenca(item.id, status);
-      setEscalaVocal((prev) => prev.map((e) => (e.id === item.id ? { ...e, status } : e)));
-    } catch (err) {
-      Alert.alert('Erro', err instanceof ApiError ? err.message : 'Não foi possível atualizar.');
-    } finally {
-      setActionLoadingId(null);
-    }
-  }
+  useFocusEffect(
+    useCallback(() => {
+      notificacoesService
+        .getMinhasNotificacoes()
+        .then((notificacoes) => setTemNotificacaoNaoLida(notificacoes.some((n) => !n.lida)))
+        .catch(() => {
+          // o sino não é crítico pra tela funcionar, falha aqui é silenciosa
+        });
+    }, []),
+  );
 
-  async function handleAtualizarStatusAvulsa(item: MinhaEscalaAvulsaItem, status: StatusEscalaVocal) {
-    setActionLoadingId(item.id);
-    try {
-      await escalaAvulsaService.confirmarPresencaAvulsa(item.id, status);
-      setEscalaAvulsa((prev) => prev.map((e) => (e.id === item.id ? { ...e, status } : e)));
-    } catch (err) {
-      Alert.alert('Erro', err instanceof ApiError ? err.message : 'Não foi possível atualizar.');
-    } finally {
-      setActionLoadingId(null);
-    }
-  }
-
-  function handleRecusarEscalaFixa(item: MinhaEscalaFixaItem) {
+  function abrirIndicacaoFixa(item: MinhaEscalaFixaItem) {
     if (!selectedDate) {
       Alert.alert(
         'Selecione uma data',
@@ -135,26 +139,57 @@ export function AgendaScreen() {
       );
       return;
     }
+    setIndicacao({ item, data: selectedDate });
+    setMostrarListaCandidatos(false);
+  }
+
+  async function abrirListaCandidatos() {
+    if (!indicacao) return;
+    setMostrarListaCandidatos(true);
+    setCandidatos([]);
+    setCarregandoCandidatos(true);
+    try {
+      setCandidatos(await excecoesService.getCandidatosExcecao());
+    } catch {
+      // sem candidatos pra indicar não impede a recusa — só some a lista
+    } finally {
+      setCarregandoCandidatos(false);
+    }
+  }
+
+  function fecharIndicacao() {
+    setIndicacao(null);
+    setMostrarListaCandidatos(false);
+    setCandidatos([]);
+  }
+
+  function executarRecusaFixa(indicado: MembroCandidato | null) {
+    if (!indicacao) return;
+    const atual = indicacao;
+    fecharIndicacao();
 
     confirmAction(
       {
         title: 'Recusar presença',
-        message: `Isso registra uma falta para "${item.funcao}" (${item.dia_semana}) no dia ${selectedDate}. O ministério vai precisar definir um substituto pra essa data. Confirmar?`,
+        message: indicado
+          ? `Recusar essa escala e indicar ${indicado.nome} pra te substituir?`
+          : 'Confirmar a recusa dessa escala?',
         confirmLabel: 'Recusar',
       },
       async () => {
-        setActionLoadingId(item.id);
+        setActionLoadingId(atual.item.id);
         try {
-          await excecoesService.criarExcecao({ escalaFixaId: item.id, data: selectedDate });
+          await excecoesService.criarExcecao({
+            escalaFixaId: atual.item.id,
+            data: atual.data,
+            indicadoId: indicado?.id,
+          });
           Alert.alert(
             'Registrado',
             'Sua falta foi registrada. Você será avisado quando um substituto for definido.',
           );
         } catch (err) {
-          Alert.alert(
-            'Erro',
-            err instanceof ApiError ? err.message : 'Não foi possível registrar a falta.',
-          );
+          Alert.alert('Erro', err instanceof ApiError ? err.message : 'Não foi possível registrar a recusa.');
         } finally {
           setActionLoadingId(null);
         }
@@ -207,8 +242,20 @@ export function AgendaScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>Minha Agenda</Text>
-        <Text style={styles.subtitle}>Seus próximos compromissos</Text>
+        <View style={styles.headerTextos}>
+          <Text style={styles.title}>Minha Agenda</Text>
+          <Text style={styles.subtitle}>Seus próximos compromissos</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.bell}
+          onPress={() => navigation.navigate('Notificacoes')}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={temNotificacaoNaoLida ? 'Notificações (não lidas)' : 'Notificações'}
+        >
+          <Icon name="notifications-outline" size={22} color={colors.text} />
+          {temNotificacaoNaoLida && <View style={styles.badgeDot} />}
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -218,6 +265,9 @@ export function AgendaScreen() {
       >
         <Card style={styles.calendarCard}>
           <Calendar
+            // `react-native-calendars` não reage bem a mudança de tema via prop depois de
+            // montado — forçar remount na troca de modo garante que a paleta nova aplique.
+            key={modo}
             markedDates={markedDates}
             onDayPress={(day: DateData) => setSelectedDate(day.dateString)}
             theme={{
@@ -249,37 +299,24 @@ export function AgendaScreen() {
             </View>
 
             {escalaVocal.map((item) => (
-            <Card
-              key={item.id}
-              style={styles.compromisso}
-              onPress={() => navigation.navigate('DetalhesCulto', { cultoId: item.culto_id })}
-            >
-              <View style={styles.compromissoInfo}>
-                <Text style={styles.compromissoDia}>{formatDiaCompleto(item.data_hora)}</Text>
-                <Text style={styles.compromissoHora}>
-                  {formatHora(item.data_hora)}
-                  {item.tipo ? ` · ${item.tipo}` : ''}
-                </Text>
-                <Badge label={statusLabel[item.status]} tone={statusTone[item.status]} />
-              </View>
-              {item.status === 'pendente' && (
-                <View style={styles.acoes}>
-                  <Button
-                    title="Confirmar"
-                    onPress={() => handleAtualizarStatus(item, 'confirmado')}
-                    loading={actionLoadingId === item.id}
-                    style={styles.acaoBotao}
-                  />
-                  <Button
-                    title="Recusar"
-                    onPress={() => handleAtualizarStatus(item, 'recusado')}
-                    loading={actionLoadingId === item.id}
-                    variant="outline"
-                    style={styles.acaoBotao}
-                  />
+              <Card
+                key={item.id}
+                style={styles.compromisso}
+                onPress={() => navigation.navigate('DetalhesCulto', { cultoId: item.culto_id })}
+              >
+                <View style={styles.compromissoInfo}>
+                  <Text style={styles.compromissoDia}>{formatDiaCompleto(item.data_hora)}</Text>
+                  <Text style={styles.compromissoHora}>
+                    {formatHora(item.data_hora)}
+                    {item.tipo ? ` · ${item.tipo}` : ''}
+                  </Text>
+                  {item.status === 'pendente' ? (
+                    <Badge label="Confirme na aba Notificações" tone="warning" />
+                  ) : (
+                    <Badge label="Confirmado" tone="success" />
+                  )}
                 </View>
-              )}
-            </Card>
+              </Card>
             ))}
           </>
         )}
@@ -287,40 +324,27 @@ export function AgendaScreen() {
         {escalaAvulsa.length > 0 && (
           <>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Compromissos avulsos</Text>
+              <Text style={styles.sectionTitle}>Compromissos</Text>
             </View>
 
             {escalaAvulsa.map((item) => (
-            <Card
-              key={item.id}
-              style={styles.compromisso}
-              onPress={() => navigation.navigate('DetalhesCulto', { cultoId: item.culto_id })}
-            >
-              <View style={styles.compromissoInfo}>
-                <Text style={styles.compromissoDia}>{formatDiaCompleto(item.data_hora)}</Text>
-                <Text style={styles.compromissoHora}>
-                  {formatHora(item.data_hora)} · {item.funcao}
-                </Text>
-                <Badge label={statusLabel[item.status]} tone={statusTone[item.status]} />
-              </View>
-              {item.status === 'pendente' && (
-                <View style={styles.acoes}>
-                  <Button
-                    title="Confirmar"
-                    onPress={() => handleAtualizarStatusAvulsa(item, 'confirmado')}
-                    loading={actionLoadingId === item.id}
-                    style={styles.acaoBotao}
-                  />
-                  <Button
-                    title="Recusar"
-                    onPress={() => handleAtualizarStatusAvulsa(item, 'recusado')}
-                    loading={actionLoadingId === item.id}
-                    variant="outline"
-                    style={styles.acaoBotao}
-                  />
+              <Card
+                key={item.id}
+                style={styles.compromisso}
+                onPress={() => navigation.navigate('DetalhesCulto', { cultoId: item.culto_id })}
+              >
+                <View style={styles.compromissoInfo}>
+                  <Text style={styles.compromissoDia}>{formatDiaCompleto(item.data_hora)}</Text>
+                  <Text style={styles.compromissoHora}>
+                    {formatHora(item.data_hora)} · {item.funcao}
+                  </Text>
+                  {item.status === 'pendente' ? (
+                    <Badge label="Confirme na aba Notificações" tone="warning" />
+                  ) : (
+                    <Badge label="Confirmado" tone="success" />
+                  )}
                 </View>
-              )}
-            </Card>
+              </Card>
             ))}
           </>
         )}
@@ -354,7 +378,7 @@ export function AgendaScreen() {
                 </View>
                 <Button
                   title="Recusar"
-                  onPress={() => handleRecusarEscalaFixa(item)}
+                  onPress={() => abrirIndicacaoFixa(item)}
                   loading={actionLoadingId === item.id}
                   variant="outline"
                   style={styles.acaoBotaoUnico}
@@ -365,11 +389,67 @@ export function AgendaScreen() {
           </>
         )}
       </ScrollView>
+
+      <Modal
+        visible={!!indicacao}
+        animationType="slide"
+        transparent
+        onRequestClose={fecharIndicacao}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {!mostrarListaCandidatos ? (
+              <>
+                <Text style={styles.modalTitle}>Recusar presença</Text>
+                <Button title="Indicar alguém" onPress={abrirListaCandidatos} style={styles.modalButton} />
+                <Button
+                  title="Recusar sem indicar"
+                  variant="outline"
+                  onPress={() => executarRecusaFixa(null)}
+                  style={styles.modalButton}
+                />
+                <Button title="Cancelar" variant="outline" onPress={fecharIndicacao} style={styles.modalButton} />
+              </>
+            ) : (
+              <>
+                <Text style={styles.modalTitle}>Quem você indica pra sua vaga?</Text>
+
+                {carregandoCandidatos ? (
+                  <ActivityIndicator color={colors.primary} style={styles.modalLoading} />
+                ) : (
+                  <ScrollView style={styles.modalList}>
+                    {candidatos.length === 0 ? (
+                      <Text style={styles.emptyText}>Nenhum candidato disponível no momento.</Text>
+                    ) : (
+                      candidatos.map((candidato) => (
+                        <TouchableOpacity
+                          key={candidato.id}
+                          style={styles.modalItem}
+                          onPress={() => executarRecusaFixa(candidato)}
+                        >
+                          <Text style={styles.modalItemText}>{candidato.nome}</Text>
+                        </TouchableOpacity>
+                      ))
+                    )}
+                  </ScrollView>
+                )}
+
+                <Button
+                  title="Voltar"
+                  variant="outline"
+                  onPress={() => setMostrarListaCandidatos(false)}
+                  style={styles.modalButton}
+                />
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
-const criarEstilos = (colors: Cores) => StyleSheet.create({
+const criarEstilos = (colors: Cores, shadows: Sombras) => StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
@@ -389,9 +469,35 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     minWidth: 200,
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
     paddingBottom: spacing.md,
+  },
+  headerTextos: {
+    flex: 1,
+  },
+  bell: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.sm,
+  },
+  badgeDot: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.error,
   },
   title: {
     ...typography.h1,
@@ -405,6 +511,9 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     flex: 1,
   },
   content: {
+    width: '100%',
+    maxWidth: LARGURA_CONTEUDO,
+    alignSelf: 'center',
     padding: spacing.lg,
     paddingTop: 0,
     gap: spacing.md,
@@ -444,15 +553,43 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     color: colors.textMuted,
     marginTop: 2,
   },
-  acoes: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  acaoBotao: {
-    flex: 1,
-  },
   acaoBotaoUnico: {
     alignSelf: 'flex-start',
     minWidth: 120,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: spacing.lg,
+    gap: spacing.md,
+    maxHeight: '70%',
+  },
+  modalTitle: {
+    ...typography.h3,
+    color: colors.text,
+  },
+  modalLoading: {
+    marginVertical: spacing.lg,
+  },
+  modalList: {
+    maxHeight: 280,
+  },
+  modalItem: {
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  modalItemText: {
+    ...typography.body,
+    color: colors.text,
+  },
+  modalButton: {
+    marginTop: spacing.xs,
   },
 });

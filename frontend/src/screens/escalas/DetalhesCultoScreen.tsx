@@ -21,6 +21,7 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Header } from '@/components/Header';
 import { OptionsMenu } from '@/components/OptionsMenu';
+import { SeletorFuncao } from '@/components/SeletorFuncao';
 import { useAuth } from '@/contexts/AuthContext';
 import { MainStackParamList } from '@/navigation/types';
 import * as cultosService from '@/services/cultos';
@@ -31,6 +32,7 @@ import * as excecoesService from '@/services/excecoes';
 import * as membrosService from '@/services/membros';
 import * as repertorioService from '@/services/repertorio';
 import { ApiError } from '@/services/api';
+import { buscarTituloDoLink } from '@/utils/tituloLink';
 import {
   Culto,
   EscalaAvulsaDoCultoItem,
@@ -40,7 +42,7 @@ import {
   StatusEscalaVocal,
   SugestaoVocal,
 } from '@/types';
-import { spacing, typography } from '@/theme';
+import { LARGURA_CONTEUDO, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { formatDiaCompleto, formatDiaCurto, formatDiaSemana, formatHora } from '@/utils/date';
@@ -73,7 +75,7 @@ export function DetalhesCultoScreen() {
   const styles = useThemedStyles(criarEstilos);
   const route = useRoute<RouteProp<MainStackParamList, 'DetalhesCulto'>>();
   const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();
-  const { cultoId } = route.params;
+  const { cultoId, abrirEdicaoVocal } = route.params;
   const { user } = useAuth();
 
   const [culto, setCulto] = useState<Culto | null>(null);
@@ -87,6 +89,7 @@ export function DetalhesCultoScreen() {
   const [novoNomeMusica, setNovoNomeMusica] = useState('');
   const [novoTom, setNovoTom] = useState('');
   const [novoLink, setNovoLink] = useState('');
+  const [buscandoTitulo, setBuscandoTitulo] = useState(false);
   const [salvandoMusica, setSalvandoMusica] = useState(false);
   const [excluindoMusicaId, setExcluindoMusicaId] = useState<number | null>(null);
 
@@ -136,22 +139,28 @@ export function DetalhesCultoScreen() {
         origem: 'fixa',
         origemId: item.escala_fixa_id,
       }));
-      const equipeVocal: EquipeItem[] = escalaVocalDoCulto.map((item) => ({
-        chave: `vocal-${item.id}`,
-        nome: item.nome,
-        funcao: 'Vocal',
-        status: item.status,
-        origem: 'vocal',
-        origemId: item.id,
-      }));
-      const equipeAvulsa: EquipeItem[] = escalaAvulsaDoCulto.map((item) => ({
-        chave: `avulsa-${item.id}`,
-        nome: item.nome,
-        funcao: item.funcao,
-        status: item.status,
-        origem: 'avulsa',
-        origemId: item.id,
-      }));
+      // Quem recusou some da equipe sozinho — não precisa remover na mão (o
+      // registro continua existindo pra histórico, só não aparece mais aqui).
+      const equipeVocal: EquipeItem[] = escalaVocalDoCulto
+        .filter((item) => item.status !== 'recusado')
+        .map((item) => ({
+          chave: `vocal-${item.id}`,
+          nome: item.nome,
+          funcao: 'Vocal',
+          status: item.status,
+          origem: 'vocal',
+          origemId: item.id,
+        }));
+      const equipeAvulsa: EquipeItem[] = escalaAvulsaDoCulto
+        .filter((item) => item.status !== 'recusado')
+        .map((item) => ({
+          chave: `avulsa-${item.id}`,
+          nome: item.nome,
+          funcao: item.funcao,
+          status: item.status,
+          origem: 'avulsa',
+          origemId: item.id,
+        }));
 
       const minhaFuncaoFixa = equipeFixa.find((item) => item.nome === user?.nome);
       const minhaEscalaVocal = escalaVocalDoCulto.find(
@@ -169,13 +178,13 @@ export function DetalhesCultoScreen() {
       );
       setSugestaoVocal(vocaisSugeridos);
       setSelecionadosVocal(vocaisSugeridos);
-      setModoEdicaoVocal(false);
+      setModoEdicaoVocal(Boolean(abrirEdicaoVocal));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Não foi possível carregar o culto.');
     } finally {
       setIsLoading(false);
     }
-  }, [cultoId, user]);
+  }, [cultoId, user, abrirEdicaoVocal]);
 
   useEffect(() => {
     carregarDados();
@@ -190,6 +199,21 @@ export function DetalhesCultoScreen() {
     setNovoTom('');
     setNovoLink('');
     setRepertorioModalAberto(true);
+  }
+
+  // Ao sair do campo de link, tenta puxar o título (YouTube ou Spotify) pra
+  // preencher o nome sozinho — outros links não fazem nada, sem erro.
+  async function handleLinkPerdeuFoco() {
+    if (!novoLink.trim()) return;
+    setBuscandoTitulo(true);
+    try {
+      const titulo = await buscarTituloDoLink(novoLink.trim());
+      if (titulo) {
+        setNovoNomeMusica(titulo);
+      }
+    } finally {
+      setBuscandoTitulo(false);
+    }
   }
 
   async function handleAdicionarMusica() {
@@ -429,6 +453,12 @@ export function DetalhesCultoScreen() {
     (m) => m.papel === 'vocal' && !selecionadosVocal.some((s) => s.id === m.id),
   );
 
+  // Quem já está na equipe do culto (fixa, vocal ou avulsa) some da lista de
+  // adicionar — evita escalar a mesma pessoa duas vezes pro mesmo culto.
+  const membrosParaEscolher = todosMembrosAtivos.filter(
+    (m) => !equipe.some((item) => item.nome === m.nome),
+  );
+
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <Header title="Detalhes do Culto" showBack />
@@ -450,7 +480,11 @@ export function DetalhesCultoScreen() {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Repertório</Text>
           {user && podeGerir(user) && (
-            <TouchableOpacity onPress={abrirRepertorioModal}>
+            <TouchableOpacity
+              onPress={abrirRepertorioModal}
+              accessibilityRole="button"
+              accessibilityLabel="Adicionar música ao repertório"
+            >
               <Icon name="add-circle-outline" size={22} color={colors.primary} />
             </TouchableOpacity>
           )}
@@ -498,7 +532,11 @@ export function DetalhesCultoScreen() {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Equipe</Text>
           {user && podeGerir(user) && (
-            <TouchableOpacity onPress={abrirEquipeModal}>
+            <TouchableOpacity
+              onPress={abrirEquipeModal}
+              accessibilityRole="button"
+              accessibilityLabel="Adicionar membro à equipe"
+            >
               <Icon name="add-circle-outline" size={22} color={colors.primary} />
             </TouchableOpacity>
           )}
@@ -581,10 +619,17 @@ export function DetalhesCultoScreen() {
                         <TouchableOpacity
                           onPress={() => abrirPickerVocalParaTrocar(index)}
                           hitSlop={8}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Trocar vocal ${vocal.nome}`}
                         >
                           <Icon name="swap-horizontal" size={20} color={colors.primary} />
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => removerVocal(index)} hitSlop={8}>
+                        <TouchableOpacity
+                          onPress={() => removerVocal(index)}
+                          hitSlop={8}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Remover vocal ${vocal.nome}`}
+                        >
                           <Icon name="close-circle" size={20} color={colors.error} />
                         </TouchableOpacity>
                       </View>
@@ -655,14 +700,15 @@ export function DetalhesCultoScreen() {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Adicionar música</Text>
 
-            <View style={styles.modalInput}>
+            <View style={[styles.modalInput, { flexDirection: 'row', alignItems: 'center' }]}>
               <TextInput
-                style={styles.modalTextInput}
+                style={[styles.modalTextInput, { flex: 1 }]}
                 placeholder="Nome da música"
                 placeholderTextColor={colors.textMuted}
                 value={novoNomeMusica}
                 onChangeText={setNovoNomeMusica}
               />
+              {buscandoTitulo && <ActivityIndicator size="small" color={colors.primary} />}
             </View>
             <View style={styles.modalInput}>
               <TextInput
@@ -680,10 +726,14 @@ export function DetalhesCultoScreen() {
                 placeholderTextColor={colors.textMuted}
                 value={novoLink}
                 onChangeText={setNovoLink}
+                onBlur={handleLinkPerdeuFoco}
                 autoCapitalize="none"
                 keyboardType="url"
               />
             </View>
+            <Text style={styles.linkDica}>
+              Link do YouTube ou Spotify? O nome da música é preenchido automaticamente.
+            </Text>
 
             <Button
               title="Adicionar"
@@ -720,15 +770,7 @@ export function DetalhesCultoScreen() {
                 {novoMembroEquipe ? novoMembroEquipe.nome : 'Selecionar membro'}
               </Text>
             </TouchableOpacity>
-            <View style={styles.modalInput}>
-              <TextInput
-                style={styles.modalTextInput}
-                placeholder="Função (ex: Baixo, Ministro)"
-                placeholderTextColor={colors.textMuted}
-                value={novaFuncaoEquipe}
-                onChangeText={setNovaFuncaoEquipe}
-              />
-            </View>
+            <SeletorFuncao selecionado={novaFuncaoEquipe || null} onChange={setNovaFuncaoEquipe} />
 
             <Button
               title="Adicionar"
@@ -760,10 +802,10 @@ export function DetalhesCultoScreen() {
               <ActivityIndicator color={colors.primary} style={styles.modalLoading} />
             ) : (
               <ScrollView style={styles.modalList}>
-                {todosMembrosAtivos.length === 0 ? (
+                {membrosParaEscolher.length === 0 ? (
                   <Text style={styles.emptyText}>Nenhum membro disponível.</Text>
                 ) : (
-                  todosMembrosAtivos.map((membro) => (
+                  membrosParaEscolher.map((membro) => (
                     <TouchableOpacity
                       key={membro.id}
                       style={styles.modalItem}
@@ -844,6 +886,9 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     flex: 1,
   },
   content: {
+    width: '100%',
+    maxWidth: LARGURA_CONTEUDO,
+    alignSelf: 'center',
     padding: spacing.lg,
     paddingTop: spacing.sm,
     gap: spacing.md,
@@ -1040,6 +1085,11 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
   modalPlaceholder: {
     ...typography.body,
     color: colors.textMuted,
+  },
+  linkDica: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: -spacing.xs,
   },
   modalButton: {
     marginTop: spacing.xs,

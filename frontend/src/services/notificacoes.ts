@@ -15,3 +15,10 @@ export async function getMinhasNotificacoes(): Promise<Notificacao[]> {
 export async function marcarComoLida(id: number): Promise<void> {
   await api.put(`/notificacoes/${id}/lida`, {});
 }
+
+/**
+ * Remove todas as notificações do usuário logado.
+ */
+export async function limparNotificacoes(): Promise<void> {
+  await api.delete('/notificacoes/me');
+}

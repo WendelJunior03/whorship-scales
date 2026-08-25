@@ -9,7 +9,7 @@ import { useAfinador } from '@/hooks/useAfinador';
 import { useRecurso } from '@/hooks/useRecurso';
 import { freqParaNota } from '@/utils/notas';
 import { AFINACOES, cordaMaisProxima, RECURSO_AFINADOR_AVANCADO } from '@/config/afinacoes';
-import { fonts, radius, spacing, typography } from '@/theme';
+import { fonts, LARGURA_CONTEUDO, radius, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 
@@ -171,6 +171,9 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     backgroundColor: colors.background,
   },
   content: {
+    width: '100%',
+    maxWidth: LARGURA_CONTEUDO,
+    alignSelf: 'center',
     padding: spacing.lg,
     gap: spacing.lg,
   },

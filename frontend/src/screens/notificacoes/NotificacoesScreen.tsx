@@ -1,16 +1,37 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, SectionList, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  ScrollView,
+  SectionList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { Icon, IconName } from '@/components/Icon';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import * as notificacoesService from '@/services/notificacoes';
+import * as escalaVocalService from '@/services/escalaVocal';
+import * as escalaAvulsaService from '@/services/escalaAvulsa';
 import { ApiError } from '@/services/api';
-import { Notificacao, TipoNotificacao } from '@/types';
-import { spacing, typography } from '@/theme';
+import { MainTabScreenNavigationProp } from '@/navigation/types';
+import {
+  MembroCandidato,
+  MinhaEscalaAvulsaItem,
+  MinhaEscalaVocalItem,
+  Notificacao,
+  TipoNotificacao,
+} from '@/types';
+import { LARGURA_CONTEUDO, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { formatDataRelativa, formatHora } from '@/utils/date';
+import { confirmAction } from '@/utils/confirm';
 
 const iconePorTipo: Record<TipoNotificacao, IconName> = {
   escala: 'calendar',
@@ -42,16 +63,34 @@ function agruparPorData(notificacoes: Notificacao[]): Secao[] {
 export function NotificacoesScreen() {
   const { colors } = useTheme();
   const styles = useThemedStyles(criarEstilos);
+  const navigation = useNavigation<MainTabScreenNavigationProp<'Notificacoes'>>();
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
+  const [escalaVocal, setEscalaVocal] = useState<MinhaEscalaVocalItem[]>([]);
+  const [escalaAvulsa, setEscalaAvulsa] = useState<MinhaEscalaAvulsaItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
+
+  type Indicacao =
+    | { tipo: 'vocal'; item: MinhaEscalaVocalItem }
+    | { tipo: 'avulsa'; item: MinhaEscalaAvulsaItem };
+  const [indicacao, setIndicacao] = useState<Indicacao | null>(null);
+  const [mostrarListaCandidatos, setMostrarListaCandidatos] = useState(false);
+  const [candidatos, setCandidatos] = useState<MembroCandidato[]>([]);
+  const [carregandoCandidatos, setCarregandoCandidatos] = useState(false);
 
   const carregarDados = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const dados = await notificacoesService.getMinhasNotificacoes();
+      const [dados, vocal, avulsa] = await Promise.all([
+        notificacoesService.getMinhasNotificacoes(),
+        escalaVocalService.getMinhaEscalaVocal(),
+        escalaAvulsaService.getMinhaEscalaAvulsa(),
+      ]);
       setNotificacoes(dados);
+      setEscalaVocal(vocal);
+      setEscalaAvulsa(avulsa);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Não foi possível carregar as notificações.');
     } finally {
@@ -59,17 +98,147 @@ export function NotificacoesScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    carregarDados();
-  }, [carregarDados]);
+  useFocusEffect(
+    useCallback(() => {
+      carregarDados();
+    }, [carregarDados]),
+  );
 
-  function handleAbrir(item: Notificacao) {
+  function itemPendenteDaNotificacao(item: Notificacao): MinhaEscalaVocalItem | MinhaEscalaAvulsaItem | null {
+    if (!item.referencia_id) return null;
+    if (item.referencia_tipo === 'escala_vocal') {
+      const encontrado = escalaVocal.find((e) => e.id === item.referencia_id);
+      return encontrado && encontrado.status === 'pendente' ? encontrado : null;
+    }
+    if (item.referencia_tipo === 'escala_avulsa') {
+      const encontrado = escalaAvulsa.find((e) => e.id === item.referencia_id);
+      return encontrado && encontrado.status === 'pendente' ? encontrado : null;
+    }
+    return null;
+  }
+
+  function marcarComoLida(item: Notificacao) {
     if (item.lida) return;
-
     setNotificacoes((prev) => prev.map((n) => (n.id === item.id ? { ...n, lida: true } : n)));
     notificacoesService.marcarComoLida(item.id).catch(() => {
       setNotificacoes((prev) => prev.map((n) => (n.id === item.id ? { ...n, lida: false } : n)));
     });
+  }
+
+  function handleAbrir(item: Notificacao) {
+    marcarComoLida(item);
+
+    if (item.tipo === 'substituicao' && item.culto_id && !itemPendenteDaNotificacao(item)) {
+      navigation.navigate('DetalhesCulto', { cultoId: item.culto_id, abrirEdicaoVocal: true });
+    }
+  }
+
+  function handleLimpar() {
+    confirmAction(
+      {
+        title: 'Limpar notificações',
+        message: 'Isso remove todas as suas notificações. Essa ação não pode ser desfeita.',
+        confirmLabel: 'Limpar',
+      },
+      () => {
+        const anteriores = notificacoes;
+        setNotificacoes([]);
+        notificacoesService.limparNotificacoes().catch(() => {
+          setNotificacoes(anteriores);
+        });
+      },
+    );
+  }
+
+  async function handleConfirmar(item: Notificacao) {
+    const escala = itemPendenteDaNotificacao(item);
+    if (!escala) return;
+    setActionLoadingId(item.id);
+    try {
+      if (item.referencia_tipo === 'escala_vocal') {
+        await escalaVocalService.confirmarPresenca(escala.id, 'confirmado');
+        setEscalaVocal((prev) => prev.map((e) => (e.id === escala.id ? { ...e, status: 'confirmado' } : e)));
+      } else {
+        await escalaAvulsaService.confirmarPresencaAvulsa(escala.id, 'confirmado');
+        setEscalaAvulsa((prev) => prev.map((e) => (e.id === escala.id ? { ...e, status: 'confirmado' } : e)));
+      }
+      marcarComoLida(item);
+    } catch (err) {
+      Alert.alert('Erro', err instanceof ApiError ? err.message : 'Não foi possível confirmar.');
+    } finally {
+      setActionLoadingId(null);
+    }
+  }
+
+  function abrirIndicacao(item: Notificacao) {
+    const escala = itemPendenteDaNotificacao(item);
+    if (!escala) return;
+    if (item.referencia_tipo === 'escala_vocal') {
+      setIndicacao({ tipo: 'vocal', item: escala as MinhaEscalaVocalItem });
+    } else {
+      setIndicacao({ tipo: 'avulsa', item: escala as MinhaEscalaAvulsaItem });
+    }
+    setMostrarListaCandidatos(false);
+  }
+
+  async function abrirListaCandidatos() {
+    if (!indicacao) return;
+    setMostrarListaCandidatos(true);
+    setCandidatos([]);
+    setCarregandoCandidatos(true);
+    try {
+      const buscar =
+        indicacao.tipo === 'vocal'
+          ? () => escalaVocalService.getCandidatosVocais(indicacao.item.culto_id)
+          : () => escalaAvulsaService.getCandidatosAvulsa(indicacao.item.culto_id);
+      setCandidatos(await buscar());
+    } catch {
+      // sem candidatos pra indicar não impede a recusa — só some a lista
+    } finally {
+      setCarregandoCandidatos(false);
+    }
+  }
+
+  function fecharIndicacao() {
+    setIndicacao(null);
+    setMostrarListaCandidatos(false);
+    setCandidatos([]);
+  }
+
+  function executarRecusa(indicado: MembroCandidato | null) {
+    if (!indicacao) return;
+    const atual = indicacao;
+    fecharIndicacao();
+
+    confirmAction(
+      {
+        title: 'Recusar presença',
+        message: indicado
+          ? `Recusar essa escala e indicar ${indicado.nome} pra te substituir?`
+          : 'Confirmar a recusa dessa escala?',
+        confirmLabel: 'Recusar',
+      },
+      async () => {
+        setActionLoadingId(atual.item.id);
+        try {
+          if (atual.tipo === 'vocal') {
+            await escalaVocalService.confirmarPresenca(atual.item.id, 'recusado', indicado?.id);
+            setEscalaVocal((prev) =>
+              prev.map((e) => (e.id === atual.item.id ? { ...e, status: 'recusado' } : e)),
+            );
+          } else {
+            await escalaAvulsaService.confirmarPresencaAvulsa(atual.item.id, 'recusado', indicado?.id);
+            setEscalaAvulsa((prev) =>
+              prev.map((e) => (e.id === atual.item.id ? { ...e, status: 'recusado' } : e)),
+            );
+          }
+        } catch (err) {
+          Alert.alert('Erro', err instanceof ApiError ? err.message : 'Não foi possível registrar a recusa.');
+        } finally {
+          setActionLoadingId(null);
+        }
+      },
+    );
   }
 
   if (isLoading) {
@@ -100,7 +269,16 @@ export function NotificacoesScreen() {
     <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.title}>Notificações</Text>
-        <Icon name="settings-outline" size={22} color={colors.text} />
+        {notificacoes.length > 0 && (
+          <TouchableOpacity
+            onPress={handleLimpar}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Limpar notificações"
+          >
+            <Icon name="trash-outline" size={22} color={colors.text} />
+          </TouchableOpacity>
+        )}
       </View>
 
       <SectionList
@@ -116,24 +294,102 @@ export function NotificacoesScreen() {
         renderSectionHeader={({ section }) => (
           <Text style={styles.sectionTitle}>{section.title}</Text>
         )}
-        renderItem={({ item }) => (
-          <Card style={styles.item} onPress={() => handleAbrir(item)}>
-            <View style={styles.itemIcon}>
-              <Icon name={iconePorTipo[item.tipo]} size={18} color={colors.primary} />
-            </View>
-            <View style={styles.itemInfo}>
-              <Text style={[styles.itemTitulo, !item.lida && styles.itemTituloNaoLido]}>
-                {item.titulo}
-              </Text>
-              <Text style={styles.itemDescricao}>{item.descricao}</Text>
-            </View>
-            <View style={styles.itemLado}>
-              <Text style={styles.itemHora}>{formatHora(item.created_at)}</Text>
-              {!item.lida && <View style={styles.dotNaoLido} />}
-            </View>
-          </Card>
-        )}
+        renderItem={({ item }) => {
+          const pendente = itemPendenteDaNotificacao(item);
+          return (
+            <Card style={styles.item} onPress={() => handleAbrir(item)}>
+              <View style={styles.itemLinha}>
+                <View style={styles.itemIcon}>
+                  <Icon name={iconePorTipo[item.tipo]} size={18} color={colors.primary} />
+                </View>
+                <View style={styles.itemInfo}>
+                  <Text style={[styles.itemTitulo, !item.lida && styles.itemTituloNaoLido]}>
+                    {item.titulo}
+                  </Text>
+                  <Text style={styles.itemDescricao}>{item.descricao}</Text>
+                </View>
+                <View style={styles.itemLado}>
+                  <Text style={styles.itemHora}>{formatHora(item.created_at)}</Text>
+                  {!item.lida && <View style={styles.dotNaoLido} />}
+                </View>
+              </View>
+              {pendente && (
+                <View style={styles.acoes}>
+                  <Button
+                    title="Confirmar"
+                    onPress={() => handleConfirmar(item)}
+                    loading={actionLoadingId === item.id}
+                    style={styles.acaoBotao}
+                  />
+                  <Button
+                    title="Recusar"
+                    onPress={() => abrirIndicacao(item)}
+                    loading={actionLoadingId === item.id}
+                    variant="outline"
+                    style={styles.acaoBotao}
+                  />
+                </View>
+              )}
+            </Card>
+          );
+        }}
       />
+
+      <Modal
+        visible={!!indicacao}
+        animationType="slide"
+        transparent
+        onRequestClose={fecharIndicacao}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {!mostrarListaCandidatos ? (
+              <>
+                <Text style={styles.modalTitle}>Recusar presença</Text>
+                <Button title="Indicar alguém" onPress={abrirListaCandidatos} style={styles.modalButton} />
+                <Button
+                  title="Recusar sem indicar"
+                  variant="outline"
+                  onPress={() => executarRecusa(null)}
+                  style={styles.modalButton}
+                />
+                <Button title="Cancelar" variant="outline" onPress={fecharIndicacao} style={styles.modalButton} />
+              </>
+            ) : (
+              <>
+                <Text style={styles.modalTitle}>Quem você indica pra sua vaga?</Text>
+
+                {carregandoCandidatos ? (
+                  <ActivityIndicator color={colors.primary} style={styles.modalLoading} />
+                ) : (
+                  <ScrollView style={styles.modalList}>
+                    {candidatos.length === 0 ? (
+                      <Text style={styles.emptyText}>Nenhum candidato disponível no momento.</Text>
+                    ) : (
+                      candidatos.map((candidato) => (
+                        <TouchableOpacity
+                          key={candidato.id}
+                          style={styles.modalItem}
+                          onPress={() => executarRecusa(candidato)}
+                        >
+                          <Text style={styles.modalItemText}>{candidato.nome}</Text>
+                        </TouchableOpacity>
+                      ))
+                    )}
+                  </ScrollView>
+                )}
+
+                <Button
+                  title="Voltar"
+                  variant="outline"
+                  onPress={() => setMostrarListaCandidatos(false)}
+                  style={styles.modalButton}
+                />
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -173,6 +429,9 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     flex: 1,
   },
   listContent: {
+    width: '100%',
+    maxWidth: LARGURA_CONTEUDO,
+    alignSelf: 'center',
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.lg,
     gap: spacing.sm,
@@ -189,10 +448,13 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     marginBottom: spacing.xs,
   },
   item: {
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  itemLinha: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: spacing.sm,
-    marginBottom: spacing.sm,
   },
   itemIcon: {
     width: 36,
@@ -230,5 +492,47 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: colors.primary,
+  },
+  acoes: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  acaoBotao: {
+    flex: 1,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: spacing.lg,
+    gap: spacing.md,
+    maxHeight: '70%',
+  },
+  modalTitle: {
+    ...typography.h3,
+    color: colors.text,
+  },
+  modalLoading: {
+    marginVertical: spacing.lg,
+  },
+  modalList: {
+    maxHeight: 280,
+  },
+  modalItem: {
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  modalItemText: {
+    ...typography.body,
+    color: colors.text,
+  },
+  modalButton: {
+    marginTop: spacing.xs,
   },
 });

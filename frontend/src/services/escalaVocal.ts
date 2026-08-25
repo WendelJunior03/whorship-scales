@@ -1,5 +1,5 @@
 import { api } from './api';
-import { EscalaVocalDoCultoItem, MinhaEscalaVocalItem, StatusEscalaVocal, SugestaoVocal } from '@/types';
+import { EscalaVocalDoCultoItem, MembroCandidato, MinhaEscalaVocalItem, StatusEscalaVocal, SugestaoVocal } from '@/types';
 
 export interface CriarEscalaVocalInput {
   membroId: number;
@@ -30,10 +30,28 @@ export async function getSugestaoVocais(cultoId: number): Promise<SugestaoVocal[
 
 /**
  * Confirma ou recusa a própria presença num culto em que foi escalado
- * como vocal. Só o dono do registro de escala_vocal.
+ * como vocal. Só o dono do registro de escala_vocal. Ao recusar, dá pra
+ * indicar quem poderia substituir (opcional) — o nome vai junto no aviso
+ * que o ministério recebe.
  */
-export async function confirmarPresenca(id: number, status: StatusEscalaVocal): Promise<void> {
-  await api.put(`/escala-vocal/${id}/status`, { status });
+export async function confirmarPresenca(
+  id: number,
+  status: StatusEscalaVocal,
+  indicadoId?: number,
+): Promise<void> {
+  await api.put(`/escala-vocal/${id}/status`, { status, indicadoId });
+}
+
+/**
+ * Vocais ativos que dá pra indicar como substituto num culto específico
+ * (exclui quem já está escalado nele e quem está indicando). Qualquer
+ * membro autenticado — usado na tela de recusa, não só por admin/ministro.
+ */
+export async function getCandidatosVocais(cultoId: number): Promise<MembroCandidato[]> {
+  const response = await api.get<MembroCandidato[]>('/escala-vocal/candidatos', {
+    params: { cultoId },
+  });
+  return response.data;
 }
 
 /**

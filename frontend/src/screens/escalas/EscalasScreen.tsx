@@ -18,6 +18,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { EntradaHorario } from '@/components/EntradaHorario';
 import { Header } from '@/components/Header';
 import { OptionsMenu } from '@/components/OptionsMenu';
 import { useAuth } from '@/contexts/AuthContext';
@@ -25,14 +26,14 @@ import { MainStackParamList } from '@/navigation/MainNavigator';
 import * as cultosService from '@/services/cultos';
 import { ApiError } from '@/services/api';
 import { Culto } from '@/types';
-import { spacing, typography } from '@/theme';
+import { LARGURA_CONTEUDO, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { formatDiaCompleto, formatDiaSemana, formatHora, montarDataHoraISO } from '@/utils/date';
 import { confirmAction } from '@/utils/confirm';
 
 export function EscalasScreen() {
-  const { colors } = useTheme();
+  const { colors, modo } = useTheme();
   const styles = useThemedStyles(criarEstilos);
   const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();
   const { user } = useAuth();
@@ -196,7 +197,12 @@ export function EscalasScreen() {
       />
 
       {user?.papel === 'admin' && (
-        <TouchableOpacity style={styles.fab} onPress={abrirNovoCulto}>
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={abrirNovoCulto}
+          accessibilityRole="button"
+          accessibilityLabel="Criar novo culto"
+        >
           <Icon name="add" size={28} color={colors.textInverse} />
         </TouchableOpacity>
       )}
@@ -213,6 +219,9 @@ export function EscalasScreen() {
 
             <Text style={styles.formLabel}>Dia</Text>
             <Calendar
+              // `react-native-calendars` não reage bem a mudança de tema via prop depois de
+              // montado — forçar remount na troca de modo garante que a paleta nova aplique.
+              key={modo}
               current={novaData ?? undefined}
               markedDates={
                 novaData ? { [novaData]: { selected: true, selectedColor: colors.primary } } : {}
@@ -235,13 +244,12 @@ export function EscalasScreen() {
 
             <Text style={styles.formLabel}>Horário</Text>
             <View style={styles.modalInput}>
-              <TextInput
+              <EntradaHorario
                 style={styles.modalTextInput}
                 placeholder="19:00"
                 placeholderTextColor={colors.textMuted}
                 value={novaHora}
                 onChangeText={setNovaHora}
-                keyboardType="numbers-and-punctuation"
               />
             </View>
 
@@ -299,6 +307,9 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     flex: 1,
   },
   content: {
+    width: '100%',
+    maxWidth: LARGURA_CONTEUDO,
+    alignSelf: 'center',
     padding: spacing.lg,
     paddingTop: spacing.sm,
     gap: spacing.sm,

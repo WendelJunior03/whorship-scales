@@ -56,7 +56,7 @@ export interface Membro {
   papel_org?: PapelOrg;
   /** Eixo musical (escalas) — spec 02. */
   papel_ministerio?: PapelMinisterio | null;
-  instrumento: string | null;
+  instrumentos: string[];
   ativo?: boolean;
 }
 
@@ -216,6 +216,12 @@ export interface SugestaoVocal {
   ultima_vez: string | null;
 }
 
+/** Membro que dá pra indicar como substituto ao recusar uma escala. */
+export interface MembroCandidato {
+  id: number;
+  nome: string;
+}
+
 /**
  * Formato de cada item de GET /escala-vocal/culto/:cultoId — quem está
  * escalado como vocal num culto específico, com nome já resolvido via JOIN.
@@ -270,4 +276,7 @@ export interface Notificacao {
   descricao: string;
   lida: boolean;
   created_at: string;
+  culto_id: number | null;
+  referencia_tipo: 'escala_vocal' | 'escala_avulsa' | null;
+  referencia_id: number | null;
 }

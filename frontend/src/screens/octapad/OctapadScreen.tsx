@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { Icon } from '@/components/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -8,6 +8,7 @@ import type { MainStackParamList } from '@/navigation/MainNavigator';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '@/components/Header';
 import { BarraDeslizante } from '@/components/BarraDeslizante';
+import { Card } from '@/components/Card';
 import { SeloPro } from '@/components/SeloPro';
 import { useOctapad } from '@/hooks/useOctapad';
 import { useOctapadAparencia } from '@/hooks/useOctapadAparencia';
@@ -123,6 +124,7 @@ export function OctapadScreen() {
             subtitle="Bateria eletrônica"
             showBack
             rightIcon={suportado ? 'settings-outline' : undefined}
+            rightIconLabel="Personalizar aparência do octapad"
             onRightPress={() => setPainelAberto(true)}
           />
 
@@ -157,27 +159,23 @@ export function OctapadScreen() {
                 </View>
               </View>
 
-              <TouchableOpacity
-                style={styles.proCard}
-                activeOpacity={0.8}
-                onPress={() => navigation.navigate('BibliotecaDrums')}
-              >
+              <Card style={styles.proCard} onPress={() => navigation.navigate('BibliotecaDrums')}>
                 <Icon name="musical-notes-outline" size={20} color={colors.primaryLight} />
                 <View style={styles.proTexto}>
                   <Text style={styles.proTitulo}>Biblioteca de Drums</Text>
                   <Text style={styles.proSub}>58 sons prontos pra personalizar seus pads.</Text>
                 </View>
                 <SeloPro />
-              </TouchableOpacity>
+              </Card>
 
-              <View style={styles.proCard}>
+              <Card style={styles.proCard}>
                 <Icon name="cloud-upload-outline" size={20} color={colors.primaryLight} />
                 <View style={styles.proTexto}>
                   <Text style={styles.proTitulo}>Seus samples e packs de sons</Text>
                   <Text style={styles.proSub}>Suba seus próprios sons e presets — em breve.</Text>
                 </View>
                 <SeloPro />
-              </View>
+              </Card>
 
               <Text style={styles.secao}>Volume geral</Text>
               <View style={styles.volumeLinha}>
@@ -265,11 +263,7 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    backgroundColor: colors.surface,
     borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
   },
   proTexto: { flex: 1, gap: 2 },
   proTitulo: { ...typography.bodySmall, color: colors.text, fontFamily: fonts.semibold },

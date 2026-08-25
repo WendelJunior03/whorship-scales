@@ -7,6 +7,7 @@ import { Icon } from '@/components/Icon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '@/components/Header';
 import { BarraDeslizante } from '@/components/BarraDeslizante';
+import { Card } from '@/components/Card';
 import { usePadContinuo } from '@/hooks/usePadContinuo';
 import { usePadAparencia } from '@/hooks/usePadAparencia';
 import { Note } from './padContinuoEngine';
@@ -90,14 +91,15 @@ export function PadContinuoScreen() {
         subtitle="Banco de Pads"
         showBack
         rightIcon="settings-outline"
+        rightIconLabel="Personalizar aparência dos pads"
         onRightPress={() => setPainelAberto(true)}
       />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.container}>
-          <View style={styles.aviso}>
+          <Card style={styles.aviso}>
             <Icon name="information-circle-outline" size={18} color={colors.textSecondary} />
             <Text style={styles.avisoTexto}>Toque nos pads para iniciar/parar as notas contínuas.</Text>
-          </View>
+          </Card>
 
           <View style={styles.grid}>
             {notas.map((nota: Note) => {
@@ -189,11 +191,7 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: radius.lg,
-    padding: spacing.md,
   },
   avisoTexto: {
     ...typography.caption,

@@ -1,7 +1,18 @@
 import { query } from '../config/database';
 
-export async function createNotificacao(membroId: number, tipo: string, titulo: string, descricao: string) {
-    const result = await query('INSERT INTO notificacoes (membro_id, tipo, titulo, descricao) VALUES ($1, $2, $3, $4) RETURNING *', [membroId, tipo, titulo, descricao]);
+export async function createNotificacao(
+    membroId: number,
+    tipo: string,
+    titulo: string,
+    descricao: string,
+    cultoId?: number | null,
+    referenciaTipo?: string | null,
+    referenciaId?: number | null,
+) {
+    const result = await query(
+        'INSERT INTO notificacoes (membro_id, tipo, titulo, descricao, culto_id, referencia_tipo, referencia_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+        [membroId, tipo, titulo, descricao, cultoId ?? null, referenciaTipo ?? null, referenciaId ?? null],
+    );
     return result.rows[0];
 }
 
@@ -18,4 +29,9 @@ export async function findNotificacaoById(id: number) {
 export async function marcarComoLida(id: number) {
     const result = await query('UPDATE notificacoes SET lida = true WHERE id = $1 RETURNING *', [id]);
     return result.rows[0];
+}
+
+export async function deletarMinhasNotificacoes(membroId: number) {
+    const result = await query('DELETE FROM notificacoes WHERE membro_id = $1 RETURNING id', [membroId]);
+    return result.rows;
 }

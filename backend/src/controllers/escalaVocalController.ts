@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
 import { createEscalaVocal, sugerirVocais, findEscalaVocalById, updateStatusEscalaVocal, findEscalaVocalByCultoId, findMinhaEscalaVocal, deleteEscalaVocal } from '../models/escalaVocalModel';
-import { findById, findAdminsAtivos } from '../models/membroModel';
+import { findById, findAdminsAtivos, findMembrosDisponiveisParaCulto } from '../models/membroModel';
 import { findCultoById } from '../models/cultoModel';
 import { createNotificacao } from '../models/notificacaoModel';
 import { enviarEmail } from '../services/emailService';
+import { formatarDataHoraCurta } from '../utils/data';
 
 export async function createEscalaVocalController(req: Request, res: Response) {
     try {
@@ -13,7 +14,7 @@ export async function createEscalaVocalController(req: Request, res: Response) {
         return res.status(400).json({ message: 'Dados inválidos!' })
     }
 
-    await createEscalaVocal(membroId, cultoId);
+    const escalaCriada = await createEscalaVocal(membroId, cultoId);
     const membro = await findById(membroId)
     const culto = await findCultoById(cultoId)
     if (membro && culto) {
@@ -21,7 +22,7 @@ export async function createEscalaVocalController(req: Request, res: Response) {
             await enviarEmail(
             membro.email,
             'Você foi escalado para um culto!',
-            `Olá ${membro.nome}, você foi escalado para um culto no dia ${culto.data_hora}.`
+            `Olá ${membro.nome}, você foi escalado para um culto no dia ${formatarDataHoraCurta(culto.data_hora)}.`
         );
         } catch (error) {
             console.error('Erro ao enviar email:', error);
@@ -31,7 +32,10 @@ export async function createEscalaVocalController(req: Request, res: Response) {
                 membroId,
                 'escala',
                 'Nova escala publicada',
-                `Você foi escalado para o culto do dia ${culto.data_hora}.`
+                `Você foi escalado para o culto do dia ${formatarDataHoraCurta(culto.data_hora)}.`,
+                cultoId,
+                'escala_vocal',
+                escalaCriada.id
             );
         } catch (error) {
             console.error('Erro ao criar notificação:', error);
@@ -58,9 +62,23 @@ export async function sugerirVocaisController(req: Request, res: Response) {
     }
 }
 
+export async function candidatosVocaisController(req: Request, res: Response) {
+    if (!req.user) {
+        return res.status(401).json({ message: 'Não autorizado!' })
+    }
+
+    const cultoId = Number(req.query.cultoId)
+    if (!cultoId) {
+        return res.status(400).json({ message: 'cultoId é obrigatório!' })
+    }
+
+    const candidatos = await findMembrosDisponiveisParaCulto(cultoId, req.user.id, 'vocal')
+    return res.status(200).json(candidatos)
+}
+
 export async function confirmarPresencaController (req: Request, res: Response) {
     const { id } = req.params
-    const { status } = req.body
+    const { status, indicadoId } = req.body
 
     if (!req.user) {
         return res.status(401).json({ message: 'Não autorizado!'})
@@ -93,6 +111,50 @@ export async function confirmarPresencaController (req: Request, res: Response) 
                     'confirmacao',
                     'Confirmação recebida',
                     `${membro?.nome ?? 'Um membro'} confirmou presença.`
+                );
+            }
+        } catch (error) {
+            console.error('Erro ao criar notificação:', error);
+        }
+    } else if (status === 'recusado') {
+        try {
+            const membro = await findById(req.user.id);
+            const culto = await findCultoById(escalaVocal.culto_id);
+            const indicado = indicadoId ? await findById(Number(indicadoId)) : null;
+            const nomeMembro = membro?.nome ?? 'Um membro';
+            const dataCulto = culto ? ` do culto do dia ${formatarDataHoraCurta(culto.data_hora)}` : '';
+            const mensagem = indicado
+                ? `${nomeMembro} recusou a escala${dataCulto} e indicou ${indicado.nome} para a escala.`
+                : `${nomeMembro} recusou a escala${dataCulto}.`;
+
+            const admins = await findAdminsAtivos();
+            for (const admin of admins) {
+                // O indicado já recebe o aviso pessoal "Você foi indicado" abaixo — evita duplicar.
+                if (indicado && admin.id === indicado.id) continue;
+                await createNotificacao(admin.id, 'substituicao', 'Recusa de escala', mensagem, escalaVocal.culto_id);
+            }
+
+            if (indicado) {
+                // Indicar já convida de verdade — cria a escala (pendente) igual o admin
+                // faria manualmente, pra pessoa não depender do admin agir primeiro.
+                const escalaCriada = await createEscalaVocal(indicado.id, escalaVocal.culto_id);
+                try {
+                    await enviarEmail(
+                        indicado.email,
+                        'Você foi escalado para um culto!',
+                        `Olá ${indicado.nome}, ${nomeMembro} indicou você para o culto${dataCulto}.`
+                    );
+                } catch (error) {
+                    console.error('Erro ao enviar email:', error);
+                }
+                await createNotificacao(
+                    indicado.id,
+                    'substituicao',
+                    'Você foi indicado',
+                    `${nomeMembro} recusou a escala de vocal${dataCulto} e indicou você. Confirme sua presença.`,
+                    escalaVocal.culto_id,
+                    'escala_vocal',
+                    escalaCriada.id
                 );
             }
         } catch (error) {
