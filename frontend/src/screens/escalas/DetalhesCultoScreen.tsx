@@ -10,6 +10,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { Icon } from '@/components/Icon';
@@ -131,6 +132,12 @@ export function DetalhesCultoScreen() {
   const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();
   const { cultoId, abrirEdicaoVocal } = route.params;
   const { user } = useAuth();
+
+  // Layout em 3 colunas (Repertório | Roteiro | Equipe) em telas largas; empilha no mobile.
+  const { width } = useWindowDimensions();
+  const isWide = width >= 900;
+  const colunasStyle = isWide ? styles.colunas : styles.colunasStack;
+  const colunaStyle = isWide ? styles.coluna : styles.colunaStack;
 
   const [culto, setCulto] = useState<Culto | null>(null);
   const [repertorios, setRepertorios] = useState<Repertorio[]>([]);
@@ -890,7 +897,7 @@ export function DetalhesCultoScreen() {
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, isWide && styles.contentWide]}
         showsVerticalScrollIndicator={false}
       >
         <Card>
@@ -904,6 +911,8 @@ export function DetalhesCultoScreen() {
           </View>
         </Card>
 
+        <View style={colunasStyle}>
+          <View style={colunaStyle}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Repertório</Text>
           {user && podeGerir(user) && (
@@ -956,6 +965,8 @@ export function DetalhesCultoScreen() {
           </Card>
         )}
 
+          </View>
+          <View style={colunaStyle}>
         {/* Roteiro (setlist cronometrado) */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Roteiro</Text>
@@ -1016,6 +1027,8 @@ export function DetalhesCultoScreen() {
           </Card>
         )}
 
+          </View>
+          <View style={colunaStyle}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Equipe</Text>
           {user && podeGerir(user) && (
@@ -1087,6 +1100,9 @@ export function DetalhesCultoScreen() {
             })}
           </ScrollView>
         )}
+
+          </View>
+        </View>
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Ensaio</Text>
@@ -1795,6 +1811,11 @@ const criarEstilos = (colors: Cores) =>
       paddingTop: spacing.sm,
       gap: spacing.md,
     },
+    contentWide: { maxWidth: 1120 },
+    colunas: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' },
+    colunasStack: { gap: spacing.md },
+    coluna: { flex: 1, minWidth: 0, gap: spacing.sm },
+    colunaStack: { gap: spacing.md },
     data: {
       ...typography.h2,
       color: colors.text,
