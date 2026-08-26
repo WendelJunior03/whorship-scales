@@ -85,7 +85,7 @@ export async function entrarComCodigo(req: Request, res: Response) {
     // Pré-auth e cross-tenant (a org já existe, mas ainda não há sessão dela) — sem
     // bypass, o RLS fail-closed bloqueia o INSERT (ninguém tem `app.current_org` ainda).
     const membro = await withBypass((client) =>
-        createMembers(name, phone, instruments ?? [], email, 'membro', null, hashPassword, org.id, client),
+        createMembers(name, phone, instruments ?? [], email, 'membro', null, hashPassword, org.id, null, client),
     );
 
     const token = assinarTokenMembro({
