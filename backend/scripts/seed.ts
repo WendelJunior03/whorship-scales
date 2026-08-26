@@ -86,11 +86,6 @@ async function seed() {
     )).rows[0];
 
     await query(
-        `INSERT INTO escala_fixa (membro_id, dia_semana, funcao, org_id) VALUES ($1, $2, $3, $4)`,
-        [admin.id, 'domingo', 'Violão', orgId],
-    );
-
-    await query(
         `INSERT INTO escala_vocal (membro_id, culto_id, org_id) VALUES ($1, $2, $3)`,
         [vocal1.id, culto.id, orgId],
     );

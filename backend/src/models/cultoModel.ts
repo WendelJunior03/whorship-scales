@@ -17,8 +17,7 @@ export async function createCulto(dataHora: string, tipo: string | null) {
 
 /**
  * Apaga o culto e tudo que depende dele (repertório, escala de vocal e
- * avulsa vinculados, ensaio se tiver um) — escala_fixa não é afetada, já
- * que ela não é por culto específico.
+ * avulsa vinculados, ensaio se tiver um).
  */
 export async function deleteCulto(id: number) {
     await query('DELETE FROM repertorio WHERE culto_id = $1', [id]);

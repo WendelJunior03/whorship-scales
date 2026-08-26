@@ -2,8 +2,6 @@ import express from 'express'
 import "dotenv/config"
 import cors from 'cors'
 import membroRoutes from './routes/membroRoutes';
-import escalaFixaRoutes from './routes/escalaFixaRoutes'
-import excecoesRoutes from './routes/excecoesRoutes'
 import escalaVocalRoutes from './routes/escalaVocalRoutes'
 import repertorioRoutes from './routes/repertorioRoutes'
 import cultoRoutes from './routes/cultoRoutes'
@@ -31,8 +29,6 @@ app.use(express.json());
 
 app.use('/organizacoes', organizacaoRoutes)
 app.use('/membros', membroRoutes)
-app.use('/escala-fixa', escalaFixaRoutes)
-app.use('/excecoes', excecoesRoutes)
 app.use('/escala-vocal', escalaVocalRoutes)
 app.use('/repertorio', repertorioRoutes)
 app.use('/cultos', cultoRoutes)

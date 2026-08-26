@@ -9,8 +9,7 @@ export interface CriarEscalaAvulsaInput {
 
 /**
  * Vincula um membro a uma função pontual num culto específico. Admin e
- * ministro. Usado pra cultos fora da rotina fixa (fora de quarta/sábado/
- * domingo), onde escala_fixa não se aplica.
+ * ministro.
  */
 export async function criarEscalaAvulsa(input: CriarEscalaAvulsaInput): Promise<void> {
   await api.post('/escala-avulsa', input);

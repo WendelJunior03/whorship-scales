@@ -29,9 +29,7 @@ import { MainStackParamList } from '@/navigation/types';
 import * as cultosService from '@/services/cultos';
 import * as ensaioService from '@/services/ensaio';
 import * as escalaAvulsaService from '@/services/escalaAvulsa';
-import * as escalaFixaService from '@/services/escalaFixa';
 import * as escalaVocalService from '@/services/escalaVocal';
-import * as excecoesService from '@/services/excecoes';
 import * as membrosService from '@/services/membros';
 import * as repertorioService from '@/services/repertorio';
 import { ApiError } from '@/services/api';
@@ -79,7 +77,7 @@ interface EquipeItem {
   nome: string;
   funcao: string;
   status?: StatusEscalaVocal;
-  origem: 'fixa' | 'vocal' | 'avulsa';
+  origem: 'vocal' | 'avulsa';
   origemId: number;
 }
 
@@ -142,19 +140,16 @@ export function DetalhesCultoScreen() {
     setError(null);
     try {
       const cultoEncontrado = await cultosService.getCultoById(cultoId);
-      const dataDoCulto = cultoEncontrado.data_hora.slice(0, 10);
 
       const [
         repertoriosEncontrados,
         escalaVocalDoCulto,
-        escalaFixaEfetiva,
         escalaAvulsaDoCulto,
         vocaisSugeridos,
         ensaioDoCulto,
       ] = await Promise.all([
         repertorioService.getRepertorioDoCulto(cultoId),
         escalaVocalService.getEscalaVocalDoCulto(cultoId),
-        escalaFixaService.getEscalaEfetiva(dataDoCulto),
         escalaAvulsaService.getEscalaAvulsaDoCulto(cultoId),
         user?.papel === 'admin'
           ? escalaVocalService.getSugestaoVocais(cultoId)
@@ -162,13 +157,6 @@ export function DetalhesCultoScreen() {
         ensaioService.getEnsaioDoCulto(cultoId),
       ]);
 
-      const equipeFixa: EquipeItem[] = escalaFixaEfetiva.map((item) => ({
-        chave: `fixa-${item.funcao}-${item.quem_toca}`,
-        nome: item.quem_toca,
-        funcao: item.funcao,
-        origem: 'fixa',
-        origemId: item.escala_fixa_id,
-      }));
       // Quem recusou some da equipe sozinho — não precisa remover na mão (o
       // registro continua existindo pra histórico, só não aparece mais aqui).
       const equipeVocal: EquipeItem[] = escalaVocalDoCulto
@@ -192,7 +180,6 @@ export function DetalhesCultoScreen() {
           origemId: item.id,
         }));
 
-      const minhaFuncaoFixa = equipeFixa.find((item) => item.nome === user?.nome);
       const minhaEscalaVocal = escalaVocalDoCulto.find(
         (item: EscalaVocalDoCultoItem) => item.membro_id === user?.id,
       );
@@ -202,10 +189,8 @@ export function DetalhesCultoScreen() {
 
       setCulto(cultoEncontrado);
       setRepertorios(repertoriosEncontrados);
-      setEquipe([...equipeFixa, ...equipeVocal, ...equipeAvulsa]);
-      setSuaFuncao(
-        minhaFuncaoFixa?.funcao ?? minhaEscalaAvulsa?.funcao ?? (minhaEscalaVocal ? 'Vocal' : null),
-      );
+      setEquipe([...equipeVocal, ...equipeAvulsa]);
+      setSuaFuncao(minhaEscalaAvulsa?.funcao ?? (minhaEscalaVocal ? 'Vocal' : null));
       setSugestaoVocal(vocaisSugeridos);
       setSelecionadosVocal(vocaisSugeridos);
       setModoEdicaoVocal(Boolean(abrirEdicaoVocal));
@@ -352,15 +337,10 @@ export function DetalhesCultoScreen() {
   function handleExcluirDaEquipe(item: EquipeItem) {
     if (!culto) return;
 
-    const mensagem =
-      item.origem === 'fixa'
-        ? `Isso marca a falta de "${item.nome}" só neste culto (${item.funcao}) — a escala fixa semanal dele não é alterada. Confirmar?`
-        : `Remover "${item.nome}" (${item.funcao}) da equipe deste culto?`;
-
     confirmAction(
       {
         title: 'Remover da equipe',
-        message: mensagem,
+        message: `Remover "${item.nome}" (${item.funcao}) da equipe deste culto?`,
         confirmLabel: 'Remover',
       },
       async () => {
@@ -368,13 +348,8 @@ export function DetalhesCultoScreen() {
         try {
           if (item.origem === 'vocal') {
             await escalaVocalService.deletarEscalaVocal(item.origemId);
-          } else if (item.origem === 'avulsa') {
-            await escalaAvulsaService.deletarEscalaAvulsa(item.origemId);
           } else {
-            await excecoesService.criarExcecao({
-              escalaFixaId: item.origemId,
-              data: culto.data_hora.slice(0, 10),
-            });
+            await escalaAvulsaService.deletarEscalaAvulsa(item.origemId);
           }
           await carregarDados();
         } catch (err) {
@@ -833,10 +808,7 @@ export function DetalhesCultoScreen() {
             contentContainerStyle={styles.equipeRow}
           >
             {equipe.map((membro) => {
-              const podeExcluir =
-                membro.origem === 'fixa'
-                  ? user?.papel === 'admin'
-                  : Boolean(user && podeGerir(user));
+              const podeExcluir = Boolean(user && podeGerir(user));
 
               return (
                 <View key={membro.chave} style={styles.membroAvatarBlock}>
@@ -856,8 +828,6 @@ export function DetalhesCultoScreen() {
                     <OptionsMenu
                       loading={excluindoEquipeChave === membro.chave}
                       actions={[
-                        // Registrar falta só faz sentido pra vocal/avulsa (têm status);
-                        // a ausência de fixa é tratada por "Remover" (vira exceção).
                         ...(membro.status && membro.status !== 'falta'
                           ? [
                               {

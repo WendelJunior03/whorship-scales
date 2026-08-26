@@ -17,8 +17,6 @@ export interface Organizacao {
   created_at?: string;
 }
 
-export type DiaSemana = 'quarta' | 'sabado' | 'domingo';
-
 // --- Biblioteca de vídeos (spec 08) ---
 
 export type CategoriaVideo = 'oficial' | 'playback' | 'tutorial' | 'ministracao';
@@ -122,21 +120,6 @@ export interface Classificacao {
   cor: string | null;
 }
 
-export interface EscalaFixa {
-  id: number;
-  membro_id: number;
-  dia_semana: DiaSemana;
-  funcao: string;
-  nome?: string;
-}
-
-export interface Excecao {
-  id: number;
-  escala_fixa_id: number;
-  data: string;
-  substituto_id: number | null;
-}
-
 export interface EscalaVocal {
   id: number;
   membro_id: number;
@@ -188,31 +171,6 @@ export interface LoginResponse {
 }
 
 /**
- * Formato que GET /escala-fixa (todos os membros) devolve — é um JOIN,
- * não a entidade EscalaFixa crua. Sem `id`: essa consulta não devolve
- * qual linha é qual, só a visão geral pra admin/ministro.
- */
-export interface EscalaFixaMontada {
-  id: number;
-  dia_semana: DiaSemana;
-  funcao: string;
-  nome: string;
-  papel: Papel;
-}
-
-/**
- * Formato que GET /escala-fixa/me devolve — como é "meus próprios"
- * vínculos, essa consulta já inclui o `id`, necessário pra criar uma
- * exceção referenciando essa linha específica.
- */
-export interface MinhaEscalaFixaItem {
-  id: number;
-  dia_semana: DiaSemana;
-  funcao: string;
-  nome: string;
-}
-
-/**
  * Formato de cada item de GET /escala-vocal/me — os compromissos de
  * vocal do usuário logado, já com o culto e o status de confirmação.
  */
@@ -222,18 +180,6 @@ export interface MinhaEscalaVocalItem {
   culto_id: number;
   data_hora: string;
   tipo: string | null;
-}
-
-/**
- * Formato de cada item de GET /escala-fixa/efetiva — já considera
- * substituições (excecoes), por isso "quem_toca" pode ser o titular
- * ou o substituto.
- */
-export interface EscalaEfetivaItem {
-  escala_fixa_id: number;
-  dia_semana: DiaSemana;
-  funcao: string;
-  quem_toca: string;
 }
 
 /**
@@ -265,8 +211,7 @@ export interface EscalaVocalDoCultoItem {
 
 /**
  * Escala "avulsa": vínculo pontual membro + culto + função, pra cobrir
- * cultos fora da rotina fixa (ex: um culto especial numa segunda-feira),
- * já que escala_fixa só existe por dia da semana (quarta/sábado/domingo).
+ * qualquer culto (não tem rotina fixa por dia da semana).
  */
 export interface EscalaAvulsaDoCultoItem {
   id: number;
