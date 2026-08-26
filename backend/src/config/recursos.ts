@@ -35,6 +35,8 @@ const ordemPlanos: Record<Plano, number> = { free: 0, pro: 1 };
 export const recursos: Record<string, RecursoPlano> = {
     'offline.download':            { planoMinimo: 'pro', flagAtiva: true },
     'pads.pack_premium':          { planoMinimo: 'pro', flagAtiva: true },
+    // Pad Contínuo multicamadas (spec 06, D-06.6/D-06.7) — FREE fica só com "Base 1".
+    'pads.camadas_extras':        { planoMinimo: 'pro', flagAtiva: true },
     'biblioteca.premium':         { planoMinimo: 'pro', flagAtiva: true },
     'samples.upload':             { planoMinimo: 'pro', flagAtiva: true },
     'afinador.avancado':          { planoMinimo: 'pro', flagAtiva: true },
