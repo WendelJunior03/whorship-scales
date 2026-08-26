@@ -136,7 +136,7 @@ export function PadContinuoScreen() {
           <View style={styles.masterKnob}>
             <KnobGiratorio valor={loFilterMaster} onChange={ajustarLoFilterMaster} cor={colors.primary} />
             <Text style={styles.masterValor}>{Math.round(loFilterMaster * 100)}</Text>
-            <Text style={styles.masterLabel}>LO FILTER</Text>
+            <Text style={styles.masterLabel}>FILTER</Text>
           </View>
           <View style={styles.masterKnob}>
             <KnobGiratorio valor={cutoffMaster} onChange={ajustarCutoffMaster} cor={colors.primary} />
