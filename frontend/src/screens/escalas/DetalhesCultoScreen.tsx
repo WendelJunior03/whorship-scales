@@ -111,6 +111,7 @@ export function DetalhesCultoScreen() {
   const [atualizandoParticipanteEnsaioId, setAtualizandoParticipanteEnsaioId] = useState<
     number | null
   >(null);
+  const [convidandoEquipeEnsaio, setConvidandoEquipeEnsaio] = useState(false);
 
   const [repertorioModalAberto, setRepertorioModalAberto] = useState(false);
   const [novoNomeMusica, setNovoNomeMusica] = useState('');
@@ -297,17 +298,20 @@ export function DetalhesCultoScreen() {
     );
   }
 
-  async function garantirMembrosCarregados() {
-    if (todosMembrosAtivos.length > 0) return;
+  async function garantirMembrosCarregados(): Promise<Membro[]> {
+    if (todosMembrosAtivos.length > 0) return todosMembrosAtivos;
     setCarregandoMembros(true);
     try {
       const todos = await membrosService.getTodosMembros();
-      setTodosMembrosAtivos(todos.filter((m) => m.ativo !== false));
+      const ativos = todos.filter((m) => m.ativo !== false);
+      setTodosMembrosAtivos(ativos);
+      return ativos;
     } catch (err) {
       Alert.alert(
         'Erro',
         err instanceof ApiError ? err.message : 'Não foi possível carregar os membros.',
       );
+      return [];
     } finally {
       setCarregandoMembros(false);
     }
@@ -510,6 +514,58 @@ export function DetalhesCultoScreen() {
       );
     } finally {
       setSalvandoParticipanteEnsaio(false);
+    }
+  }
+
+  // Convida de uma vez todo mundo já escalado no culto (fixa, vocal e avulsa) pro
+  // ensaio, sem precisar adicionar pessoa por pessoa. `equipe` só tem o nome (não o
+  // membro_id) — cruza com `todosMembrosAtivos` pra achar quem é quem, igual
+  // `membrosParaEscolher` já faz pra montar a lista de quem falta adicionar.
+  async function handleConvidarEquipeDoCulto() {
+    if (!ensaio) return;
+
+    setConvidandoEquipeEnsaio(true);
+    try {
+      const membros = await garantirMembrosCarregados();
+
+      const jaConvidados = new Set(ensaioParticipantes.map((p) => p.membro_id));
+      const nomesDaEquipe = new Set(equipe.map((item) => item.nome));
+      const membrosParaConvidar = membros.filter(
+        (m) => nomesDaEquipe.has(m.nome) && !jaConvidados.has(m.id),
+      );
+
+      if (membrosParaConvidar.length === 0) {
+        notifyAction('Ninguém pra convidar', 'Todo mundo da equipe já está no ensaio.');
+        return;
+      }
+
+      const resultados = await Promise.allSettled(
+        membrosParaConvidar.map((membro) =>
+          ensaioService.adicionarParticipante(ensaio.id, membro.id),
+        ),
+      );
+      await carregarDados();
+
+      const falhas = resultados.filter((r) => r.status === 'rejected').length;
+      const total = membrosParaConvidar.length;
+      if (falhas === 0) {
+        notifyAction(
+          'Equipe convidada',
+          `${total} membro${total > 1 ? 's' : ''} da equipe foram convidados pro ensaio.`,
+        );
+      } else {
+        notifyAction(
+          'Convidado com ressalvas',
+          `${total - falhas} de ${total} foram convidados. Os demais podem já estar no ensaio.`,
+        );
+      }
+    } catch (err) {
+      Alert.alert(
+        'Erro',
+        err instanceof ApiError ? err.message : 'Não foi possível convidar a equipe.',
+      );
+    } finally {
+      setConvidandoEquipeEnsaio(false);
     }
   }
 
@@ -882,6 +938,20 @@ export function DetalhesCultoScreen() {
                 </TouchableOpacity>
               )}
             </View>
+            {equipe.length > 0 && user && podeGerir(user) && (
+              <TouchableOpacity
+                style={styles.adicionarRow}
+                onPress={handleConvidarEquipeDoCulto}
+                disabled={convidandoEquipeEnsaio}
+              >
+                {convidandoEquipeEnsaio ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <Icon name="people-outline" size={18} color={colors.primary} />
+                )}
+                <Text style={styles.adicionarTexto}>Convidar toda a equipe do culto</Text>
+              </TouchableOpacity>
+            )}
             {ensaioParticipantes.length > 0 && (
               <Text style={styles.sectionSubtitle}>
                 Confirmados {ensaioConfirmados} de {ensaioParticipantes.length}
@@ -1218,57 +1288,59 @@ export function DetalhesCultoScreen() {
         onRequestClose={() => setEnsaioModalAberto(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={styles.modalContentEnsaio}>
             <Text style={styles.modalTitle}>{ensaio ? 'Editar ensaio' : 'Novo ensaio'}</Text>
 
-            <Text style={styles.formLabel}>Dia</Text>
-            <Calendar
-              // `react-native-calendars` não reage bem a mudança de tema via prop depois de
-              // montado — forçar remount na troca de modo garante que a paleta nova aplique.
-              key={modo}
-              current={ensaioData ?? undefined}
-              markedDates={
-                ensaioData
-                  ? { [ensaioData]: { selected: true, selectedColor: colors.primary } }
-                  : {}
-              }
-              onDayPress={(day: DateData) => setEnsaioData(day.dateString)}
-              theme={{
-                backgroundColor: colors.surface,
-                calendarBackground: colors.surface,
-                textSectionTitleColor: colors.textSecondary,
-                selectedDayBackgroundColor: colors.primary,
-                selectedDayTextColor: colors.textInverse,
-                todayTextColor: colors.primary,
-                dayTextColor: colors.text,
-                textDisabledColor: colors.textMuted,
-                monthTextColor: colors.text,
-                arrowColor: colors.primary,
-              }}
-              style={styles.calendar}
-            />
-
-            <Text style={styles.formLabel}>Horário</Text>
-            <View style={styles.modalInput}>
-              <EntradaHorario
-                style={styles.modalTextInput}
-                placeholder="19:00"
-                placeholderTextColor={colors.textMuted}
-                value={ensaioHora}
-                onChangeText={setEnsaioHora}
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text style={styles.formLabel}>Dia</Text>
+              <Calendar
+                // `react-native-calendars` não reage bem a mudança de tema via prop depois de
+                // montado — forçar remount na troca de modo garante que a paleta nova aplique.
+                key={modo}
+                current={ensaioData ?? undefined}
+                markedDates={
+                  ensaioData
+                    ? { [ensaioData]: { selected: true, selectedColor: colors.primary } }
+                    : {}
+                }
+                onDayPress={(day: DateData) => setEnsaioData(day.dateString)}
+                theme={{
+                  backgroundColor: colors.surface,
+                  calendarBackground: colors.surface,
+                  textSectionTitleColor: colors.textSecondary,
+                  selectedDayBackgroundColor: colors.primary,
+                  selectedDayTextColor: colors.textInverse,
+                  todayTextColor: colors.primary,
+                  dayTextColor: colors.text,
+                  textDisabledColor: colors.textMuted,
+                  monthTextColor: colors.text,
+                  arrowColor: colors.primary,
+                }}
+                style={styles.calendar}
               />
-            </View>
 
-            <Text style={styles.formLabel}>Observações (opcional)</Text>
-            <View style={styles.modalInput}>
-              <TextInput
-                style={styles.modalTextInput}
-                placeholder="Ex: levar instrumento, foco no repertório novo"
-                placeholderTextColor={colors.textMuted}
-                value={ensaioObservacoes}
-                onChangeText={setEnsaioObservacoes}
-              />
-            </View>
+              <Text style={styles.formLabel}>Horário</Text>
+              <View style={styles.modalInput}>
+                <EntradaHorario
+                  style={styles.modalTextInput}
+                  placeholder="19:00"
+                  placeholderTextColor={colors.textMuted}
+                  value={ensaioHora}
+                  onChangeText={setEnsaioHora}
+                />
+              </View>
+
+              <Text style={styles.formLabel}>Observações (opcional)</Text>
+              <View style={styles.modalInput}>
+                <TextInput
+                  style={styles.modalTextInput}
+                  placeholder="Ex: levar instrumento, foco no repertório novo"
+                  placeholderTextColor={colors.textMuted}
+                  value={ensaioObservacoes}
+                  onChangeText={setEnsaioObservacoes}
+                />
+              </View>
+            </ScrollView>
 
             <Button
               title={ensaio ? 'Salvar alterações' : 'Criar ensaio'}
@@ -1604,6 +1676,14 @@ const criarEstilos = (colors: Cores) =>
       padding: spacing.lg,
       gap: spacing.md,
       maxHeight: '70%',
+    },
+    modalContentEnsaio: {
+      backgroundColor: colors.surface,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      padding: spacing.lg,
+      gap: spacing.md,
+      maxHeight: '85%',
     },
     modalLoading: {
       marginVertical: spacing.lg,
