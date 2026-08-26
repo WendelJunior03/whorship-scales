@@ -63,20 +63,19 @@ export function usePadContinuo() {
   }, []);
 
   /**
-   * Troca a nota global — todas as camadas LIGADAS no momento passam a tocar essa nota
-   * (com crossfade: a nota antiga some com fade de saída, a nova entra com fade de
-   * entrada — ver `camadaEngine.ts`). Clicar na MESMA nota que já está tocando desativa
-   * tudo (mesmo gesto de antes: tocar de novo no pad ativo desliga).
+   * Troca a nota global — todas as camadas LIGADAS (armadas) no momento passam a tocar
+   * essa nota (com crossfade: a nota antiga some com fade de saída, a nova entra com
+   * fade de entrada — ver `camadaEngine.ts`). Clicar na MESMA nota que já está tocando
+   * só PARA O SOM — quem decide quais camadas participam é o "ligada" de cada uma (o
+   * banco de pads não mexe nisso), então elas continuam armadas pra quando uma nota for
+   * escolhida de novo.
    */
   const selecionarNotaGlobal = useCallback(
     (nota: Note) => {
       const ligadas = IDS_CAMADAS.filter((id) => estadosRef.current[id].ligada);
 
       if (nota === notaGlobal) {
-        ligadas.forEach((camada) => {
-          pararCamadaNaEngine(camada);
-          setEstados((s) => ({ ...s, [camada]: { ...s[camada], ligada: false } }));
-        });
+        ligadas.forEach((camada) => pararCamadaNaEngine(camada));
         setNotaGlobal(null);
         return;
       }
@@ -87,17 +86,24 @@ export function usePadContinuo() {
     [notaGlobal, tocarCamada],
   );
 
-  /** Liga/desliga uma camada. Ligar sem nota global escolhida ainda só avisa. */
+  /**
+   * Arma/desarma uma camada — decide só QUAIS camadas participam, independente do
+   * banco de pads estar tocando algo agora ou não. Se já tiver uma nota global tocando,
+   * arma/desarma toca ou para o som na hora também; sem nota escolhida ainda, só marca
+   * a intenção (fica pronta pra tocar assim que uma nota for escolhida).
+   */
   const alternarLigada = useCallback(
     (camada: CamadaId) => {
       const ligadaAgora = estadosRef.current[camada].ligada;
+
       if (ligadaAgora) {
-        pararCamadaNaEngine(camada);
+        pararCamadaNaEngine(camada); // no-op se não tiver nada tocando ali
         setEstados((s) => ({ ...s, [camada]: { ...s[camada], ligada: false } }));
         return;
       }
+
       if (!notaGlobal) {
-        notifyAction('Escolha uma nota', 'Toque numa nota no banco de pads antes de ligar a camada.');
+        setEstados((s) => ({ ...s, [camada]: { ...s[camada], ligada: true } }));
         return;
       }
       tocarCamada(camada, notaGlobal);
