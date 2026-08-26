@@ -6,7 +6,12 @@ import {
   definirGanhoEfetivo,
   NodosCamada,
 } from './camadaEngine';
-import { obterEntradaMaster, definirVolumeMaster as definirVolumeDoMasterBus } from './masterBus';
+import {
+  obterEntradaMaster,
+  definirVolumeMaster as definirVolumeDoMasterBus,
+  definirCutoffMaster as definirCutoffDoMasterBus,
+  definirLoFilterMaster as definirLoFilterDoMasterBus,
+} from './masterBus';
 import { carregar } from './carregador';
 import { definicaoDaCamada } from './catalogo';
 import { CamadaId, Note } from './tipos';
@@ -82,4 +87,12 @@ export function recalcularGanhos(estados: Partial<Record<CamadaId, EstadoParaGan
 
 export function definirVolumeMaster(valor: number): void {
   definirVolumeDoMasterBus(valor);
+}
+
+export function definirCutoffMaster(valor: number): void {
+  definirCutoffDoMasterBus(valor);
+}
+
+export function definirLoFilterMaster(valor: number): void {
+  definirLoFilterDoMasterBus(valor);
 }

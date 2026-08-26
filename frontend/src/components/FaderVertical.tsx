@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { GestureResponderEvent, StyleSheet, View } from 'react-native';
 import { Cores } from '@/theme/palettes';
-import { useThemedStyles } from '@/contexts/ThemeContext';
+import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
+import { hexParaRgba } from '@/utils/cor';
 import { radius } from '@/theme';
 
 interface FaderVerticalProps {
@@ -17,6 +18,7 @@ interface FaderVerticalProps {
  * cima aumenta, pra baixo diminui (convenção de fader de mixer).
  */
 export function FaderVertical({ valor, onChange, corPreenchida, corBolinha }: FaderVerticalProps) {
+  const { colors } = useTheme();
   const styles = useThemedStyles(criarEstilos);
   const [altura, setAltura] = useState(1); // evita divisão por zero antes do 1º layout
 
@@ -27,26 +29,39 @@ export function FaderVertical({ valor, onChange, corPreenchida, corBolinha }: Fa
   }
 
   return (
+    // Área de toque mais larga que o trilho visível — mais fácil de agarrar no dedo.
     <View
-      style={styles.trilha}
+      style={styles.areaToque}
       onLayout={(e) => setAltura(e.nativeEvent.layout.height)}
       onStartShouldSetResponder={() => true}
       onResponderGrant={definirPelaPosicao}
       onResponderMove={definirPelaPosicao}
     >
-      <View style={[styles.trilhaPreenchida, { height: `${valor * 100}%`, backgroundColor: corPreenchida }]} />
-      <View style={[styles.bolinha, { bottom: `${valor * 100}%`, backgroundColor: corBolinha }]} />
+      <View style={styles.trilha}>
+        <View style={[styles.trilhaPreenchida, { height: `${valor * 100}%`, backgroundColor: corPreenchida }]} />
+        <View
+          style={[
+            styles.bolinha,
+            { bottom: `${valor * 100}%`, backgroundColor: corBolinha, borderColor: colors.surface },
+          ]}
+        />
+      </View>
     </View>
   );
 }
 
 const criarEstilos = (colors: Cores) => StyleSheet.create({
-  trilha: {
-    width: 8,
+  areaToque: {
+    width: 44,
     flex: 1,
     minHeight: 96,
+    alignItems: 'center',
+  },
+  trilha: {
+    width: 14,
+    flex: 1,
     borderRadius: radius.pill,
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: hexParaRgba(colors.textMuted, 0.35),
     justifyContent: 'flex-end',
   },
   trilhaPreenchida: {
@@ -58,6 +73,7 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
+    borderWidth: 2,
     left: '50%',
     marginLeft: -10,
     marginBottom: -10,
