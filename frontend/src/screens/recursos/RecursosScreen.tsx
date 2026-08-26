@@ -23,7 +23,8 @@ type RotaRecurso =
   | 'Ministerio'
   | 'Confirmacoes'
   | 'PanoramaEscalas'
-  | 'Indisponibilidades';
+  | 'Indisponibilidades'
+  | 'Comunicados';
 
 interface ItemRecurso {
   icon: IconName;
@@ -46,6 +47,12 @@ const PESSOAL: ItemRecurso[] = [
     label: 'Indisponibilidades',
     sublabel: 'Datas que não posso servir',
     route: 'Indisponibilidades',
+  },
+  {
+    icon: 'chatbubble-ellipses-outline',
+    label: 'Comunicados',
+    sublabel: 'Avisos da organização',
+    route: 'Comunicados',
   },
 ];
 
