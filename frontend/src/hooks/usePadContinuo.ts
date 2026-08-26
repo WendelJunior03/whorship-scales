@@ -62,14 +62,29 @@ export function usePadContinuo() {
     }
   }, []);
 
-  /** Troca a nota global — todas as camadas LIGADAS no momento passam a tocar essa nota. */
+  /**
+   * Troca a nota global — todas as camadas LIGADAS no momento passam a tocar essa nota
+   * (com crossfade: a nota antiga some com fade de saída, a nova entra com fade de
+   * entrada — ver `camadaEngine.ts`). Clicar na MESMA nota que já está tocando desativa
+   * tudo (mesmo gesto de antes: tocar de novo no pad ativo desliga).
+   */
   const selecionarNotaGlobal = useCallback(
     (nota: Note) => {
-      setNotaGlobal(nota);
       const ligadas = IDS_CAMADAS.filter((id) => estadosRef.current[id].ligada);
+
+      if (nota === notaGlobal) {
+        ligadas.forEach((camada) => {
+          pararCamadaNaEngine(camada);
+          setEstados((s) => ({ ...s, [camada]: { ...s[camada], ligada: false } }));
+        });
+        setNotaGlobal(null);
+        return;
+      }
+
+      setNotaGlobal(nota);
       ligadas.forEach((camada) => tocarCamada(camada, nota));
     },
-    [tocarCamada],
+    [notaGlobal, tocarCamada],
   );
 
   /** Liga/desliga uma camada. Ligar sem nota global escolhida ainda só avisa. */
