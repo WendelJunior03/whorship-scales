@@ -1,4 +1,4 @@
-# Design Tokens — Deep Scales
+# Design Tokens — Worship Stage
 
 Fonte única de verdade do visual do app (spec [`04-redesign-ui-ux.md`](../../../docs/specs/04-redesign-ui-ux.md), T-04.3).
 Os tokens são **temáticos** (claro/escuro): cores e sombras vêm do `ThemeContext`;

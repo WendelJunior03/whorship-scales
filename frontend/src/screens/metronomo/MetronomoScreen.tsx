@@ -86,7 +86,7 @@ export function MetronomoScreen() {
           <Text style={styles.avisoTitulo}>Disponível na versão web</Text>
           <Text style={styles.avisoTexto}>
             O metrônomo usa áudio de tempo preciso via navegador. No app nativo chega numa
-            próxima fase — abra o Deep Scales no navegador pra usar agora.
+            próxima fase — abra o Worship Stage no navegador pra usar agora.
           </Text>
         </View>
       </SafeAreaView>

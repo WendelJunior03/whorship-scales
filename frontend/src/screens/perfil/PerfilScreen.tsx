@@ -75,7 +75,7 @@ export function PerfilScreen() {
     if (!org?.codigo) return;
     try {
       await Share.share({
-        message: `Entre na organização "${org.nome}" no Deep Scales com o código: ${org.codigo}`,
+        message: `Entre na organização "${org.nome}" no Worship Stage com o código: ${org.codigo}`,
       });
     } catch {
       // usuário cancelou o compartilhamento — sem ação
@@ -117,7 +117,7 @@ export function PerfilScreen() {
         );
         return;
       case 'Sobre o aplicativo':
-        Alert.alert('Sobre o aplicativo', `Deep Scales · versão ${appConfig.expo.version}`);
+        Alert.alert('Sobre o aplicativo', `Worship Stage · versão ${appConfig.expo.version}`);
         return;
     }
   }

@@ -1,4 +1,4 @@
-# Deep Scales — Gestão de Escalas de Louvor
+# Worship Stage — Gestão de Escalas de Louvor
 
 Plataforma para organizar e automatizar as escalas do ministério de louvor de uma igreja,
 substituindo o processo manual em planilha enviada por foto. Cada membro passa a ter visão
@@ -12,7 +12,7 @@ como PWA diretamente do navegador.
 ## Visão Geral
 
 As escalas tradicionais feitas em planilha são estáticas, difíceis de atualizar e não
-oferecem visão individual para cada membro. O Deep Scales resolve isso com três modelos de
+oferecem visão individual para cada membro. O Worship Stage resolve isso com três modelos de
 escala, todos vinculados a um culto específico:
 
 - **Escala fixa** — instrumentistas e ministros com dia da semana fixo (quarta, sábado,

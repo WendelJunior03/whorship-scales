@@ -133,7 +133,7 @@ export function OctapadScreen() {
               <Icon name="musical-notes-outline" size={44} color={colors.textMuted} />
               <Text style={styles.avisoTitulo}>Disponível na versão web</Text>
               <Text style={styles.avisoTexto}>
-                O Octapad usa áudio de baixa latência via navegador. Abra o Deep Scales no
+                O Octapad usa áudio de baixa latência via navegador. Abra o Worship Stage no
                 navegador pra tocar.
               </Text>
             </View>

@@ -128,7 +128,7 @@ export function HomeScreen() {
               {getSaudacao()}, {primeiroNome}
             </Text>
             <Text style={styles.headerOrg} numberOfLines={1}>
-              {org?.nome ?? 'Deep Scales'}
+              {org?.nome ?? 'Worship Stage'}
             </Text>
           </View>
         </View>
