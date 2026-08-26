@@ -38,6 +38,7 @@ const iconePorTipo: Record<TipoNotificacao, IconName> = {
   substituicao: 'swap-horizontal',
   confirmacao: 'checkmark-circle',
   falta: 'alert-circle-outline',
+  comentario: 'chatbubble-ellipses-outline',
   repertorio: 'musical-notes',
   lembrete: 'alarm',
 };

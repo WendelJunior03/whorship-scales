@@ -7,3 +7,4 @@ export * as excecoesService from './excecoes';
 export * as escalaVocalService from './escalaVocal';
 export * as repertorioService from './repertorio';
 export * as ministeriosService from './ministerios';
+export * as comentariosService from './comentarios';

@@ -242,9 +242,17 @@ escala_comentarios
   created_at  timestamptz
 ```
 **Tarefas:**
-- [ ] **T-11.12** — Migration `escala_comentarios` (RLS por org).
-- [ ] **T-11.13** — Endpoints listar/criar comentário + notificação aos participantes.
-- [ ] **T-11.14** — UI: aba Comentários (lista + campo "Digite aqui…").
+- [x] **T-11.12** — ✅ Migration `1787700000000_escala-comentarios-modulo4.sql`:
+  `escala_comentarios` (id, org_id, culto_id, membro_id, texto, created_at) com RLS por org
+  (mesmo padrão do Passo 4), índices e grants.
+- [x] **T-11.13** — ✅ Endpoints `GET /comentarios/culto/:cultoId` e `POST /comentarios`
+  (`comentarioModel`/`Controller`/`Routes`, montado em `/comentarios`). Ao criar, notifica os
+  **participantes do culto** (vocal + avulsa não recusados + escala fixa efetiva do dia,
+  considerando substituições) **menos o autor**, com notificação tipo `comentario`.
+- [x] **T-11.14** — ✅ Seção **Comentários** na `DetalhesCultoScreen` (lista com autor/hora/
+  texto + campo "Digite aqui…" com botão enviar). *(seção no fim da tela — a `DetalhesCulto`
+  usa seções, não abas.)* Tipo `Comentario` + serviço `comentariosService`; `TipoNotificacao`
+  ganha `comentario` (ícone na aba de Notificações).
 
 ---
 
