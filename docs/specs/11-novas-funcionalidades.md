@@ -383,8 +383,8 @@ avisos
 aviso_leituras  (aviso_id, membro_id, lido_em)   -- controle de lidos (opcional)
 ```
 **Tarefas:**
-- [ ] **T-11.26** — Migration `avisos` (+ `aviso_leituras`).
-- [ ] **T-11.27** — CRUD (quem pode publicar via capacidade RBAC) + UI (lista + detalhe).
+- [x] **T-11.26** — Migration `avisos` (+ `aviso_leituras`), RLS por org.
+- [x] **T-11.27** — CRUD (publicar via capacidade `aviso.publicar` = admin/líder) + UI (rótulo "Comunicados": seção na Home + tela lista/detalhe + marcar lido).
 
 ---
 
