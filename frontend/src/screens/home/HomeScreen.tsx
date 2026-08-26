@@ -11,8 +11,9 @@ import * as notificacoesService from '@/services/notificacoes';
 import * as ministeriosService from '@/services/ministerios';
 import * as cultosService from '@/services/cultos';
 import * as membrosService from '@/services/membros';
+import * as avisosService from '@/services/avisos';
 import { ApiError } from '@/services/api';
-import { Aniversariante, CultoResumo, Ministerio } from '@/types';
+import { Aniversariante, Aviso, CultoResumo, Ministerio } from '@/types';
 import { spacing, radius, typography, fonts, LARGURA_CONTEUDO } from '@/theme';
 import { Cores, Sombras } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
@@ -62,6 +63,7 @@ export function HomeScreen() {
   const [ministerios, setMinisterios] = useState<Ministerio[]>([]);
   const [minhasEscalas, setMinhasEscalas] = useState<CultoResumo[]>([]);
   const [aniversariantes, setAniversariantes] = useState<Aniversariante[]>([]);
+  const [avisos, setAvisos] = useState<Aviso[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [temNotificacaoNaoLida, setTemNotificacaoNaoLida] = useState(false);
@@ -70,14 +72,16 @@ export function HomeScreen() {
     setIsLoading(true);
     setError(null);
     try {
-      const [mins, resumo, nascimentos] = await Promise.all([
+      const [mins, resumo, nascimentos, comunicados] = await Promise.all([
         ministeriosService.listarMinisterios(),
         cultosService.getResumoCultos(),
         membrosService.getAniversariantesDoMes(),
+        avisosService.listarAvisos(),
       ]);
       const hoje = inicioDoDia(new Date());
       setMinisterios(mins);
       setAniversariantes(nascimentos);
+      setAvisos(comunicados.slice(0, 3));
       setMinhasEscalas(
         resumo
           .filter((c) => c.minha_situacao !== null && inicioDoDia(new Date(c.data_hora)) >= hoje)
@@ -128,7 +132,7 @@ export function HomeScreen() {
               {getSaudacao()}, {primeiroNome}
             </Text>
             <Text style={styles.headerOrg} numberOfLines={1}>
-              {org?.nome ?? 'Deep Scales'}
+              {org?.nome ?? 'Worship Stage'}
             </Text>
           </View>
         </View>
@@ -232,9 +236,38 @@ export function HomeScreen() {
           ))
         )}
 
-        {/* Avisos (módulo 9 — em breve) */}
-        <SecaoHeader titulo="Avisos" subtitulo="Em destaque" styles={styles} />
-        <VazioCard texto="Lista vazia." styles={styles} />
+        {/* Comunicados (módulo 9) */}
+        <SecaoHeader
+          titulo="Comunicados"
+          subtitulo="Em destaque"
+          contador={avisos.length}
+          acao={{ label: 'Ver todos', onPress: () => navigation.navigate('Comunicados') }}
+          styles={styles}
+        />
+        {avisos.length === 0 ? (
+          <VazioCard texto="Nenhum comunicado no momento." styles={styles} />
+        ) : (
+          avisos.map((a) => (
+            <Card
+              key={a.id}
+              style={styles.ministerioCard}
+              onPress={() => navigation.navigate('Comunicados', { abrirId: a.id })}
+            >
+              <View style={[styles.avisoPonto, !a.lido && styles.avisoPontoNaoLido]} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.ministerioNome, !a.lido && styles.avisoTituloNaoLido]} numberOfLines={1}>
+                  {a.titulo}
+                </Text>
+                {a.corpo ? (
+                  <Text style={styles.ministerioMeta} numberOfLines={1}>
+                    {a.corpo}
+                  </Text>
+                ) : null}
+              </View>
+              <Icon name="chevron-forward" size={18} color={colors.textMuted} />
+            </Card>
+          ))
+        )}
 
         {/* Aniversariantes (módulo 8) */}
         <SecaoHeader
@@ -382,6 +415,9 @@ const criarEstilos = (colors: Cores, shadows: Sombras) =>
     ministerioIcon: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
     ministerioNome: { ...typography.body, color: colors.text, fontFamily: fonts.semibold },
     ministerioMeta: { ...typography.caption, color: colors.textSecondary, marginTop: 1 },
+    avisoPonto: { width: 8, height: 8, borderRadius: 4, backgroundColor: 'transparent' },
+    avisoPontoNaoLido: { backgroundColor: colors.primary },
+    avisoTituloNaoLido: { fontFamily: fonts.bold },
     escalaCard: { gap: spacing.xs },
     escalaTopo: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
     escalaData: { ...typography.bodySmall, color: colors.text, fontFamily: fonts.semibold },

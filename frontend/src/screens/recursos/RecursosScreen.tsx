@@ -24,7 +24,8 @@ type RotaRecurso =
   | 'Confirmacoes'
   | 'PanoramaEscalas'
   | 'Indisponibilidades'
-  | 'Aniversariantes';
+  | 'Aniversariantes'
+  | 'Comunicados';
 
 interface ItemRecurso {
   icon: IconName;
@@ -53,6 +54,12 @@ const PESSOAL: ItemRecurso[] = [
     label: 'Aniversariantes',
     sublabel: 'Do mês, por membro',
     route: 'Aniversariantes',
+  },
+  {
+    icon: 'chatbubble-ellipses-outline',
+    label: 'Comunicados',
+    sublabel: 'Avisos da organização',
+    route: 'Comunicados',
   },
 ];
 

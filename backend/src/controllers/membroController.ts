@@ -200,7 +200,7 @@ export async function esqueciSenhaController(req: Request, res: Response) {
         try {
             await enviarEmail(
                 membro.email,
-                'Redefinir senha — Deep Scales',
+                'Redefinir senha — Worship Stage',
                 `<p>Olá, ${membro.nome}!</p>
                  <p>Clique no link abaixo para escolher uma nova senha. Ele vale por 30 minutos:</p>
                  <p><a href="${link}">${link}</a></p>

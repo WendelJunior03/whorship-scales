@@ -112,6 +112,8 @@ afterAll(async () => {
     if (!pular && A.orgId && B.orgId) {
         const orgs = [A.orgId, B.orgId];
         await withBypass(async (client) => {
+            await client.query('DELETE FROM aviso_leituras WHERE org_id = ANY($1)', [orgs]);
+            await client.query('DELETE FROM avisos WHERE org_id = ANY($1)', [orgs]);
             await client.query('DELETE FROM ministerio_membros WHERE org_id = ANY($1)', [orgs]);
             await client.query('DELETE FROM ministerios WHERE org_id = ANY($1)', [orgs]);
             await client.query('DELETE FROM indisponibilidades WHERE org_id = ANY($1)', [orgs]);
@@ -132,7 +134,7 @@ afterAll(async () => {
 // Endpoints de admin/gestão: um membro comum (vocal) deve receber 403 em TODOS.
 // Ids inexistentes de propósito (a autorização roda ANTES do controller, então
 // não há efeito colateral nem risco de apagar dado semeado).
-const ACOES_RESTRITAS: { m: 'post' | 'get' | 'delete'; path: string }[] = [
+const ACOES_RESTRITAS: { m: 'post' | 'get' | 'delete' | 'put'; path: string }[] = [
     { m: 'post', path: '/cultos' },
     { m: 'delete', path: '/cultos/999999' },
     { m: 'post', path: '/membros/cadastro' },
@@ -147,6 +149,9 @@ const ACOES_RESTRITAS: { m: 'post' | 'get' | 'delete'; path: string }[] = [
     { m: 'delete', path: '/repertorio/999999' },
     { m: 'post', path: '/ensaios' },
     { m: 'delete', path: '/ensaios/999999' },
+    { m: 'post', path: '/avisos' },
+    { m: 'delete', path: '/avisos/999999' },
+    { m: 'put', path: '/avisos/999999' },
 ];
 
 describe('Autorização por capacidade (Passo 5)', () => {
@@ -354,5 +359,57 @@ describe('Indisponibilidades (módulo 7)', () => {
             .get(`/escala-vocal/sugestao?cultoId=${A.cultoId}`)
             .set('Authorization', auth(tokens.adminA));
         expect(depois.body.vocais.some((v: { id: number }) => v.id === A.vocalId)).toBe(false);
+    });
+});
+
+// Módulo 9 — avisos: publicação restrita, leitura por todos, lido e isolamento.
+describe('Avisos (módulo 9)', () => {
+    it('admin publica; todo membro da org vê (com flag de lido) e marca como lido', async () => {
+        if (pular) return;
+        const criar = await http()
+            .post('/avisos')
+            .set('Authorization', auth(tokens.adminA))
+            .send({ titulo: 'Reunião geral', corpo: 'Domingo após o culto.' });
+        expect(criar.status).toBe(201);
+        const avisoId = criar.body.id;
+
+        // Vocal (membro comum) enxerga o aviso, ainda não lido.
+        const lista = await http().get('/avisos').set('Authorization', auth(tokens.vocalA));
+        const doVocal = lista.body.find((a: { id: number }) => a.id === avisoId);
+        expect(doVocal).toBeTruthy();
+        expect(doVocal.lido).toBe(false);
+
+        // Aparece na contagem de não lidos e some depois de marcar lido.
+        const antes = await http().get('/avisos/nao-lidos').set('Authorization', auth(tokens.vocalA));
+        expect(antes.body.total).toBeGreaterThanOrEqual(1);
+
+        const marca = await http()
+            .post(`/avisos/${avisoId}/lido`)
+            .set('Authorization', auth(tokens.vocalA));
+        expect(marca.status).toBe(200);
+
+        const relido = await http().get('/avisos').set('Authorization', auth(tokens.vocalA));
+        expect(relido.body.find((a: { id: number }) => a.id === avisoId).lido).toBe(true);
+    });
+
+    it('aviso da org A não vaza pra org B (isolamento)', async () => {
+        if (pular) return;
+        const criar = await http()
+            .post('/avisos')
+            .set('Authorization', auth(tokens.adminA))
+            .send({ titulo: 'Interno A' });
+        const avisoId = criar.body.id;
+
+        const listaB = await http().get('/avisos').set('Authorization', auth(tokens.adminB));
+        expect(listaB.body.some((a: { id: number }) => a.id === avisoId)).toBe(false);
+
+        const detalheB = await http().get(`/avisos/${avisoId}`).set('Authorization', auth(tokens.adminB));
+        expect(detalheB.status).toBe(404);
+    });
+
+    it('publicar sem título → 400', async () => {
+        if (pular) return;
+        const res = await http().post('/avisos').set('Authorization', auth(tokens.adminA)).send({ corpo: 'x' });
+        expect(res.status).toBe(400);
     });
 });

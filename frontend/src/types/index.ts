@@ -190,6 +190,22 @@ export interface Indisponibilidade {
   membro_nome?: string;
 }
 
+// --- Comunicados / avisos da organização (spec 11, módulo 9) ---
+// Rótulo na UI = "Comunicados"; no back-end a entidade se chama `aviso`.
+
+export interface Aviso {
+  id: number;
+  ministerio_id: number | null;
+  titulo: string;
+  corpo: string | null;
+  autor_id: number | null;
+  autor_nome: string | null;
+  publicado_em: string;
+  created_at?: string;
+  /** Se o usuário logado já leu este aviso. */
+  lido: boolean;
+}
+
 // --- Panorama de escalas (spec 11, módulo 6) ---
 
 export interface PanoramaMembro {

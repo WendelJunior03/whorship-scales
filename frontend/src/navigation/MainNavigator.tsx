@@ -20,6 +20,7 @@ import { MinisterioScreen } from '@/screens/ministerio/MinisterioScreen';
 import { PanoramaEscalasScreen } from '@/screens/escalas/PanoramaEscalasScreen';
 import { IndisponibilidadesScreen } from '@/screens/indisponibilidades/IndisponibilidadesScreen';
 import { AniversariantesScreen } from '@/screens/membros/AniversariantesScreen';
+import { ComunicadosScreen } from '@/screens/comunicados/ComunicadosScreen';
 
 export type MainStackParamList = {
   MainTabs: undefined;
@@ -39,6 +40,7 @@ export type MainStackParamList = {
   PanoramaEscalas: undefined;
   Indisponibilidades: undefined;
   Aniversariantes: undefined;
+  Comunicados: { abrirId?: number } | undefined;
 };
 
 const Stack = createStackNavigator<MainStackParamList>();
@@ -63,6 +65,7 @@ function StackNavigator() {
       <Stack.Screen name="PanoramaEscalas" component={PanoramaEscalasScreen} />
       <Stack.Screen name="Indisponibilidades" component={IndisponibilidadesScreen} />
       <Stack.Screen name="Aniversariantes" component={AniversariantesScreen} />
+      <Stack.Screen name="Comunicados" component={ComunicadosScreen} />
     </Stack.Navigator>
   );
 }

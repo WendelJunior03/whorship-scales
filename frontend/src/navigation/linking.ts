@@ -33,6 +33,7 @@ export const linking: LinkingOptions<LinkingParamList> = {
       DetalheMembro: 'membros/:membroId?',
       Indisponibilidades: 'indisponibilidades',
       Aniversariantes: 'aniversariantes',
+      Comunicados: 'comunicados/:abrirId?',
     },
   },
 };

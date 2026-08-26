@@ -1,6 +1,6 @@
-# 🚀 Deep Scales — Roadmap de Evolução (Specs)
+# 🚀 Worship Stage — Roadmap de Evolução (Specs)
 
-Este diretório contém as **especificações de evolução** do Deep Scales, transformando o
+Este diretório contém as **especificações de evolução** do Worship Stage, transformando o
 PWA atual (gestão de escalas de uma igreja) em uma **plataforma multi-igreja** com
 ferramentas para músicos, líderes e administradores.
 
