@@ -10,6 +10,8 @@ interface FaderVerticalProps {
   onChange: (v: number) => void;
   corPreenchida: string;
   corBolinha: string;
+  /** Cor da trilha vazia — opcional, sobrescreve o tom padrão do tema (personalização). */
+  corTrilha?: string;
 }
 
 /**
@@ -17,7 +19,7 @@ interface FaderVerticalProps {
  * de slider no projeto: `onResponderMove` puro), só no eixo Y e invertido: arrastar pra
  * cima aumenta, pra baixo diminui (convenção de fader de mixer).
  */
-export function FaderVertical({ valor, onChange, corPreenchida, corBolinha }: FaderVerticalProps) {
+export function FaderVertical({ valor, onChange, corPreenchida, corBolinha, corTrilha }: FaderVerticalProps) {
   const { colors } = useTheme();
   const styles = useThemedStyles(criarEstilos);
   const [altura, setAltura] = useState(1); // evita divisão por zero antes do 1º layout
@@ -37,7 +39,7 @@ export function FaderVertical({ valor, onChange, corPreenchida, corBolinha }: Fa
       onResponderGrant={definirPelaPosicao}
       onResponderMove={definirPelaPosicao}
     >
-      <View style={styles.trilha}>
+      <View style={[styles.trilha, corTrilha ? { backgroundColor: hexParaRgba(corTrilha, 0.35) } : null]}>
         <View style={[styles.trilhaPreenchida, { height: `${valor * 100}%`, backgroundColor: corPreenchida }]} />
         <View
           style={[

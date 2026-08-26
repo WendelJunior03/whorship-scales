@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { useFocusEffect } from '@react-navigation/native';
@@ -11,7 +11,10 @@ import { Card } from '@/components/Card';
 import { SeloPro } from '@/components/SeloPro';
 import { useRecurso } from '@/hooks/useRecurso';
 import { usePadContinuo } from '@/hooks/usePadContinuo';
+import { usePadAparencia } from '@/hooks/usePadAparencia';
+import { PainelPersonalizarPads } from './PainelPersonalizarPads';
 import { EstadoCamada, NOTAS } from '@/audio/padContinuo';
+import { hexParaRgba } from '@/utils/cor';
 import { fonts, radius, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
@@ -19,6 +22,8 @@ import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 const KEEP_AWAKE_TAG = 'pad-continuo';
 const LARGURA_COLUNA = 108;
 const ALTURA_FADER = 140;
+// Intensidade mínima da cor de destaque (brilho=0 nunca some de vez).
+const ALPHA_DESTAQUE_MIN = 0.4;
 
 export function PadContinuoScreen() {
   const { colors } = useTheme();
@@ -43,8 +48,16 @@ export function PadContinuoScreen() {
     pararTudo,
   } = usePadContinuo();
   const { liberado: camadasExtrasLiberadas, isPro } = useRecurso('pads.camadas_extras');
+  const { aparencia, atualizar, restaurarPadrao } = usePadAparencia();
+  const [painelAberto, setPainelAberto] = useState(false);
 
   const camadasVisiveis = camadas.filter((c) => !c.somenteNoPro || camadasExtrasLiberadas);
+
+  // Cor de destaque (fader, knob, banco de pads, SOLO) — personalizável; `brilho`
+  // modula a intensidade sem nunca deixar totalmente apagada.
+  const corDestaqueBase = aparencia.corAtivo ?? colors.primary;
+  const corDestaque = hexParaRgba(corDestaqueBase, ALPHA_DESTAQUE_MIN + aparencia.brilho * (1 - ALPHA_DESTAQUE_MIN));
+  const corInativa = aparencia.corInativo ?? undefined;
 
   const pararTudoRef = useRef(pararTudo);
   useEffect(() => {
@@ -74,7 +87,14 @@ export function PadContinuoScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <Header title="Pads Contínuos" subtitle="Banco de Pads" showBack />
+      <Header
+        title="Pads Contínuos"
+        subtitle="Banco de Pads"
+        showBack
+        rightIcon="settings-outline"
+        rightIconLabel="Personalizar aparência dos pads"
+        onRightPress={() => setPainelAberto(true)}
+      />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Card style={styles.aviso}>
           <Icon name="information-circle-outline" size={18} color={colors.textSecondary} />
@@ -91,7 +111,8 @@ export function PadContinuoScreen() {
                 rotulo={camada.rotulo}
                 estado={estados[camada.id]}
                 carregando={!!carregando[camada.id]}
-                corDestaque={colors.primary}
+                corDestaque={corDestaque}
+                corInativa={corInativa}
                 onAlternarLigada={() => alternarLigada(camada.id)}
                 onAjustarVolume={(v) => ajustarVolume(camada.id, v)}
                 onAjustarCutoff={(v) => ajustarCutoff(camada.id, v)}
@@ -118,7 +139,11 @@ export function PadContinuoScreen() {
               return (
                 <TouchableOpacity
                   key={nota}
-                  style={[styles.notaBotao, ativa && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                  style={[
+                    styles.notaBotao,
+                    corInativa ? { backgroundColor: hexParaRgba(corInativa, 0.18), borderColor: corInativa } : null,
+                    ativa && { backgroundColor: corDestaque, borderColor: corDestaque },
+                  ]}
                   onPress={() => selecionarNotaGlobal(nota)}
                 >
                   <Text style={[styles.notaBotaoTexto, ativa && styles.notaBotaoTextoAtivo]}>{nota}</Text>
@@ -134,22 +159,30 @@ export function PadContinuoScreen() {
         </View>
         <Card style={styles.masterCard}>
           <View style={styles.masterKnob}>
-            <KnobGiratorio valor={loFilterMaster} onChange={ajustarLoFilterMaster} cor={colors.primary} />
+            <KnobGiratorio valor={loFilterMaster} onChange={ajustarLoFilterMaster} cor={corDestaque} corInativa={corInativa} />
             <Text style={styles.masterValor}>{Math.round(loFilterMaster * 100)}</Text>
             <Text style={styles.masterLabel}>FILTER</Text>
           </View>
           <View style={styles.masterKnob}>
-            <KnobGiratorio valor={cutoffMaster} onChange={ajustarCutoffMaster} cor={colors.primary} />
+            <KnobGiratorio valor={cutoffMaster} onChange={ajustarCutoffMaster} cor={corDestaque} corInativa={corInativa} />
             <Text style={styles.masterValor}>{Math.round(cutoffMaster * 100)}</Text>
             <Text style={styles.masterLabel}>CUTOFF</Text>
           </View>
           <View style={styles.masterKnob}>
-            <KnobGiratorio valor={volumeMaster} onChange={ajustarVolumeMaster} cor={colors.primary} />
+            <KnobGiratorio valor={volumeMaster} onChange={ajustarVolumeMaster} cor={corDestaque} corInativa={corInativa} />
             <Text style={styles.masterValor}>{Math.round(volumeMaster * 100)}</Text>
             <Text style={styles.masterLabel}>VOLUME</Text>
           </View>
         </Card>
       </ScrollView>
+
+      <PainelPersonalizarPads
+        visible={painelAberto}
+        onClose={() => setPainelAberto(false)}
+        aparencia={aparencia}
+        atualizar={atualizar}
+        restaurarPadrao={restaurarPadrao}
+      />
     </SafeAreaView>
   );
 }
@@ -159,6 +192,7 @@ interface ColunaCamadaProps {
   estado: EstadoCamada;
   carregando: boolean;
   corDestaque: string;
+  corInativa?: string;
   onAlternarLigada: () => void;
   onAjustarVolume: (v: number) => void;
   onAjustarCutoff: (v: number) => void;
@@ -176,6 +210,7 @@ function ColunaCamada({
   estado,
   carregando,
   corDestaque,
+  corInativa,
   onAlternarLigada,
   onAjustarVolume,
   onAjustarCutoff,
@@ -184,6 +219,7 @@ function ColunaCamada({
 }: ColunaCamadaProps) {
   const { colors } = useTheme();
   const styles = useThemedStyles(criarEstilos);
+  const estiloInativo = corInativa ? { backgroundColor: hexParaRgba(corInativa, 0.18), borderColor: corInativa } : null;
 
   return (
     <Card style={styles.coluna}>
@@ -198,12 +234,17 @@ function ColunaCamada({
           onChange={onAjustarVolume}
           corPreenchida={corDestaque}
           corBolinha={corDestaque}
+          corTrilha={corInativa}
         />
       </View>
 
       <View style={styles.botoesBloco}>
         <TouchableOpacity
-          style={[styles.botaoToggle, estado.ligada && { backgroundColor: colors.success, borderColor: colors.success }]}
+          style={[
+            styles.botaoToggle,
+            estiloInativo,
+            estado.ligada && { backgroundColor: colors.success, borderColor: colors.success },
+          ]}
           onPress={onAlternarLigada}
         >
           {carregando ? (
@@ -215,20 +256,24 @@ function ColunaCamada({
           )}
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.botaoToggle, estado.mudo && { backgroundColor: colors.error, borderColor: colors.error }]}
+          style={[
+            styles.botaoToggle,
+            estiloInativo,
+            estado.mudo && { backgroundColor: colors.error, borderColor: colors.error },
+          ]}
           onPress={onAlternarMudo}
         >
           <Text style={[styles.botaoToggleTexto, estado.mudo && styles.botaoToggleTextoAtivo]}>MUTE</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.botaoToggle, estado.solo && { backgroundColor: corDestaque, borderColor: corDestaque }]}
+          style={[styles.botaoToggle, estiloInativo, estado.solo && { backgroundColor: corDestaque, borderColor: corDestaque }]}
           onPress={onAlternarSolo}
         >
           <Text style={[styles.botaoToggleTexto, estado.solo && styles.botaoToggleTextoAtivo]}>SOLO</Text>
         </TouchableOpacity>
       </View>
 
-      <KnobGiratorio valor={estado.cutoff} onChange={onAjustarCutoff} cor={corDestaque} />
+      <KnobGiratorio valor={estado.cutoff} onChange={onAjustarCutoff} cor={corDestaque} corInativa={corInativa} />
       <Text style={styles.ledTexto}>CUTOFF</Text>
     </Card>
   );

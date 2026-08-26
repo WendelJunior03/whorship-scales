@@ -8,6 +8,8 @@ interface KnobGiratorioProps {
   onChange: (v: number) => void;
   cor: string;
   tamanho?: number;
+  /** Cor das marcas apagadas/base — opcional, sobrescreve o tom padrão do tema (personalização). */
+  corInativa?: string;
 }
 
 const ANGULO_MIN = -135;
@@ -23,7 +25,7 @@ const PIXELS_PARA_CURSO_COMPLETO = 120;
  * vertical (não segue um arco) — mesma filosofia do `BarraDeslizante`/`FaderVertical`:
  * gesto nativo do RN, sem lib nova.
  */
-export function KnobGiratorio({ valor, onChange, cor, tamanho = 56 }: KnobGiratorioProps) {
+export function KnobGiratorio({ valor, onChange, cor, tamanho = 56, corInativa }: KnobGiratorioProps) {
   const { colors } = useTheme();
   const styles = useThemedStyles(criarEstilos);
   const inicio = useRef({ pageY: 0, valor });
@@ -63,7 +65,7 @@ export function KnobGiratorio({ valor, onChange, cor, tamanho = 56 }: KnobGirato
             style={[
               styles.marca,
               {
-                backgroundColor: aceso ? cor : colors.border,
+                backgroundColor: aceso ? cor : (corInativa ?? colors.border),
                 transform: [{ translateX: x }, { translateY: y }, { rotate: `${anguloGraus}deg` }],
               },
             ]}
