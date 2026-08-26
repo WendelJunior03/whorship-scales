@@ -273,6 +273,34 @@ describe('Indisponibilidades (módulo 7)', () => {
         expect(Array.isArray(res.body) ? res.body.length : -1).toBe(0);
     });
 
+    it('aniversariantes do mês: filtra por mês e isola por org', async () => {
+        if (pular) return;
+        // Admin da A faz aniversário em maio; vocal da B em maio também (outra org).
+        await withBypass(async (client) => {
+            await client.query("UPDATE membros SET data_nascimento = '1990-05-15' WHERE id = $1", [A.adminId]);
+            await client.query("UPDATE membros SET data_nascimento = '1992-05-20' WHERE id = $1", [B.vocalId]);
+        });
+
+        const maio = await http()
+            .get('/membros/aniversariantes?mes=5')
+            .set('Authorization', auth(tokens.adminA));
+        expect(maio.status).toBe(200);
+        const idsMaio = maio.body.map((m: { id: number }) => m.id);
+        expect(idsMaio).toContain(A.adminId); // da própria org
+        expect(idsMaio).not.toContain(B.vocalId); // isolado por org
+
+        const junho = await http()
+            .get('/membros/aniversariantes?mes=6')
+            .set('Authorization', auth(tokens.adminA));
+        expect(junho.body.map((m: { id: number }) => m.id)).not.toContain(A.adminId);
+    });
+
+    it('aniversariantes: mês inválido → 400', async () => {
+        if (pular) return;
+        const res = await http().get('/membros/aniversariantes?mes=13').set('Authorization', auth(tokens.adminA));
+        expect(res.status).toBe(400);
+    });
+
     it('sugestão de vocais EXCLUI quem marcou indisponibilidade na data do culto', async () => {
         if (pular) return;
         // Antes: o vocal da A aparece na sugestão do culto da A.

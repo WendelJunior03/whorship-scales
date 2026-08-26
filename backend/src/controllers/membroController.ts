@@ -2,14 +2,20 @@ import bcrypt from 'bcrypt';
 import { query } from '../config/database';
 import { Request, Response } from 'express';
 import { createMembers, deactivateMember } from '../models/membroModel';
-import { findByEmail, findById, findAllMembers, updateMember, findByIdComSenha, updatePassword } from '../models/membroModel';
+import { findByEmail, findById, findAllMembers, updateMember, findByIdComSenha, updatePassword, findAniversariantesDoMes } from '../models/membroModel';
 import { assinarTokenMembro, assinarTokenResetSenha, verificarTokenResetSenha } from '../utils/token';
 import { podeAcessar, mesmoUsuario, PapelOrg, PapelMinisterio } from '../config/capacidades';
 import { enviarEmail } from '../services/emailService';
 
+const DATA_ISO_RE = /^\d{4}-\d{2}-\d{2}$/;
+/** Aceita 'YYYY-MM-DD'; qualquer outra coisa (vazio, inválido) vira null. */
+function normalizarDataNascimento(valor: unknown): string | null {
+    return typeof valor === 'string' && DATA_ISO_RE.test(valor) ? valor : null;
+}
+
 
 export async function cadastrarUser(req: Request, res: Response) {
-    const {name, email, passwordUser, papelOrg, papelMinisterio, instruments, phone} = req.body
+    const {name, email, passwordUser, papelOrg, papelMinisterio, instruments, phone, dataNascimento} = req.body
 
     if (!req.orgId) {
         return res.status(401).json({message: 'Não autenticado!'})
@@ -24,7 +30,7 @@ export async function cadastrarUser(req: Request, res: Response) {
     const hashPassword = await bcrypt.hash(passwordUser, 10)
 
     // Novo membro nasce na organização do admin que o cadastra.
-    await createMembers (name, phone, instruments ?? [], email, (papelOrg as PapelOrg) ?? 'membro', (papelMinisterio as PapelMinisterio) ?? null, hashPassword, req.orgId);
+    await createMembers (name, phone, instruments ?? [], email, (papelOrg as PapelOrg) ?? 'membro', (papelMinisterio as PapelMinisterio) ?? null, hashPassword, req.orgId, normalizarDataNascimento(dataNascimento));
 
     return res.status(201).json({message: 'Usuario cadastrado com sucesso!'})
 }
@@ -94,6 +100,8 @@ export async function getMemberById(req: Request, res: Response) {
 export async function updateMemberController (req: Request, res: Response) {
     const id = Number(req.params.id);
     const {name, phone, instruments, email, papelOrg, papelMinisterio} = req.body;
+    // Campo ausente no corpo = "não mexeu"; presente (inclusive null/'') = alterar.
+    const mexeuNascimento = 'dataNascimento' in req.body;
 
     if ( !req.user ) {
         return res.status(401).json({message: 'Não autenticado!'})
@@ -143,9 +151,27 @@ export async function updateMemberController (req: Request, res: Response) {
         }
     }
 
-    await updateMember(id, name, phone, instruments, email, papelOrgEfetivo, papelMinisterioEfetivo);
+    // Data de nascimento: o valor novo (se veio no corpo) ou o atual preservado.
+    let dataNascimentoEfetiva: string | null;
+    if (mexeuNascimento) {
+        dataNascimentoEfetiva = normalizarDataNascimento(req.body.dataNascimento);
+    } else {
+        const atual = await findById(id);
+        dataNascimentoEfetiva = atual?.data_nascimento ?? null;
+    }
+
+    await updateMember(id, name, phone, instruments, email, papelOrgEfetivo, papelMinisterioEfetivo, dataNascimentoEfetiva);
 
     return res.status(200).json({message: 'Alterações realizadas com sucesso!'})
+}
+
+/** GET /membros/aniversariantes?mes=MM — aniversariantes do mês (1–12) da org. */
+export async function getAniversariantesController(req: Request, res: Response) {
+    const mes = req.query.mes ? Number(req.query.mes) : new Date().getMonth() + 1;
+    if (!Number.isInteger(mes) || mes < 1 || mes > 12) {
+        return res.status(400).json({ message: 'mes inválido (1–12)!' });
+    }
+    return res.status(200).json(await findAniversariantesDoMes(mes));
 }
 
 export async function deactivateMemberController(req: Request, res: Response) {

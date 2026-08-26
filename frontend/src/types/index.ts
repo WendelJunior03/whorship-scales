@@ -56,6 +56,17 @@ export interface Membro {
   papel_ministerio?: PapelMinisterio | null;
   instrumentos: string[];
   ativo?: boolean;
+  /** Data de nascimento (YYYY-MM-DD) — módulo 8 (aniversariantes). */
+  data_nascimento?: string | null;
+}
+
+/** Item de GET /membros/aniversariantes — aniversariante do mês. */
+export interface Aniversariante {
+  id: number;
+  nome: string;
+  email: string;
+  data_nascimento: string; // YYYY-MM-DD
+  dia: number;
 }
 
 export interface Culto {

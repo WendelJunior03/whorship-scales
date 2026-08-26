@@ -10,8 +10,9 @@ import { MainTabScreenNavigationProp } from '@/navigation/types';
 import * as notificacoesService from '@/services/notificacoes';
 import * as ministeriosService from '@/services/ministerios';
 import * as cultosService from '@/services/cultos';
+import * as membrosService from '@/services/membros';
 import { ApiError } from '@/services/api';
-import { CultoResumo, Ministerio } from '@/types';
+import { Aniversariante, CultoResumo, Ministerio } from '@/types';
 import { spacing, radius, typography, fonts, LARGURA_CONTEUDO } from '@/theme';
 import { Cores, Sombras } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
@@ -42,6 +43,16 @@ function iniciais(nome: string): string {
   return ((p[0]?.[0] ?? '') + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase();
 }
 
+const MESES_ANIV = [
+  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
+];
+/** 'YYYY-MM-DD' → "15 de maio" (ignora o ano). */
+function formatAniversario(iso: string): string {
+  const [, mm, dd] = iso.split('-');
+  return `${Number(dd)} de ${MESES_ANIV[Number(mm) - 1] ?? ''}`;
+}
+
 export function HomeScreen() {
   const { colors } = useTheme();
   const styles = useThemedStyles(criarEstilos);
@@ -50,6 +61,7 @@ export function HomeScreen() {
 
   const [ministerios, setMinisterios] = useState<Ministerio[]>([]);
   const [minhasEscalas, setMinhasEscalas] = useState<CultoResumo[]>([]);
+  const [aniversariantes, setAniversariantes] = useState<Aniversariante[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [temNotificacaoNaoLida, setTemNotificacaoNaoLida] = useState(false);
@@ -58,12 +70,14 @@ export function HomeScreen() {
     setIsLoading(true);
     setError(null);
     try {
-      const [mins, resumo] = await Promise.all([
+      const [mins, resumo, nascimentos] = await Promise.all([
         ministeriosService.listarMinisterios(),
         cultosService.getResumoCultos(),
+        membrosService.getAniversariantesDoMes(),
       ]);
       const hoje = inicioDoDia(new Date());
       setMinisterios(mins);
+      setAniversariantes(nascimentos);
       setMinhasEscalas(
         resumo
           .filter((c) => c.minha_situacao !== null && inicioDoDia(new Date(c.data_hora)) >= hoje)
@@ -222,9 +236,28 @@ export function HomeScreen() {
         <SecaoHeader titulo="Avisos" subtitulo="Em destaque" styles={styles} />
         <VazioCard texto="Lista vazia." styles={styles} />
 
-        {/* Aniversariantes (módulo 8 — em breve) */}
-        <SecaoHeader titulo="Aniversariantes" subtitulo="Este mês" styles={styles} />
-        <VazioCard texto="Lista vazia." styles={styles} />
+        {/* Aniversariantes (módulo 8) */}
+        <SecaoHeader
+          titulo="Aniversariantes"
+          subtitulo="Este mês"
+          contador={aniversariantes.length}
+          styles={styles}
+        />
+        {aniversariantes.length === 0 ? (
+          <VazioCard texto="Nenhum aniversariante este mês." styles={styles} />
+        ) : (
+          aniversariantes.map((a) => (
+            <Card key={a.id} style={styles.ministerioCard}>
+              <View style={styles.ministerioIcon}>
+                <Icon name="gift-outline" size={22} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.ministerioNome}>{a.nome}</Text>
+                <Text style={styles.ministerioMeta}>{formatAniversario(a.data_nascimento)}</Text>
+              </View>
+            </Card>
+          ))
+        )}
 
         {/* Mais tocadas — atalho pra biblioteca */}
         <Card style={styles.promoCard} onPress={() => navigation.navigate('Biblioteca')}>
