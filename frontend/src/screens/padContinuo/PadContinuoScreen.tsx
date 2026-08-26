@@ -8,9 +8,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '@/components/Header';
 import { BarraDeslizante } from '@/components/BarraDeslizante';
 import { Card } from '@/components/Card';
+import { SeloPro } from '@/components/SeloPro';
+import { useRecurso } from '@/hooks/useRecurso';
 import { usePadContinuo } from '@/hooks/usePadContinuo';
 import { usePadAparencia } from '@/hooks/usePadAparencia';
-import { Note } from './padContinuoEngine';
+import { CamadaId, NOTAS, Note } from '@/audio/padContinuo';
 import { NOTA_LABEL } from './notasLabel';
 import { PainelPersonalizarPads } from './PainelPersonalizarPads';
 import { corEhClara, hexParaRgba, misturarHex } from '@/utils/cor';
@@ -26,27 +28,45 @@ const ALPHA_BORDA_MIN = 0.5;
 // Opacidade da cor personalizada do pad inativo — mais sutil que a do pad ativo.
 const ALPHA_INATIVO = 0.35;
 const KEEP_AWAKE_TAG = 'pad-continuo';
+const CAMADA_PRINCIPAL: CamadaId = 'base1';
 
 export function PadContinuoScreen() {
   const { colors } = useTheme();
   const styles = useThemedStyles(criarEstilos);
-  const { notas, ativos, alternar, volumeGeral, ajustarVolumeGeral, pararTudo } = usePadContinuo();
+  const {
+    camadas,
+    estados,
+    carregando,
+    selecionarNota,
+    ajustarVolume,
+    ajustarCutoff,
+    alternarMudo,
+    alternarSolo,
+    volumeMaster,
+    ajustarVolumeMaster,
+    pararTudo,
+  } = usePadContinuo();
   const { aparencia, atualizar, restaurarPadrao } = usePadAparencia();
+  const { liberado: camadasExtrasLiberadas, isPro } = useRecurso('pads.camadas_extras');
   const [painelAberto, setPainelAberto] = useState(false);
 
-  // `pararTudo` muda a cada toque em um pad (depende de `ativos`) — se ele entrasse direto nas
-  // deps do useFocusEffect, a limpeza rodaria a CADA clique (não só ao sair da tela) e desligava
-  // o pad na hora. Por isso guarda a versão mais recente numa ref e mantém o efeito estável.
+  const camadaPrincipal = estados[CAMADA_PRINCIPAL];
+  const camadasExtras = camadas.filter((c) => c.somenteNoPro);
+
+  // `pararTudo` é estável (useCallback sem deps no hook), mas mantemos o padrão de ref
+  // por segurança — se um dia passar a depender de estado, a limpeza continua só
+  // rodando ao sair da tela, não a cada interação.
   const pararTudoRef = useRef(pararTudo);
   useEffect(() => {
     pararTudoRef.current = pararTudo;
   }, [pararTudo]);
 
-  // Mantém a tela ligada só enquanto tiver algum pad tocando (evita o celular travar sozinho
-  // no meio do culto). No web usa a Wake Lock API do navegador — sem suporte, é um no-op.
-  const algumPadAtivo = notas.some((nota) => ativos[nota]);
+  // Mantém a tela ligada enquanto QUALQUER camada tiver nota tocando (evita o celular
+  // travar sozinho no meio do culto). No web usa a Wake Lock API do navegador — sem
+  // suporte, é um no-op.
+  const algumaCamadaAtiva = Object.values(estados).some((estado) => estado.notaAtiva !== null);
   useEffect(() => {
-    if (algumPadAtivo) {
+    if (algumaCamadaAtiva) {
       activateKeepAwakeAsync(KEEP_AWAKE_TAG).catch(() => undefined);
     } else {
       deactivateKeepAwake(KEEP_AWAKE_TAG).catch(() => undefined);
@@ -54,9 +74,9 @@ export function PadContinuoScreen() {
     return () => {
       deactivateKeepAwake(KEEP_AWAKE_TAG).catch(() => undefined);
     };
-  }, [algumPadAtivo]);
+  }, [algumaCamadaAtiva]);
 
-  // Ao sair da tela (voltar, trocar de aba, etc.) desliga qualquer pad que tenha ficado tocando.
+  // Ao sair da tela (voltar, trocar de aba, etc.) desliga qualquer camada que tenha ficado tocando.
   useFocusEffect(
     useCallback(() => {
       return () => pararTudoRef.current();
@@ -102,13 +122,13 @@ export function PadContinuoScreen() {
           </Card>
 
           <View style={styles.grid}>
-            {notas.map((nota: Note) => {
-              const on = ativos[nota];
+            {NOTAS.map((nota: Note) => {
+              const on = camadaPrincipal.notaAtiva === nota;
               return (
                 <TouchableOpacity
                   key={nota}
                   activeOpacity={0.9}
-                  onPress={() => alternar(nota)}
+                  onPress={() => selecionarNota(CAMADA_PRINCIPAL, nota)}
                   style={[styles.pad, { backgroundColor: corInativa }, on && { borderColor: bordaAtiva }]}
                 >
                   {on && (
@@ -149,15 +169,49 @@ export function PadContinuoScreen() {
             })}
           </View>
 
-          <Text style={styles.secao}>Volume geral</Text>
+          {/* Camadas extras (PRO) — spec 06, D-06.6/D-06.7. FREE vê um card de convite. */}
+          <View style={styles.secaoHeader}>
+            <Text style={styles.secao}>Camadas</Text>
+            {isPro && <SeloPro />}
+          </View>
+
+          {camadasExtrasLiberadas ? (
+            camadasExtras.map((camada) => (
+              <FaixaCamada
+                key={camada.id}
+                rotulo={camada.rotulo}
+                estado={estados[camada.id]}
+                carregando={!!carregando[camada.id]}
+                corDestaque={corAtiva}
+                onSelecionarNota={(nota) => selecionarNota(camada.id, nota)}
+                onAjustarVolume={(v) => ajustarVolume(camada.id, v)}
+                onAjustarCutoff={(v) => ajustarCutoff(camada.id, v)}
+                onAlternarMudo={() => alternarMudo(camada.id)}
+                onAlternarSolo={() => alternarSolo(camada.id)}
+              />
+            ))
+          ) : (
+            <Card style={styles.avisoPro}>
+              <Icon name="grid-outline" size={20} color={colors.textSecondary} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.avisoProTitulo}>5 camadas extras no PRO</Text>
+                <Text style={styles.avisoProTexto}>
+                  Base 2, Base 3, Atmosfera, Reverse e Guitarra — todas tocando junto com a de cima.
+                </Text>
+              </View>
+              <SeloPro />
+            </Card>
+          )}
+
+          <Text style={styles.secao}>Master</Text>
           <View style={styles.volumeLinha}>
             <BarraDeslizante
-              valor={volumeGeral}
-              onChange={ajustarVolumeGeral}
+              valor={volumeMaster}
+              onChange={ajustarVolumeMaster}
               corPreenchida={corAtiva}
               corBolinha={corAtiva}
             />
-            <Text style={styles.volumeTexto}>{Math.round(volumeGeral * 100)}%</Text>
+            <Text style={styles.volumeTexto}>{Math.round(volumeMaster * 100)}%</Text>
           </View>
         </View>
       </ScrollView>
@@ -170,6 +224,104 @@ export function PadContinuoScreen() {
         restaurarPadrao={restaurarPadrao}
       />
     </SafeAreaView>
+  );
+}
+
+interface FaixaCamadaProps {
+  rotulo: string;
+  estado: { notaAtiva: Note | null; volume: number; cutoff: number; mudo: boolean; solo: boolean };
+  carregando: boolean;
+  corDestaque: string;
+  onSelecionarNota: (nota: Note) => void;
+  onAjustarVolume: (v: number) => void;
+  onAjustarCutoff: (v: number) => void;
+  onAlternarMudo: () => void;
+  onAlternarSolo: () => void;
+}
+
+/**
+ * Uma camada extra (PRO): mute/solo, cutoff e volume próprios, e uma faixa horizontal
+ * compacta de notas (mesma interação do grid principal — tocar liga, tocar de novo na
+ * mesma nota desliga — só visualmente mais enxuta pra caber 5 delas na tela).
+ */
+function FaixaCamada({
+  rotulo,
+  estado,
+  carregando,
+  corDestaque,
+  onSelecionarNota,
+  onAjustarVolume,
+  onAjustarCutoff,
+  onAlternarMudo,
+  onAlternarSolo,
+}: FaixaCamadaProps) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(criarEstilos);
+
+  return (
+    <Card style={styles.faixa}>
+      <View style={styles.faixaTopo}>
+        <Text style={styles.faixaRotulo}>{rotulo}</Text>
+        {carregando && <Icon name="cloud-download-outline" size={16} color={colors.textMuted} />}
+        <View style={styles.faixaBotoes}>
+          <TouchableOpacity
+            onPress={onAlternarMudo}
+            style={[styles.faixaBotao, estado.mudo && styles.faixaBotaoMudoAtivo]}
+            accessibilityRole="button"
+            accessibilityLabel="Mudo"
+          >
+            <Text style={[styles.faixaBotaoTexto, estado.mudo && styles.faixaBotaoTextoAtivo]}>M</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={onAlternarSolo}
+            style={[styles.faixaBotao, estado.solo && { backgroundColor: corDestaque }]}
+            accessibilityRole="button"
+            accessibilityLabel="Solo"
+          >
+            <Text style={[styles.faixaBotaoTexto, estado.solo && styles.faixaBotaoTextoAtivo]}>S</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <View style={styles.faixaSliders}>
+        <View style={styles.faixaSliderBloco}>
+          <Text style={styles.faixaSliderLabel}>Cutoff</Text>
+          <BarraDeslizante
+            valor={estado.cutoff}
+            onChange={onAjustarCutoff}
+            corPreenchida={corDestaque}
+            corBolinha={corDestaque}
+          />
+        </View>
+        <View style={styles.faixaSliderBloco}>
+          <Text style={styles.faixaSliderLabel}>Volume</Text>
+          <BarraDeslizante
+            valor={estado.volume}
+            onChange={onAjustarVolume}
+            corPreenchida={corDestaque}
+            corBolinha={corDestaque}
+          />
+        </View>
+      </View>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.faixaNotasScroll}>
+        {NOTAS.map((nota) => {
+          const ativa = estado.notaAtiva === nota;
+          return (
+            <TouchableOpacity
+              key={nota}
+              onPress={() => onSelecionarNota(nota)}
+              style={[
+                styles.faixaNota,
+                ativa && { backgroundColor: corDestaque, borderColor: corDestaque },
+              ]}
+            >
+              <Text style={[styles.faixaNotaTexto, ativa && styles.faixaNotaTextoAtiva]}>{nota}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+    </Card>
   );
 }
 
@@ -243,10 +395,30 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
   padLabelAtiva: {
     color: 'rgba(255,255,255,0.85)',
   },
+  secaoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   secao: {
     ...typography.bodySmall,
     color: colors.textSecondary,
     fontFamily: fonts.semibold,
+  },
+  avisoPro: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderRadius: radius.lg,
+  },
+  avisoProTitulo: {
+    ...typography.body,
+    color: colors.text,
+    fontFamily: fonts.semibold,
+  },
+  avisoProTexto: {
+    ...typography.caption,
+    color: colors.textSecondary,
   },
   volumeLinha: {
     flexDirection: 'row',
@@ -258,5 +430,77 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     color: colors.textSecondary,
     width: 44,
     textAlign: 'right',
+  },
+  // Faixa de camada extra
+  faixa: {
+    borderRadius: radius.lg,
+    gap: spacing.sm,
+  },
+  faixaTopo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  faixaRotulo: {
+    ...typography.body,
+    color: colors.text,
+    fontFamily: fonts.semibold,
+    flex: 1,
+  },
+  faixaBotoes: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  faixaBotao: {
+    width: 28,
+    height: 28,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surfaceMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  faixaBotaoMudoAtivo: {
+    backgroundColor: colors.error,
+  },
+  faixaBotaoTexto: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    fontFamily: fonts.bold,
+  },
+  faixaBotaoTextoAtivo: {
+    color: colors.textInverse,
+  },
+  faixaSliders: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  faixaSliderBloco: {
+    flex: 1,
+    gap: 4,
+  },
+  faixaSliderLabel: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  faixaNotasScroll: {
+    flexDirection: 'row',
+  },
+  faixaNota: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.xs,
+  },
+  faixaNotaTexto: {
+    ...typography.caption,
+    color: colors.text,
+    fontFamily: fonts.semibold,
+  },
+  faixaNotaTextoAtiva: {
+    color: colors.textInverse,
   },
 });

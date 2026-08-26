@@ -1,4 +1,4 @@
-import { Note } from './padContinuoEngine';
+import { Note } from '@/audio/padContinuo';
 
 export const NOTA_LABEL: Record<Note, string> = {
   C: 'Dó',
