@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import { createRepertorio, findAllRepertorios, findRepertorioById, deleteRepertorio } from '../models/repertorioModel';
 import { findProximoCultoDoMembro } from '../models/escalaVocalModel';
 import { findProximoCultoAvulsaDoMembro } from '../models/escalaAvulsaModel';
-import { findProximoCultoFixaDoMembro } from '../models/escalaFixaModel';
 
 export async function createRepertorioController(req: Request, res: Response) {
     try {
@@ -24,13 +23,12 @@ export async function meuProximoCultoController(req: Request, res: Response) {
         return res.status(401).json({ message: 'Não autorizado!'})
     }
 
-    const [cultoVocal, cultoAvulsa, cultoFixa] = await Promise.all([
+    const [cultoVocal, cultoAvulsa] = await Promise.all([
         findProximoCultoDoMembro(req.user.id),
         findProximoCultoAvulsaDoMembro(req.user.id),
-        findProximoCultoFixaDoMembro(req.user.id),
     ]);
 
-    const candidatos = [cultoVocal, cultoAvulsa, cultoFixa].filter(Boolean);
+    const candidatos = [cultoVocal, cultoAvulsa].filter(Boolean);
 
     if (candidatos.length === 0) {
         return res.status(404).json({ message: 'Culto não encontrada!'})

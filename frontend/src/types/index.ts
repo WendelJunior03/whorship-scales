@@ -17,8 +17,6 @@ export interface Organizacao {
   created_at?: string;
 }
 
-export type DiaSemana = 'quarta' | 'sabado' | 'domingo';
-
 // --- Biblioteca de vídeos (spec 08) ---
 
 export type CategoriaVideo = 'oficial' | 'playback' | 'tutorial' | 'ministracao';
@@ -122,21 +120,6 @@ export interface Classificacao {
   cor: string | null;
 }
 
-export interface EscalaFixa {
-  id: number;
-  membro_id: number;
-  dia_semana: DiaSemana;
-  funcao: string;
-  nome?: string;
-}
-
-export interface Excecao {
-  id: number;
-  escala_fixa_id: number;
-  data: string;
-  substituto_id: number | null;
-}
-
 export interface EscalaVocal {
   id: number;
   membro_id: number;
@@ -167,34 +150,67 @@ export interface Panorama {
   celulas: Record<string, Record<string, PanoramaMembro[]>>;
 }
 
+/** Ensaio vinculado 1:1 a um culto — opcional, criação manual. */
+export interface Ensaio {
+  id: number;
+  culto_id: number;
+  data_hora: string;
+  observacoes: string | null;
+}
+
+export interface EnsaioParticipante {
+  id: number;
+  membro_id: number;
+  nome: string;
+  status: StatusEscalaVocal;
+}
+
+export interface EnsaioDoCulto {
+  ensaio: Ensaio | null;
+  participantes: EnsaioParticipante[];
+}
+
+/** Uma participação (minha) num ensaio, já com os dados do ensaio embutidos. */
+export interface MinhaParticipacaoEnsaio {
+  id: number;
+  status: StatusEscalaVocal;
+  ensaio_id: number;
+  data_hora: string;
+  observacoes: string | null;
+  culto_id: number;
+}
+
+/** Comentário na thread de um culto/escala (spec 11, módulo 4). */
+export interface Comentario {
+  id: number;
+  culto_id: number;
+  membro_id: number;
+  texto: string;
+  created_at: string;
+  autor_nome: string;
+}
+
+export type AcaoHistorico =
+  | 'adicionou_membro'
+  | 'removeu_membro'
+  | 'confirmou'
+  | 'recusou'
+  | 'falta';
+
+/** Evento do histórico (audit log) de um culto (spec 11, módulo 5). */
+export interface HistoricoItem {
+  id: number;
+  culto_id: number;
+  ator_id: number | null;
+  acao: AcaoHistorico;
+  detalhe: { membro_nome?: string; funcao?: string };
+  created_at: string;
+  ator_nome: string | null;
+}
+
 export interface LoginResponse {
   token: string;
   message: string;
-}
-
-/**
- * Formato que GET /escala-fixa (todos os membros) devolve — é um JOIN,
- * não a entidade EscalaFixa crua. Sem `id`: essa consulta não devolve
- * qual linha é qual, só a visão geral pra admin/ministro.
- */
-export interface EscalaFixaMontada {
-  id: number;
-  dia_semana: DiaSemana;
-  funcao: string;
-  nome: string;
-  papel: Papel;
-}
-
-/**
- * Formato que GET /escala-fixa/me devolve — como é "meus próprios"
- * vínculos, essa consulta já inclui o `id`, necessário pra criar uma
- * exceção referenciando essa linha específica.
- */
-export interface MinhaEscalaFixaItem {
-  id: number;
-  dia_semana: DiaSemana;
-  funcao: string;
-  nome: string;
 }
 
 /**
@@ -207,18 +223,6 @@ export interface MinhaEscalaVocalItem {
   culto_id: number;
   data_hora: string;
   tipo: string | null;
-}
-
-/**
- * Formato de cada item de GET /escala-fixa/efetiva — já considera
- * substituições (excecoes), por isso "quem_toca" pode ser o titular
- * ou o substituto.
- */
-export interface EscalaEfetivaItem {
-  escala_fixa_id: number;
-  dia_semana: DiaSemana;
-  funcao: string;
-  quem_toca: string;
 }
 
 /**
@@ -250,8 +254,7 @@ export interface EscalaVocalDoCultoItem {
 
 /**
  * Escala "avulsa": vínculo pontual membro + culto + função, pra cobrir
- * cultos fora da rotina fixa (ex: um culto especial numa segunda-feira),
- * já que escala_fixa só existe por dia da semana (quarta/sábado/domingo).
+ * qualquer culto (não tem rotina fixa por dia da semana).
  */
 export interface EscalaAvulsaDoCultoItem {
   id: number;
@@ -283,7 +286,9 @@ export type TipoNotificacao =
   | 'substituicao'
   | 'confirmacao'
   | 'falta'
+  | 'comentario'
   | 'repertorio'
+  | 'ensaio'
   | 'lembrete';
 
 /**
@@ -298,6 +303,6 @@ export interface Notificacao {
   lida: boolean;
   created_at: string;
   culto_id: number | null;
-  referencia_tipo: 'escala_vocal' | 'escala_avulsa' | null;
+  referencia_tipo: 'escala_vocal' | 'escala_avulsa' | 'ensaio_participante' | null;
   referencia_id: number | null;
 }

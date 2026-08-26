@@ -21,7 +21,6 @@ type RotaRecurso =
   | 'Escalas'
   | 'Membros'
   | 'Ministerio'
-  | 'EscalaFixa'
   | 'Confirmacoes'
   | 'PanoramaEscalas';
 
@@ -45,7 +44,6 @@ const GESTAO: (ItemRecurso & { soAdmin?: boolean })[] = [
   { icon: 'calendar-outline', label: 'Escalas', sublabel: 'Ver escalas', route: 'Escalas' },
   { icon: 'stats-chart-outline', label: 'Panorama', sublabel: 'Escalas do mês', route: 'PanoramaEscalas' },
   { icon: 'people-outline', label: 'Membros', sublabel: 'Gerenciar', route: 'Membros', soAdmin: true },
-  { icon: 'repeat-outline', label: 'Escala Fixa', sublabel: 'Configurar', route: 'EscalaFixa' },
   { icon: 'checkmark-done-outline', label: 'Confirmações', sublabel: 'Acompanhar', route: 'Confirmacoes' },
 ];
 

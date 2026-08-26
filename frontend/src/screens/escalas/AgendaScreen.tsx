@@ -1,15 +1,13 @@
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
-  Modal,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Calendar, DateData } from 'react-native-calendars';
+import { Calendar } from 'react-native-calendars';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Badge } from '@/components/Badge';
@@ -17,46 +15,22 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Icon } from '@/components/Icon';
 import { MainTabScreenNavigationProp } from '@/navigation/types';
-import * as cultosService from '@/services/cultos';
 import * as escalaAvulsaService from '@/services/escalaAvulsa';
-import * as escalaFixaService from '@/services/escalaFixa';
 import * as escalaVocalService from '@/services/escalaVocal';
-import * as excecoesService from '@/services/excecoes';
 import * as notificacoesService from '@/services/notificacoes';
 import { ApiError } from '@/services/api';
-import {
-  Culto,
-  DiaSemana,
-  MembroCandidato,
-  MinhaEscalaAvulsaItem,
-  MinhaEscalaFixaItem,
-  MinhaEscalaVocalItem,
-} from '@/types';
+import { MinhaEscalaAvulsaItem, MinhaEscalaVocalItem } from '@/types';
 import { LARGURA_CONTEUDO, radius, spacing, typography } from '@/theme';
 import { Cores, Sombras } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { formatDiaCompleto, formatHora } from '@/utils/date';
-import { confirmAction } from '@/utils/confirm';
-
-const diaSemanaPorIndice: Record<number, DiaSemana> = {
-  0: 'domingo',
-  3: 'quarta',
-  6: 'sabado',
-};
-
-function capitalize(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
 
 /**
- * Compromissos: lista TUDO que a pessoa está escalada (vocal, avulsa e
- * fixa), sem status de pendente/confirmado/recusado — confirmar e recusar
- * vocal/avulsa agora acontece direto na notificação de "nova escala". Quem
- * recusou lá simplesmente já não aparece mais aqui na próxima vez que a
- * tela carregar (por isso recarrega sempre que a aba ganha foco).
- * Escala fixa é diferente: não tem notificação de "nova escala" (é um
- * vínculo semanal permanente), então "Recusar" (marcar falta numa data)
- * continua aqui mesmo.
+ * Compromissos: lista TUDO que a pessoa está escalada (vocal e avulsa),
+ * sem status de pendente/confirmado/recusado — confirmar e recusar agora
+ * acontece direto na notificação de "nova escala". Quem recusou lá
+ * simplesmente já não aparece mais aqui na próxima vez que a tela carregar
+ * (por isso recarrega sempre que a aba ganha foco).
  */
 export function AgendaScreen() {
   const { colors, modo } = useTheme();
@@ -64,49 +38,20 @@ export function AgendaScreen() {
   const navigation = useNavigation<MainTabScreenNavigationProp<'Agenda'>>();
   const [escalaVocal, setEscalaVocal] = useState<MinhaEscalaVocalItem[]>([]);
   const [escalaAvulsa, setEscalaAvulsa] = useState<MinhaEscalaAvulsaItem[]>([]);
-  const [escalaFixa, setEscalaFixa] = useState<MinhaEscalaFixaItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
-  const [proximoCultoPorDia, setProximoCultoPorDia] = useState<Partial<Record<DiaSemana, Culto>>>(
-    {},
-  );
   const [temNotificacaoNaoLida, setTemNotificacaoNaoLida] = useState(false);
-
-  type Indicacao = { item: MinhaEscalaFixaItem; data: string };
-  const [indicacao, setIndicacao] = useState<Indicacao | null>(null);
-  const [mostrarListaCandidatos, setMostrarListaCandidatos] = useState(false);
-  const [candidatos, setCandidatos] = useState<MembroCandidato[]>([]);
-  const [carregandoCandidatos, setCarregandoCandidatos] = useState(false);
 
   const carregarDados = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const [vocal, avulsa, fixa, todosCultos] = await Promise.all([
+      const [vocal, avulsa] = await Promise.all([
         escalaVocalService.getMinhaEscalaVocal(),
         escalaAvulsaService.getMinhaEscalaAvulsa(),
-        escalaFixaService.getMinhaEscalaFixa(),
-        cultosService.getTodosCultos(),
       ]);
       setEscalaVocal(vocal.filter((e) => e.status !== 'recusado'));
       setEscalaAvulsa(avulsa.filter((e) => e.status !== 'recusado'));
-      setEscalaFixa(fixa);
-
-      const agora = new Date();
-      const proximoPorDia: Partial<Record<DiaSemana, Culto>> = {};
-      for (const culto of todosCultos) {
-        const dataCulto = new Date(culto.data_hora);
-        if (dataCulto < agora) continue;
-        const dia = diaSemanaPorIndice[dataCulto.getDay()];
-        if (!dia) continue;
-        const atual = proximoPorDia[dia];
-        if (!atual || dataCulto < new Date(atual.data_hora)) {
-          proximoPorDia[dia] = culto;
-        }
-      }
-      setProximoCultoPorDia(proximoPorDia);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Não foi possível carregar sua agenda.');
     } finally {
@@ -130,72 +75,6 @@ export function AgendaScreen() {
         });
     }, []),
   );
-
-  function abrirIndicacaoFixa(item: MinhaEscalaFixaItem) {
-    if (!selectedDate) {
-      Alert.alert(
-        'Selecione uma data',
-        'Toque no dia do calendário em que você vai faltar antes de recusar.',
-      );
-      return;
-    }
-    setIndicacao({ item, data: selectedDate });
-    setMostrarListaCandidatos(false);
-  }
-
-  async function abrirListaCandidatos() {
-    if (!indicacao) return;
-    setMostrarListaCandidatos(true);
-    setCandidatos([]);
-    setCarregandoCandidatos(true);
-    try {
-      setCandidatos(await excecoesService.getCandidatosExcecao());
-    } catch {
-      // sem candidatos pra indicar não impede a recusa — só some a lista
-    } finally {
-      setCarregandoCandidatos(false);
-    }
-  }
-
-  function fecharIndicacao() {
-    setIndicacao(null);
-    setMostrarListaCandidatos(false);
-    setCandidatos([]);
-  }
-
-  function executarRecusaFixa(indicado: MembroCandidato | null) {
-    if (!indicacao) return;
-    const atual = indicacao;
-    fecharIndicacao();
-
-    confirmAction(
-      {
-        title: 'Recusar presença',
-        message: indicado
-          ? `Recusar essa escala e indicar ${indicado.nome} pra te substituir?`
-          : 'Confirmar a recusa dessa escala?',
-        confirmLabel: 'Recusar',
-      },
-      async () => {
-        setActionLoadingId(atual.item.id);
-        try {
-          await excecoesService.criarExcecao({
-            escalaFixaId: atual.item.id,
-            data: atual.data,
-            indicadoId: indicado?.id,
-          });
-          Alert.alert(
-            'Registrado',
-            'Sua falta foi registrada. Você será avisado quando um substituto for definido.',
-          );
-        } catch (err) {
-          Alert.alert('Erro', err instanceof ApiError ? err.message : 'Não foi possível registrar a recusa.');
-        } finally {
-          setActionLoadingId(null);
-        }
-      },
-    );
-  }
 
   if (isLoading) {
     return (
@@ -231,13 +110,6 @@ export function AgendaScreen() {
     const day = item.data_hora.slice(0, 10);
     markedDates[day] = { ...markedDates[day], marked: true, dotColor: colors.primary };
   }
-  if (selectedDate) {
-    markedDates[selectedDate] = {
-      ...markedDates[selectedDate],
-      selected: true,
-      selectedColor: colors.primary,
-    };
-  }
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -269,7 +141,6 @@ export function AgendaScreen() {
             // montado — forçar remount na troca de modo garante que a paleta nova aplique.
             key={modo}
             markedDates={markedDates}
-            onDayPress={(day: DateData) => setSelectedDate(day.dateString)}
             theme={{
               backgroundColor: colors.surface,
               calendarBackground: colors.surface,
@@ -286,7 +157,7 @@ export function AgendaScreen() {
           />
         </Card>
 
-        {escalaVocal.length === 0 && escalaAvulsa.length === 0 && escalaFixa.length === 0 && (
+        {escalaVocal.length === 0 && escalaAvulsa.length === 0 && (
           <Card>
             <Text style={styles.emptyText}>Você não tem compromissos futuros registrados.</Text>
           </Card>
@@ -348,103 +219,7 @@ export function AgendaScreen() {
             ))}
           </>
         )}
-
-        {escalaFixa.length > 0 && (
-          <>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Sua escala fixa</Text>
-            </View>
-
-            {escalaFixa.map((item) => {
-              const proximoCulto = proximoCultoPorDia[item.dia_semana];
-              return (
-              <Card
-                key={item.id}
-                style={styles.compromisso}
-                onPress={
-                  proximoCulto
-                    ? () => navigation.navigate('DetalhesCulto', { cultoId: proximoCulto.id })
-                    : undefined
-                }
-              >
-                <View style={styles.compromissoInfo}>
-                  <Text style={styles.compromissoDia}>{capitalize(item.dia_semana)}</Text>
-                  <Text style={styles.compromissoHora}>{item.funcao}</Text>
-                  {!proximoCulto && (
-                    <Text style={styles.semCultoTexto}>
-                      Nenhum culto futuro criado ainda pra esse dia
-                    </Text>
-                  )}
-                </View>
-                <Button
-                  title="Recusar"
-                  onPress={() => abrirIndicacaoFixa(item)}
-                  loading={actionLoadingId === item.id}
-                  variant="outline"
-                  style={styles.acaoBotaoUnico}
-                />
-              </Card>
-              );
-            })}
-          </>
-        )}
       </ScrollView>
-
-      <Modal
-        visible={!!indicacao}
-        animationType="slide"
-        transparent
-        onRequestClose={fecharIndicacao}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            {!mostrarListaCandidatos ? (
-              <>
-                <Text style={styles.modalTitle}>Recusar presença</Text>
-                <Button title="Indicar alguém" onPress={abrirListaCandidatos} style={styles.modalButton} />
-                <Button
-                  title="Recusar sem indicar"
-                  variant="outline"
-                  onPress={() => executarRecusaFixa(null)}
-                  style={styles.modalButton}
-                />
-                <Button title="Cancelar" variant="outline" onPress={fecharIndicacao} style={styles.modalButton} />
-              </>
-            ) : (
-              <>
-                <Text style={styles.modalTitle}>Quem você indica pra sua vaga?</Text>
-
-                {carregandoCandidatos ? (
-                  <ActivityIndicator color={colors.primary} style={styles.modalLoading} />
-                ) : (
-                  <ScrollView style={styles.modalList}>
-                    {candidatos.length === 0 ? (
-                      <Text style={styles.emptyText}>Nenhum candidato disponível no momento.</Text>
-                    ) : (
-                      candidatos.map((candidato) => (
-                        <TouchableOpacity
-                          key={candidato.id}
-                          style={styles.modalItem}
-                          onPress={() => executarRecusaFixa(candidato)}
-                        >
-                          <Text style={styles.modalItemText}>{candidato.nome}</Text>
-                        </TouchableOpacity>
-                      ))
-                    )}
-                  </ScrollView>
-                )}
-
-                <Button
-                  title="Voltar"
-                  variant="outline"
-                  onPress={() => setMostrarListaCandidatos(false)}
-                  style={styles.modalButton}
-                />
-              </>
-            )}
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -547,49 +322,5 @@ const criarEstilos = (colors: Cores, shadows: Sombras) => StyleSheet.create({
   compromissoHora: {
     ...typography.bodySmall,
     color: colors.textSecondary,
-  },
-  semCultoTexto: {
-    ...typography.caption,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  acaoBotaoUnico: {
-    alignSelf: 'flex-start',
-    minWidth: 120,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: spacing.lg,
-    gap: spacing.md,
-    maxHeight: '70%',
-  },
-  modalTitle: {
-    ...typography.h3,
-    color: colors.text,
-  },
-  modalLoading: {
-    marginVertical: spacing.lg,
-  },
-  modalList: {
-    maxHeight: 280,
-  },
-  modalItem: {
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  modalItemText: {
-    ...typography.body,
-    color: colors.text,
-  },
-  modalButton: {
-    marginTop: spacing.xs,
   },
 });

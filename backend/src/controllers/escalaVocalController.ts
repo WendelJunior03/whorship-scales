@@ -3,6 +3,7 @@ import { createEscalaVocal, sugerirVocais, findEscalaVocalById, updateStatusEsca
 import { findById, findAdminsAtivos, findMembrosDisponiveisParaCulto } from '../models/membroModel';
 import { findCultoById } from '../models/cultoModel';
 import { createNotificacao } from '../models/notificacaoModel';
+import { registrarHistorico } from '../models/historicoModel';
 import { enviarEmail } from '../services/emailService';
 import { formatarDataHoraCurta } from '../utils/data';
 
@@ -40,6 +41,14 @@ export async function createEscalaVocalController(req: Request, res: Response) {
         } catch (error) {
             console.error('Erro ao criar notificação:', error);
         }
+    }
+    try {
+        await registrarHistorico(cultoId, req.user?.id ?? null, 'adicionou_membro', {
+            membro_nome: membro?.nome,
+            funcao: 'Vocal',
+        });
+    } catch (error) {
+        console.error('Erro ao registrar histórico:', error);
     }
     return res.status(201).json({ message: 'Escala vocal cadastrada com sucesso!' })
 
@@ -100,6 +109,18 @@ export async function confirmarPresencaController (req: Request, res: Response) 
     }
 
     await updateStatusEscalaVocal(Number(id), status);
+
+    if (status === 'confirmado' || status === 'recusado') {
+        try {
+            const eu = await findById(req.user.id);
+            await registrarHistorico(escalaVocal.culto_id, req.user.id, status === 'confirmado' ? 'confirmou' : 'recusou', {
+                membro_nome: eu?.nome,
+                funcao: 'Vocal',
+            });
+        } catch (error) {
+            console.error('Erro ao registrar histórico:', error);
+        }
+    }
 
     if (status === 'confirmado') {
         try {
@@ -189,6 +210,16 @@ export async function registrarFaltaVocalController(req: Request, res: Response)
         console.error('Erro ao criar notificação:', error);
     }
 
+    try {
+        const faltante = await findById(escalaVocal.membro_id);
+        await registrarHistorico(escalaVocal.culto_id, req.user?.id ?? null, 'falta', {
+            membro_nome: faltante?.nome,
+            funcao: 'Vocal',
+        });
+    } catch (error) {
+        console.error('Erro ao registrar histórico:', error);
+    }
+
     return res.status(200).json({ message: 'Falta registrada com sucesso!' });
 }
 
@@ -216,6 +247,15 @@ export async function deleteEscalaVocalController(req: Request, res: Response) {
         return res.status(404).json({ message: 'Escala vocal não encontrada!' })
     }
 
+    const removido = await findById(escalaVocal.membro_id);
     await deleteEscalaVocal(Number(id));
+    try {
+        await registrarHistorico(escalaVocal.culto_id, req.user?.id ?? null, 'removeu_membro', {
+            membro_nome: removido?.nome,
+            funcao: 'Vocal',
+        });
+    } catch (error) {
+        console.error('Erro ao registrar histórico:', error);
+    }
     return res.status(200).json({ message: 'Escala vocal removida com sucesso!' })
 }

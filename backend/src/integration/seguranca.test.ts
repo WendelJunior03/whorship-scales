@@ -64,6 +64,11 @@ async function semearOrg(nome: string, sufixo: string, senhaHash: string): Promi
             [culto.id, org.id],
         );
 
+        await client.query(
+            `INSERT INTO ensaios (culto_id, data_hora, org_id) VALUES ($1, NOW(), $2)`,
+            [culto.id, org.id],
+        );
+
         return {
             orgId: org.id,
             adminId: admin.id,
@@ -107,8 +112,9 @@ afterAll(async () => {
     if (!pular && A.orgId && B.orgId) {
         const orgs = [A.orgId, B.orgId];
         await withBypass(async (client) => {
+            await client.query('DELETE FROM ensaio_participantes WHERE org_id = ANY($1)', [orgs]);
+            await client.query('DELETE FROM ensaios WHERE org_id = ANY($1)', [orgs]);
             await client.query('DELETE FROM repertorio WHERE org_id = ANY($1)', [orgs]);
-            await client.query('DELETE FROM escala_fixa WHERE org_id = ANY($1)', [orgs]);
             await client.query('DELETE FROM cultos WHERE org_id = ANY($1)', [orgs]);
             await client.query('DELETE FROM membros WHERE org_id = ANY($1)', [orgs]);
             await client.query('DELETE FROM organizacoes WHERE id = ANY($1)', [orgs]);
@@ -129,9 +135,6 @@ const ACOES_RESTRITAS: { m: 'post' | 'get' | 'delete'; path: string }[] = [
     { m: 'post', path: '/membros/cadastro' },
     { m: 'get', path: '/membros' },
     { m: 'delete', path: '/membros/999999' },
-    { m: 'post', path: '/escala-fixa' },
-    { m: 'get', path: '/escala-fixa' },
-    { m: 'delete', path: '/escala-fixa/999999' },
     { m: 'post', path: '/escala-vocal' },
     { m: 'get', path: '/escala-vocal/sugestao' },
     { m: 'delete', path: '/escala-vocal/999999' },
@@ -139,6 +142,8 @@ const ACOES_RESTRITAS: { m: 'post' | 'get' | 'delete'; path: string }[] = [
     { m: 'delete', path: '/escala-avulsa/999999' },
     { m: 'post', path: '/repertorio' },
     { m: 'delete', path: '/repertorio/999999' },
+    { m: 'post', path: '/ensaios' },
+    { m: 'delete', path: '/ensaios/999999' },
 ];
 
 describe('Autorização por capacidade (Passo 5)', () => {
@@ -151,9 +156,7 @@ describe('Autorização por capacidade (Passo 5)', () => {
     it('admin NÃO é bloqueado nas leituras de gestão (200)', async () => {
         if (pular) return;
         const membros = await http().get('/membros').set('Authorization', auth(tokens.adminA));
-        const fixa = await http().get('/escala-fixa').set('Authorization', auth(tokens.adminA));
         expect(membros.status).toBe(200);
-        expect(fixa.status).toBe(200);
     });
 
     it('membro comum acessa o que é próprio (GET /membros/me e GET /cultos = 200)', async () => {
@@ -207,5 +210,14 @@ describe('Isolamento entre organizações (Passo 4)', () => {
         if (pular) return;
         const res = await http().get(`/repertorio/${B.cultoId}`).set('Authorization', auth(tokens.adminA));
         expect(Array.isArray(res.body) ? res.body.length : 0).toBe(0);
+    });
+
+    it('A não enxerga o ensaio de um culto da B (mesmo ele existindo pra B)', async () => {
+        if (pular) return;
+        const daB = await http().get(`/ensaios/culto/${B.cultoId}`).set('Authorization', auth(tokens.adminB));
+        expect(daB.body.ensaio).not.toBeNull();
+
+        const daA = await http().get(`/ensaios/culto/${B.cultoId}`).set('Authorization', auth(tokens.adminA));
+        expect(daA.body.ensaio).toBeNull();
     });
 });
