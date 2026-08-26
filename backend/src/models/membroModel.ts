@@ -116,16 +116,3 @@ export async function findMembrosDisponiveisParaCulto(cultoId: number, excluirMe
     );
     return result.rows;
 }
-
-/**
- * Membros ativos pra indicar como substituto numa falta de escala fixa (sem
- * culto específico — é uma vaga semanal recorrente) — só exclui quem está
- * indicando.
- */
-export async function findMembrosAtivosExcluindo(excluirMembroId: number) {
-    const result = await query(
-        'SELECT id, nome FROM membros WHERE ativo = true AND id <> $1 ORDER BY nome ASC',
-        [excluirMembroId],
-    );
-    return result.rows;
-}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import '@/config/calendario';
 import { ActivityIndicator, Platform, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';

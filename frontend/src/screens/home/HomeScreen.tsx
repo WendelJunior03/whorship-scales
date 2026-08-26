@@ -13,11 +13,9 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
 import { MainTabScreenNavigationProp } from '@/navigation/types';
-import * as escalaFixaService from '@/services/escalaFixa';
 import * as notificacoesService from '@/services/notificacoes';
 import * as repertorioService from '@/services/repertorio';
 import { ApiError } from '@/services/api';
-import { MinhaEscalaFixaItem } from '@/types';
 import { MeuProximoCulto } from '@/services/repertorio';
 import { spacing, radius, typography, fonts, LARGURA_CONTEUDO } from '@/theme';
 import { Cores, Sombras } from '@/theme/palettes';
@@ -32,7 +30,6 @@ export function HomeScreen() {
   const navigation = useNavigation<MainTabScreenNavigationProp<'Home'>>();
 
   const [proximoCulto, setProximoCulto] = useState<MeuProximoCulto | null>(null);
-  const [minhaEscala, setMinhaEscala] = useState<MinhaEscalaFixaItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [temNotificacaoNaoLida, setTemNotificacaoNaoLida] = useState(false);
@@ -41,15 +38,11 @@ export function HomeScreen() {
     setIsLoading(true);
     setError(null);
     try {
-      const [culto, escala] = await Promise.all([
-        repertorioService.getMeuProximoCulto().catch((err) => {
-          if (err instanceof ApiError && err.status === 404) return null;
-          throw err;
-        }),
-        escalaFixaService.getMinhaEscalaFixa(),
-      ]);
+      const culto = await repertorioService.getMeuProximoCulto().catch((err) => {
+        if (err instanceof ApiError && err.status === 404) return null;
+        throw err;
+      });
       setProximoCulto(culto);
-      setMinhaEscala(escala);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Não foi possível carregar os dados.');
     } finally {
@@ -155,25 +148,6 @@ export function HomeScreen() {
           </Card>
         )}
 
-        <Text style={styles.sectionTitle}>Sua escala fixa</Text>
-        {minhaEscala.length === 0 ? (
-          <Card style={styles.card}>
-            <Text style={styles.mutedText}>Você ainda não tem uma escala fixa cadastrada.</Text>
-          </Card>
-        ) : (
-          minhaEscala.map((escala, index) => (
-            <Card key={`${escala.dia_semana}-${escala.funcao}-${index}`} style={styles.escalaCard}>
-              <View style={styles.escalaIcon}>
-                <Icon name="repeat-outline" size={18} color={colors.primary} />
-              </View>
-              <View>
-                <Text style={styles.escalaDia}>{capitalize(escala.dia_semana)}</Text>
-                <Text style={styles.escalaInfo}>{escala.funcao}</Text>
-              </View>
-            </Card>
-          ))
-        )}
-
         <Text style={styles.sectionTitle}>Músicas do próximo culto</Text>
         {!proximoCulto ? (
           <Card style={styles.card}>
@@ -207,10 +181,6 @@ export function HomeScreen() {
       </ScrollView>
     </SafeAreaView>
   );
-}
-
-function capitalize(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 const criarEstilos = (colors: Cores, shadows: Sombras) => StyleSheet.create({
@@ -406,29 +376,5 @@ const criarEstilos = (colors: Cores, shadows: Sombras) => StyleSheet.create({
     ...typography.bodySmall,
     color: colors.primary,
     fontFamily: fonts.semibold,
-  },
-  escalaCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    borderRadius: radius.xl,
-    ...shadows.sm,
-  },
-  escalaIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.md,
-    backgroundColor: colors.primarySoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  escalaDia: {
-    ...typography.body,
-    color: colors.text,
-    fontFamily: fonts.semibold,
-  },
-  escalaInfo: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
   },
 });

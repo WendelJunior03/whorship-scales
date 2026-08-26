@@ -18,12 +18,14 @@ import { Card } from '@/components/Card';
 import * as notificacoesService from '@/services/notificacoes';
 import * as escalaVocalService from '@/services/escalaVocal';
 import * as escalaAvulsaService from '@/services/escalaAvulsa';
+import * as ensaioService from '@/services/ensaio';
 import { ApiError } from '@/services/api';
 import { MainTabScreenNavigationProp } from '@/navigation/types';
 import {
   MembroCandidato,
   MinhaEscalaAvulsaItem,
   MinhaEscalaVocalItem,
+  MinhaParticipacaoEnsaio,
   Notificacao,
   TipoNotificacao,
 } from '@/types';
@@ -40,6 +42,7 @@ const iconePorTipo: Record<TipoNotificacao, IconName> = {
   falta: 'alert-circle-outline',
   comentario: 'chatbubble-ellipses-outline',
   repertorio: 'musical-notes',
+  ensaio: 'calendar-outline',
   lembrete: 'alarm',
 };
 
@@ -69,6 +72,7 @@ export function NotificacoesScreen() {
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
   const [escalaVocal, setEscalaVocal] = useState<MinhaEscalaVocalItem[]>([]);
   const [escalaAvulsa, setEscalaAvulsa] = useState<MinhaEscalaAvulsaItem[]>([]);
+  const [participacoesEnsaio, setParticipacoesEnsaio] = useState<MinhaParticipacaoEnsaio[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
@@ -85,14 +89,16 @@ export function NotificacoesScreen() {
     setIsLoading(true);
     setError(null);
     try {
-      const [dados, vocal, avulsa] = await Promise.all([
+      const [dados, vocal, avulsa, ensaios] = await Promise.all([
         notificacoesService.getMinhasNotificacoes(),
         escalaVocalService.getMinhaEscalaVocal(),
         escalaAvulsaService.getMinhaEscalaAvulsa(),
+        ensaioService.getMinhasParticipacoesEnsaio(),
       ]);
       setNotificacoes(dados);
       setEscalaVocal(vocal);
       setEscalaAvulsa(avulsa);
+      setParticipacoesEnsaio(ensaios);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Não foi possível carregar as notificações.');
     } finally {
@@ -106,7 +112,9 @@ export function NotificacoesScreen() {
     }, [carregarDados]),
   );
 
-  function itemPendenteDaNotificacao(item: Notificacao): MinhaEscalaVocalItem | MinhaEscalaAvulsaItem | null {
+  function itemPendenteDaNotificacao(
+    item: Notificacao,
+  ): MinhaEscalaVocalItem | MinhaEscalaAvulsaItem | MinhaParticipacaoEnsaio | null {
     if (!item.referencia_id) return null;
     if (item.referencia_tipo === 'escala_vocal') {
       const encontrado = escalaVocal.find((e) => e.id === item.referencia_id);
@@ -114,6 +122,10 @@ export function NotificacoesScreen() {
     }
     if (item.referencia_tipo === 'escala_avulsa') {
       const encontrado = escalaAvulsa.find((e) => e.id === item.referencia_id);
+      return encontrado && encontrado.status === 'pendente' ? encontrado : null;
+    }
+    if (item.referencia_tipo === 'ensaio_participante') {
+      const encontrado = participacoesEnsaio.find((e) => e.id === item.referencia_id);
       return encontrado && encontrado.status === 'pendente' ? encontrado : null;
     }
     return null;
@@ -160,9 +172,14 @@ export function NotificacoesScreen() {
       if (item.referencia_tipo === 'escala_vocal') {
         await escalaVocalService.confirmarPresenca(escala.id, 'confirmado');
         setEscalaVocal((prev) => prev.map((e) => (e.id === escala.id ? { ...e, status: 'confirmado' } : e)));
-      } else {
+      } else if (item.referencia_tipo === 'escala_avulsa') {
         await escalaAvulsaService.confirmarPresencaAvulsa(escala.id, 'confirmado');
         setEscalaAvulsa((prev) => prev.map((e) => (e.id === escala.id ? { ...e, status: 'confirmado' } : e)));
+      } else {
+        await ensaioService.confirmarPresencaEnsaio(escala.id, 'confirmado');
+        setParticipacoesEnsaio((prev) =>
+          prev.map((e) => (e.id === escala.id ? { ...e, status: 'confirmado' } : e)),
+        );
       }
       marcarComoLida(item);
     } catch (err) {
@@ -170,6 +187,35 @@ export function NotificacoesScreen() {
     } finally {
       setActionLoadingId(null);
     }
+  }
+
+  // Ensaio não tem "indicar substituto" (não ocupa uma vaga de função) — recusa
+  // direto, sem abrir o modal de indicação usado por vocal/avulsa.
+  function handleRecusarEnsaio(item: Notificacao) {
+    const participacao = itemPendenteDaNotificacao(item);
+    if (!participacao) return;
+
+    confirmAction(
+      {
+        title: 'Recusar presença',
+        message: 'Confirmar a recusa de presença nesse ensaio?',
+        confirmLabel: 'Recusar',
+      },
+      async () => {
+        setActionLoadingId(item.id);
+        try {
+          await ensaioService.confirmarPresencaEnsaio(participacao.id, 'recusado');
+          setParticipacoesEnsaio((prev) =>
+            prev.map((e) => (e.id === participacao.id ? { ...e, status: 'recusado' } : e)),
+          );
+          marcarComoLida(item);
+        } catch (err) {
+          Alert.alert('Erro', err instanceof ApiError ? err.message : 'Não foi possível registrar a recusa.');
+        } finally {
+          setActionLoadingId(null);
+        }
+      },
+    );
   }
 
   function abrirIndicacao(item: Notificacao) {
@@ -325,7 +371,11 @@ export function NotificacoesScreen() {
                   />
                   <Button
                     title="Recusar"
-                    onPress={() => abrirIndicacao(item)}
+                    onPress={() =>
+                      item.referencia_tipo === 'ensaio_participante'
+                        ? handleRecusarEnsaio(item)
+                        : abrirIndicacao(item)
+                    }
                     loading={actionLoadingId === item.id}
                     variant="outline"
                     style={styles.acaoBotao}

@@ -13,22 +13,23 @@ import {
   View,
 } from 'react-native';
 import { Icon } from '@/components/Icon';
+import { Calendar, DateData } from 'react-native-calendars';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { EntradaHorario } from '@/components/EntradaHorario';
 import { Header } from '@/components/Header';
 import { OptionsMenu } from '@/components/OptionsMenu';
 import { SeletorFuncao } from '@/components/SeletorFuncao';
 import { useAuth } from '@/contexts/AuthContext';
 import { MainStackParamList } from '@/navigation/types';
 import * as cultosService from '@/services/cultos';
+import * as ensaioService from '@/services/ensaio';
 import * as escalaAvulsaService from '@/services/escalaAvulsa';
-import * as escalaFixaService from '@/services/escalaFixa';
 import * as escalaVocalService from '@/services/escalaVocal';
-import * as excecoesService from '@/services/excecoes';
 import * as membrosService from '@/services/membros';
 import * as repertorioService from '@/services/repertorio';
 import * as comentariosService from '@/services/comentarios';
@@ -38,6 +39,8 @@ import { buscarTituloDoLink } from '@/utils/tituloLink';
 import {
   Comentario,
   Culto,
+  Ensaio,
+  EnsaioParticipante,
   EscalaAvulsaDoCultoItem,
   EscalaVocalDoCultoItem,
   HistoricoItem,
@@ -49,7 +52,13 @@ import {
 import { LARGURA_CONTEUDO, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
-import { formatDiaCompleto, formatDiaCurto, formatDiaSemana, formatHora } from '@/utils/date';
+import {
+  formatDiaCompleto,
+  formatDiaCurto,
+  formatDiaSemana,
+  formatHora,
+  montarDataHoraISO,
+} from '@/utils/date';
 import { podeGerir, papelLabel } from '@/utils/papel';
 import { confirmAction, notifyAction } from '@/utils/confirm';
 
@@ -92,12 +101,12 @@ interface EquipeItem {
   nome: string;
   funcao: string;
   status?: StatusEscalaVocal;
-  origem: 'fixa' | 'vocal' | 'avulsa';
+  origem: 'vocal' | 'avulsa';
   origemId: number;
 }
 
 export function DetalhesCultoScreen() {
-  const { colors } = useTheme();
+  const { colors, modo } = useTheme();
   const styles = useThemedStyles(criarEstilos);
   const route = useRoute<RouteProp<MainStackParamList, 'DetalhesCulto'>>();
   const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();
@@ -110,6 +119,21 @@ export function DetalhesCultoScreen() {
   const [suaFuncao, setSuaFuncao] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [ensaio, setEnsaio] = useState<Ensaio | null>(null);
+  const [ensaioParticipantes, setEnsaioParticipantes] = useState<EnsaioParticipante[]>([]);
+  const [ensaioModalAberto, setEnsaioModalAberto] = useState(false);
+  const [ensaioData, setEnsaioData] = useState<string | null>(null);
+  const [ensaioHora, setEnsaioHora] = useState('');
+  const [ensaioObservacoes, setEnsaioObservacoes] = useState('');
+  const [salvandoEnsaio, setSalvandoEnsaio] = useState(false);
+  const [excluindoEnsaio, setExcluindoEnsaio] = useState(false);
+  const [participanteEnsaioPickerAberto, setParticipanteEnsaioPickerAberto] = useState(false);
+  const [salvandoParticipanteEnsaio, setSalvandoParticipanteEnsaio] = useState(false);
+  const [atualizandoParticipanteEnsaioId, setAtualizandoParticipanteEnsaioId] = useState<
+    number | null
+  >(null);
+  const [convidandoEquipeEnsaio, setConvidandoEquipeEnsaio] = useState(false);
 
   const [repertorioModalAberto, setRepertorioModalAberto] = useState(false);
   const [novoNomeMusica, setNovoNomeMusica] = useState('');
@@ -146,37 +170,29 @@ export function DetalhesCultoScreen() {
     setError(null);
     try {
       const cultoEncontrado = await cultosService.getCultoById(cultoId);
-      const dataDoCulto = cultoEncontrado.data_hora.slice(0, 10);
 
       const [
         repertoriosEncontrados,
         escalaVocalDoCulto,
-        escalaFixaEfetiva,
         escalaAvulsaDoCulto,
         vocaisSugeridos,
+        ensaioDoCulto,
         comentariosDoCulto,
         historicoDoCulto,
       ] = await Promise.all([
         repertorioService.getRepertorioDoCulto(cultoId),
         escalaVocalService.getEscalaVocalDoCulto(cultoId),
-        escalaFixaService.getEscalaEfetiva(dataDoCulto),
         escalaAvulsaService.getEscalaAvulsaDoCulto(cultoId),
         user?.papel === 'admin'
           ? escalaVocalService.getSugestaoVocais(cultoId)
           : Promise.resolve([]),
+        ensaioService.getEnsaioDoCulto(cultoId),
         comentariosService.listarComentarios(cultoId),
         user && podeGerir(user)
           ? historicoService.listarHistorico(cultoId)
           : Promise.resolve([] as HistoricoItem[]),
       ]);
 
-      const equipeFixa: EquipeItem[] = escalaFixaEfetiva.map((item) => ({
-        chave: `fixa-${item.funcao}-${item.quem_toca}`,
-        nome: item.quem_toca,
-        funcao: item.funcao,
-        origem: 'fixa',
-        origemId: item.escala_fixa_id,
-      }));
       // Quem recusou some da equipe sozinho — não precisa remover na mão (o
       // registro continua existindo pra histórico, só não aparece mais aqui).
       const equipeVocal: EquipeItem[] = escalaVocalDoCulto
@@ -200,7 +216,6 @@ export function DetalhesCultoScreen() {
           origemId: item.id,
         }));
 
-      const minhaFuncaoFixa = equipeFixa.find((item) => item.nome === user?.nome);
       const minhaEscalaVocal = escalaVocalDoCulto.find(
         (item: EscalaVocalDoCultoItem) => item.membro_id === user?.id,
       );
@@ -210,15 +225,15 @@ export function DetalhesCultoScreen() {
 
       setCulto(cultoEncontrado);
       setRepertorios(repertoriosEncontrados);
-      setEquipe([...equipeFixa, ...equipeVocal, ...equipeAvulsa]);
-      setSuaFuncao(
-        minhaFuncaoFixa?.funcao ?? minhaEscalaAvulsa?.funcao ?? (minhaEscalaVocal ? 'Vocal' : null),
-      );
+      setEquipe([...equipeVocal, ...equipeAvulsa]);
+      setSuaFuncao(minhaEscalaAvulsa?.funcao ?? (minhaEscalaVocal ? 'Vocal' : null));
       setSugestaoVocal(vocaisSugeridos);
       setSelecionadosVocal(vocaisSugeridos);
       setComentarios(comentariosDoCulto);
       setHistorico(historicoDoCulto);
       setModoEdicaoVocal(Boolean(abrirEdicaoVocal));
+      setEnsaio(ensaioDoCulto.ensaio);
+      setEnsaioParticipantes(ensaioDoCulto.participantes);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Não foi possível carregar o culto.');
     } finally {
@@ -306,17 +321,20 @@ export function DetalhesCultoScreen() {
     );
   }
 
-  async function garantirMembrosCarregados() {
-    if (todosMembrosAtivos.length > 0) return;
+  async function garantirMembrosCarregados(): Promise<Membro[]> {
+    if (todosMembrosAtivos.length > 0) return todosMembrosAtivos;
     setCarregandoMembros(true);
     try {
       const todos = await membrosService.getTodosMembros();
-      setTodosMembrosAtivos(todos.filter((m) => m.ativo !== false));
+      const ativos = todos.filter((m) => m.ativo !== false);
+      setTodosMembrosAtivos(ativos);
+      return ativos;
     } catch (err) {
       Alert.alert(
         'Erro',
         err instanceof ApiError ? err.message : 'Não foi possível carregar os membros.',
       );
+      return [];
     } finally {
       setCarregandoMembros(false);
     }
@@ -357,15 +375,10 @@ export function DetalhesCultoScreen() {
   function handleExcluirDaEquipe(item: EquipeItem) {
     if (!culto) return;
 
-    const mensagem =
-      item.origem === 'fixa'
-        ? `Isso marca a falta de "${item.nome}" só neste culto (${item.funcao}) — a escala fixa semanal dele não é alterada. Confirmar?`
-        : `Remover "${item.nome}" (${item.funcao}) da equipe deste culto?`;
-
     confirmAction(
       {
         title: 'Remover da equipe',
-        message: mensagem,
+        message: `Remover "${item.nome}" (${item.funcao}) da equipe deste culto?`,
         confirmLabel: 'Remover',
       },
       async () => {
@@ -373,13 +386,8 @@ export function DetalhesCultoScreen() {
         try {
           if (item.origem === 'vocal') {
             await escalaVocalService.deletarEscalaVocal(item.origemId);
-          } else if (item.origem === 'avulsa') {
-            await escalaAvulsaService.deletarEscalaAvulsa(item.origemId);
           } else {
-            await excecoesService.criarExcecao({
-              escalaFixaId: item.origemId,
-              data: culto.data_hora.slice(0, 10),
-            });
+            await escalaAvulsaService.deletarEscalaAvulsa(item.origemId);
           }
           await carregarDados();
         } catch (err) {
@@ -411,9 +419,212 @@ export function DetalhesCultoScreen() {
           }
           await carregarDados();
         } catch (err) {
-          notifyAction('Erro', err instanceof ApiError ? err.message : 'Não foi possível registrar a falta.');
+          notifyAction(
+            'Erro',
+            err instanceof ApiError ? err.message : 'Não foi possível registrar a falta.',
+          );
         } finally {
           setExcluindoEquipeChave(null);
+        }
+      },
+    );
+  }
+
+  function abrirEnsaioModal() {
+    if (ensaio) {
+      setEnsaioData(ensaio.data_hora.slice(0, 10));
+      setEnsaioHora(formatHora(ensaio.data_hora));
+      setEnsaioObservacoes(ensaio.observacoes ?? '');
+    } else {
+      setEnsaioData(null);
+      setEnsaioHora('');
+      setEnsaioObservacoes('');
+    }
+    setEnsaioModalAberto(true);
+  }
+
+  async function handleSalvarEnsaio() {
+    if (!ensaioData || !ensaioHora.trim()) {
+      Alert.alert('Preencha tudo', 'Selecione o dia e informe o horário do ensaio.');
+      return;
+    }
+
+    const dataHora = montarDataHoraISO(ensaioData, ensaioHora.trim());
+    if (!dataHora) {
+      Alert.alert('Horário inválido', 'Use o formato HH:mm, por exemplo 19:00.');
+      return;
+    }
+
+    setSalvandoEnsaio(true);
+    try {
+      if (ensaio) {
+        await ensaioService.atualizarEnsaio(ensaio.id, {
+          dataHora,
+          observacoes: ensaioObservacoes.trim() || null,
+        });
+      } else {
+        await ensaioService.criarEnsaio({
+          cultoId,
+          dataHora,
+          observacoes: ensaioObservacoes.trim() || null,
+        });
+      }
+      setEnsaioModalAberto(false);
+      await carregarDados();
+    } catch (err) {
+      Alert.alert(
+        'Erro',
+        err instanceof ApiError ? err.message : 'Não foi possível salvar o ensaio.',
+      );
+    } finally {
+      setSalvandoEnsaio(false);
+    }
+  }
+
+  function handleExcluirEnsaio() {
+    if (!ensaio) return;
+
+    confirmAction(
+      {
+        title: 'Excluir ensaio',
+        message: 'Isso remove o ensaio e a lista de participantes dele. Confirmar?',
+        confirmLabel: 'Excluir',
+      },
+      async () => {
+        setExcluindoEnsaio(true);
+        try {
+          await ensaioService.excluirEnsaio(ensaio.id);
+          await carregarDados();
+        } catch (err) {
+          Alert.alert(
+            'Erro',
+            err instanceof ApiError ? err.message : 'Não foi possível excluir o ensaio.',
+          );
+        } finally {
+          setExcluindoEnsaio(false);
+        }
+      },
+    );
+  }
+
+  function abrirParticipanteEnsaioModal() {
+    setParticipanteEnsaioPickerAberto(true);
+    garantirMembrosCarregados();
+  }
+
+  async function handleAdicionarParticipanteEnsaio(membro: Membro) {
+    if (!ensaio) return;
+
+    setParticipanteEnsaioPickerAberto(false);
+    setSalvandoParticipanteEnsaio(true);
+    try {
+      await ensaioService.adicionarParticipante(ensaio.id, membro.id);
+      await carregarDados();
+    } catch (err) {
+      Alert.alert(
+        'Erro',
+        err instanceof ApiError ? err.message : 'Não foi possível adicionar o participante.',
+      );
+    } finally {
+      setSalvandoParticipanteEnsaio(false);
+    }
+  }
+
+  // Convida de uma vez todo mundo já escalado no culto (fixa, vocal e avulsa) pro
+  // ensaio, sem precisar adicionar pessoa por pessoa. `equipe` só tem o nome (não o
+  // membro_id) — cruza com `todosMembrosAtivos` pra achar quem é quem, igual
+  // `membrosParaEscolher` já faz pra montar a lista de quem falta adicionar.
+  async function handleConvidarEquipeDoCulto() {
+    if (!ensaio) return;
+
+    setConvidandoEquipeEnsaio(true);
+    try {
+      const membros = await garantirMembrosCarregados();
+
+      const jaConvidados = new Set(ensaioParticipantes.map((p) => p.membro_id));
+      const nomesDaEquipe = new Set(equipe.map((item) => item.nome));
+      const membrosParaConvidar = membros.filter(
+        (m) => nomesDaEquipe.has(m.nome) && !jaConvidados.has(m.id),
+      );
+
+      if (membrosParaConvidar.length === 0) {
+        notifyAction('Ninguém pra convidar', 'Todo mundo da equipe já está no ensaio.');
+        return;
+      }
+
+      const resultados = await Promise.allSettled(
+        membrosParaConvidar.map((membro) =>
+          ensaioService.adicionarParticipante(ensaio.id, membro.id),
+        ),
+      );
+      await carregarDados();
+
+      const falhas = resultados.filter((r) => r.status === 'rejected').length;
+      const total = membrosParaConvidar.length;
+      if (falhas === 0) {
+        notifyAction(
+          'Equipe convidada',
+          `${total} membro${total > 1 ? 's' : ''} da equipe foram convidados pro ensaio.`,
+        );
+      } else {
+        notifyAction(
+          'Convidado com ressalvas',
+          `${total - falhas} de ${total} foram convidados. Os demais podem já estar no ensaio.`,
+        );
+      }
+    } catch (err) {
+      Alert.alert(
+        'Erro',
+        err instanceof ApiError ? err.message : 'Não foi possível convidar a equipe.',
+      );
+    } finally {
+      setConvidandoEquipeEnsaio(false);
+    }
+  }
+
+  function handleRemoverParticipanteEnsaio(participante: EnsaioParticipante) {
+    confirmAction(
+      {
+        title: 'Remover do ensaio',
+        message: `Remover "${participante.nome}" do ensaio?`,
+        confirmLabel: 'Remover',
+      },
+      async () => {
+        setAtualizandoParticipanteEnsaioId(participante.id);
+        try {
+          await ensaioService.removerParticipante(participante.id);
+          await carregarDados();
+        } catch (err) {
+          Alert.alert(
+            'Erro',
+            err instanceof ApiError ? err.message : 'Não foi possível remover o participante.',
+          );
+        } finally {
+          setAtualizandoParticipanteEnsaioId(null);
+        }
+      },
+    );
+  }
+
+  function handleRegistrarFaltaEnsaio(participante: EnsaioParticipante) {
+    confirmAction(
+      {
+        title: 'Registrar falta',
+        message: `Marcar falta de "${participante.nome}" no ensaio? Ele será notificado.`,
+        confirmLabel: 'Registrar falta',
+      },
+      async () => {
+        setAtualizandoParticipanteEnsaioId(participante.id);
+        try {
+          await ensaioService.registrarFaltaEnsaio(participante.id);
+          await carregarDados();
+        } catch (err) {
+          notifyAction(
+            'Erro',
+            err instanceof ApiError ? err.message : 'Não foi possível registrar a falta.',
+          );
+        } finally {
+          setAtualizandoParticipanteEnsaioId(null);
         }
       },
     );
@@ -546,6 +757,11 @@ export function DetalhesCultoScreen() {
   const equipeConfirmavel = equipe.filter((item) => item.status !== undefined);
   const totalConfirmados = equipeConfirmavel.filter((item) => item.status === 'confirmado').length;
 
+  const membrosParaEscolherEnsaio = todosMembrosAtivos.filter(
+    (m) => !ensaioParticipantes.some((p) => p.membro_id === m.id),
+  );
+  const ensaioConfirmados = ensaioParticipantes.filter((p) => p.status === 'confirmado').length;
+
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <Header title="Detalhes do Culto" showBack />
@@ -560,7 +776,9 @@ export function DetalhesCultoScreen() {
           <Text style={styles.hora}>{formatHora(culto.data_hora)}</Text>
           <View style={styles.tipoRow}>
             <Icon name="bookmark-outline" size={16} color={colors.textSecondary} />
-            <Text style={styles.tipo}>{culto.tipo ?? `Culto de ${formatDiaSemana(culto.data_hora)}`}</Text>
+            <Text style={styles.tipo}>
+              {culto.tipo ?? `Culto de ${formatDiaSemana(culto.data_hora)}`}
+            </Text>
           </View>
         </Card>
 
@@ -644,10 +862,7 @@ export function DetalhesCultoScreen() {
             contentContainerStyle={styles.equipeRow}
           >
             {equipe.map((membro) => {
-              const podeExcluir =
-                membro.origem === 'fixa'
-                  ? user?.papel === 'admin'
-                  : Boolean(user && podeGerir(user));
+              const podeExcluir = Boolean(user && podeGerir(user));
 
               return (
                 <View key={membro.chave} style={styles.membroAvatarBlock}>
@@ -667,8 +882,6 @@ export function DetalhesCultoScreen() {
                     <OptionsMenu
                       loading={excluindoEquipeChave === membro.chave}
                       actions={[
-                        // Registrar falta só faz sentido pra vocal/avulsa (têm status);
-                        // a ausência de fixa é tratada por "Remover" (vira exceção).
                         ...(membro.status && membro.status !== 'falta'
                           ? [
                               {
@@ -691,6 +904,132 @@ export function DetalhesCultoScreen() {
               );
             })}
           </ScrollView>
+        )}
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Ensaio</Text>
+          {!ensaio && user && podeGerir(user) && (
+            <TouchableOpacity
+              onPress={abrirEnsaioModal}
+              accessibilityRole="button"
+              accessibilityLabel="Criar ensaio"
+            >
+              <Icon name="add-circle-outline" size={22} color={colors.primary} />
+            </TouchableOpacity>
+          )}
+        </View>
+        {!ensaio ? (
+          <Card>
+            <Text style={styles.emptyText}>Nenhum ensaio marcado ainda.</Text>
+          </Card>
+        ) : (
+          <>
+            <Card style={styles.ensaioCard}>
+              <View style={styles.ensaioTopo}>
+                <View>
+                  <Text style={styles.ensaioData}>{formatDiaCompleto(ensaio.data_hora)}</Text>
+                  <Text style={styles.ensaioHora}>{formatHora(ensaio.data_hora)}</Text>
+                </View>
+                {user && podeGerir(user) && (
+                  <OptionsMenu
+                    loading={excluindoEnsaio}
+                    actions={[
+                      { label: 'Editar ensaio', icon: 'create-outline', onPress: abrirEnsaioModal },
+                      {
+                        label: 'Excluir ensaio',
+                        icon: 'trash-outline',
+                        destructive: true,
+                        onPress: handleExcluirEnsaio,
+                      },
+                    ]}
+                  />
+                )}
+              </View>
+              {ensaio.observacoes && (
+                <Text style={styles.ensaioObservacoes}>{ensaio.observacoes}</Text>
+              )}
+            </Card>
+
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionSubtitleTitulo}>Participantes</Text>
+              {user && podeGerir(user) && (
+                <TouchableOpacity
+                  onPress={abrirParticipanteEnsaioModal}
+                  accessibilityRole="button"
+                  accessibilityLabel="Adicionar participante ao ensaio"
+                >
+                  <Icon name="add-circle-outline" size={20} color={colors.primary} />
+                </TouchableOpacity>
+              )}
+            </View>
+            {equipe.length > 0 && user && podeGerir(user) && (
+              <TouchableOpacity
+                style={styles.adicionarRow}
+                onPress={handleConvidarEquipeDoCulto}
+                disabled={convidandoEquipeEnsaio}
+              >
+                {convidandoEquipeEnsaio ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <Icon name="people-outline" size={18} color={colors.primary} />
+                )}
+                <Text style={styles.adicionarTexto}>Convidar toda a equipe do culto</Text>
+              </TouchableOpacity>
+            )}
+            {ensaioParticipantes.length > 0 && (
+              <Text style={styles.sectionSubtitle}>
+                Confirmados {ensaioConfirmados} de {ensaioParticipantes.length}
+              </Text>
+            )}
+            {ensaioParticipantes.length === 0 ? (
+              <Card>
+                <Text style={styles.emptyText}>Ninguém convidado ainda.</Text>
+              </Card>
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.equipeRow}
+              >
+                {ensaioParticipantes.map((participante) => (
+                  <View key={participante.id} style={styles.membroAvatarBlock}>
+                    <View style={styles.avatar}>
+                      <Text style={styles.avatarText}>{participante.nome[0]}</Text>
+                    </View>
+                    <Text style={styles.membroNome} numberOfLines={1}>
+                      {participante.nome}
+                    </Text>
+                    <Badge
+                      label={statusLabel[participante.status]}
+                      tone={statusTone[participante.status]}
+                    />
+                    {user && podeGerir(user) && (
+                      <OptionsMenu
+                        loading={atualizandoParticipanteEnsaioId === participante.id}
+                        actions={[
+                          ...(participante.status !== 'falta'
+                            ? [
+                                {
+                                  label: 'Registrar falta',
+                                  icon: 'alert-circle-outline' as const,
+                                  onPress: () => handleRegistrarFaltaEnsaio(participante),
+                                },
+                              ]
+                            : []),
+                          {
+                            label: 'Remover do ensaio',
+                            icon: 'trash-outline' as const,
+                            destructive: true,
+                            onPress: () => handleRemoverParticipanteEnsaio(participante),
+                          },
+                        ]}
+                      />
+                    )}
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+          </>
         )}
 
         {user?.papel === 'admin' && (
@@ -940,10 +1279,7 @@ export function DetalhesCultoScreen() {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Adicionar à equipe</Text>
 
-            <TouchableOpacity
-              style={styles.modalInput}
-              onPress={() => setMembroPickerAberto(true)}
-            >
+            <TouchableOpacity style={styles.modalInput} onPress={() => setMembroPickerAberto(true)}>
               <Text style={novoMembroEquipe ? styles.modalTextInput : styles.modalPlaceholder}>
                 {novoMembroEquipe ? novoMembroEquipe.nome : 'Selecionar membro'}
               </Text>
@@ -999,7 +1335,11 @@ export function DetalhesCultoScreen() {
                 )}
               </ScrollView>
             )}
-            <Button title="Cancelar" variant="outline" onPress={() => setMembroPickerAberto(false)} />
+            <Button
+              title="Cancelar"
+              variant="outline"
+              onPress={() => setMembroPickerAberto(false)}
+            />
           </View>
         </View>
       </Modal>
@@ -1037,341 +1377,503 @@ export function DetalhesCultoScreen() {
           </View>
         </View>
       </Modal>
+
+      <Modal
+        visible={ensaioModalAberto}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setEnsaioModalAberto(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContentEnsaio}>
+            <Text style={styles.modalTitle}>{ensaio ? 'Editar ensaio' : 'Novo ensaio'}</Text>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text style={styles.formLabel}>Dia</Text>
+              <Calendar
+                // `react-native-calendars` não reage bem a mudança de tema via prop depois de
+                // montado — forçar remount na troca de modo garante que a paleta nova aplique.
+                key={modo}
+                current={ensaioData ?? undefined}
+                markedDates={
+                  ensaioData
+                    ? { [ensaioData]: { selected: true, selectedColor: colors.primary } }
+                    : {}
+                }
+                onDayPress={(day: DateData) => setEnsaioData(day.dateString)}
+                theme={{
+                  backgroundColor: colors.surface,
+                  calendarBackground: colors.surface,
+                  textSectionTitleColor: colors.textSecondary,
+                  selectedDayBackgroundColor: colors.primary,
+                  selectedDayTextColor: colors.textInverse,
+                  todayTextColor: colors.primary,
+                  dayTextColor: colors.text,
+                  textDisabledColor: colors.textMuted,
+                  monthTextColor: colors.text,
+                  arrowColor: colors.primary,
+                }}
+                style={styles.calendar}
+              />
+
+              <Text style={styles.formLabel}>Horário</Text>
+              <View style={styles.modalInput}>
+                <EntradaHorario
+                  style={styles.modalTextInput}
+                  placeholder="19:00"
+                  placeholderTextColor={colors.textMuted}
+                  value={ensaioHora}
+                  onChangeText={setEnsaioHora}
+                />
+              </View>
+
+              <Text style={styles.formLabel}>Observações (opcional)</Text>
+              <View style={styles.modalInput}>
+                <TextInput
+                  style={styles.modalTextInput}
+                  placeholder="Ex: levar instrumento, foco no repertório novo"
+                  placeholderTextColor={colors.textMuted}
+                  value={ensaioObservacoes}
+                  onChangeText={setEnsaioObservacoes}
+                />
+              </View>
+            </ScrollView>
+
+            <Button
+              title={ensaio ? 'Salvar alterações' : 'Criar ensaio'}
+              onPress={handleSalvarEnsaio}
+              loading={salvandoEnsaio}
+              style={styles.modalButton}
+            />
+            <Button
+              title="Cancelar"
+              variant="outline"
+              onPress={() => setEnsaioModalAberto(false)}
+              disabled={salvandoEnsaio}
+              style={styles.modalButton}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={participanteEnsaioPickerAberto}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setParticipanteEnsaioPickerAberto(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContentPicker}>
+            <Text style={styles.modalTitle}>Convidar pro ensaio</Text>
+            {carregandoMembros ? (
+              <ActivityIndicator color={colors.primary} style={styles.modalLoading} />
+            ) : (
+              <ScrollView style={styles.modalList}>
+                {membrosParaEscolherEnsaio.length === 0 ? (
+                  <Text style={styles.emptyText}>Nenhum membro disponível.</Text>
+                ) : (
+                  membrosParaEscolherEnsaio.map((membro) => (
+                    <TouchableOpacity
+                      key={membro.id}
+                      style={styles.modalItem}
+                      onPress={() => handleAdicionarParticipanteEnsaio(membro)}
+                    >
+                      <Text style={styles.modalItemText}>{membro.nome}</Text>
+                      <Icon name="chevron-forward" size={18} color={colors.textMuted} />
+                    </TouchableOpacity>
+                  ))
+                )}
+              </ScrollView>
+            )}
+            <Button
+              title="Cancelar"
+              variant="outline"
+              onPress={() => setParticipanteEnsaioPickerAberto(false)}
+              disabled={salvandoParticipanteEnsaio}
+            />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
-const criarEstilos = (colors: Cores) => StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  centered: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-  },
-  errorText: {
-    ...typography.body,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  retryButton: {
-    minWidth: 200,
-  },
-  scroll: {
-    flex: 1,
-  },
-  content: {
-    width: '100%',
-    maxWidth: LARGURA_CONTEUDO,
-    alignSelf: 'center',
-    padding: spacing.lg,
-    paddingTop: spacing.sm,
-    gap: spacing.md,
-  },
-  data: {
-    ...typography.h2,
-    color: colors.text,
-  },
-  hora: {
-    ...typography.h1,
-    color: colors.primary,
-    marginTop: 2,
-  },
-  tipoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: spacing.sm,
-  },
-  tipo: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  sectionTitle: {
-    ...typography.h3,
-    color: colors.text,
-  },
-  sectionSubtitle: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginBottom: spacing.sm,
-  },
-  vocalRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  vocalNumero: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  vocalNumeroText: {
-    ...typography.caption,
-    color: colors.textInverse,
-    fontWeight: '700',
-  },
-  vocalNome: {
-    ...typography.body,
-    color: colors.text,
-    flex: 1,
-  },
-  vocalData: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-  },
-  vocalAcoes: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  adicionarRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingTop: spacing.xs,
-  },
-  adicionarTexto: {
-    ...typography.bodySmall,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  vocalBotoes: {
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  emptyText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-  },
-  listCard: {
-    gap: spacing.sm,
-  },
-  musicaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  musicaNumero: {
-    ...typography.caption,
-    color: colors.textMuted,
-    width: 20,
-  },
-  musicaNome: {
-    ...typography.body,
-    color: colors.text,
-    flex: 1,
-  },
-  tomBadge: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    paddingHorizontal: 0,
-    paddingVertical: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tomBadgeText: {
-    fontSize: 14,
-  },
-  equipeRow: {
-    gap: spacing.md,
-  },
-  membroAvatarBlock: {
-    alignItems: 'center',
-    width: 72,
-    gap: 4,
-  },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.surfaceElevated,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    ...typography.body,
-    color: colors.primary,
-    fontWeight: '700',
-  },
-  membroNome: {
-    ...typography.caption,
-    color: colors.text,
-  },
-  membroFuncao: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  suaFuncaoCard: {
-    borderColor: colors.primary,
-  },
-  suaFuncaoLabel: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  suaFuncaoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginTop: 4,
-  },
-  suaFuncaoValor: {
-    ...typography.h3,
-    color: colors.text,
-  },
-  comentarioItem: {
-    gap: 2,
-  },
-  comentarioCabecalho: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  comentarioAutor: {
-    ...typography.bodySmall,
-    color: colors.text,
-    fontWeight: '600',
-  },
-  comentarioHora: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  comentarioTexto: {
-    ...typography.body,
-    color: colors.textSecondary,
-  },
-  comentarioInputRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: spacing.sm,
-  },
-  comentarioInput: {
-    flex: 1,
-    ...typography.body,
-    color: colors.text,
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    minHeight: 48,
-    maxHeight: 120,
-    ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null),
-  },
-  comentarioEnviar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  comentarioEnviarOff: {
-    opacity: 0.5,
-  },
-  historicoItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-  },
-  historicoDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.primary,
-    marginTop: 6,
-  },
-  historicoTexto: {
-    ...typography.bodySmall,
-    color: colors.text,
-  },
-  historicoHora: {
-    ...typography.caption,
-    color: colors.textMuted,
-    marginTop: 1,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
-  modalTitle: {
-    ...typography.h3,
-    color: colors.text,
-  },
-  modalInput: {
-    backgroundColor: colors.background,
-    borderRadius: 14,
-    paddingHorizontal: spacing.md,
-    height: 56,
-    borderWidth: 1,
-    borderColor: colors.border,
-    justifyContent: 'center',
-  },
-  modalTextInput: {
-    ...typography.body,
-    color: colors.text,
-    ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null),
-  },
-  modalPlaceholder: {
-    ...typography.body,
-    color: colors.textMuted,
-  },
-  linkDica: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginTop: -spacing.xs,
-  },
-  modalButton: {
-    marginTop: spacing.xs,
-  },
-  modalContentPicker: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: spacing.lg,
-    gap: spacing.md,
-    maxHeight: '70%',
-  },
-  modalLoading: {
-    marginVertical: spacing.lg,
-  },
-  modalList: {
-    maxHeight: 320,
-  },
-  modalItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  modalItemText: {
-    ...typography.body,
-    color: colors.text,
-  },
-  modalItemSubtext: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-});
+const criarEstilos = (colors: Cores) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    centered: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.md,
+      paddingHorizontal: spacing.lg,
+    },
+    errorText: {
+      ...typography.body,
+      color: colors.textSecondary,
+      textAlign: 'center',
+    },
+    retryButton: {
+      minWidth: 200,
+    },
+    scroll: {
+      flex: 1,
+    },
+    content: {
+      width: '100%',
+      maxWidth: LARGURA_CONTEUDO,
+      alignSelf: 'center',
+      padding: spacing.lg,
+      paddingTop: spacing.sm,
+      gap: spacing.md,
+    },
+    data: {
+      ...typography.h2,
+      color: colors.text,
+    },
+    hora: {
+      ...typography.h1,
+      color: colors.primary,
+      marginTop: 2,
+    },
+    tipoRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginTop: spacing.sm,
+    },
+    tipo: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    sectionTitle: {
+      ...typography.h3,
+      color: colors.text,
+    },
+    sectionSubtitle: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      marginBottom: spacing.sm,
+    },
+    sectionSubtitleTitulo: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+      fontWeight: '600',
+    },
+    ensaioCard: {
+      gap: spacing.xs,
+    },
+    ensaioTopo: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+    },
+    ensaioData: {
+      ...typography.body,
+      color: colors.text,
+      fontWeight: '600',
+    },
+    ensaioHora: {
+      ...typography.h3,
+      color: colors.primary,
+    },
+    ensaioObservacoes: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+    },
+    formLabel: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      marginBottom: spacing.xs,
+      marginTop: spacing.sm,
+    },
+    calendar: {
+      borderRadius: 14,
+      overflow: 'hidden',
+    },
+    vocalRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    vocalNumero: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    vocalNumeroText: {
+      ...typography.caption,
+      color: colors.textInverse,
+      fontWeight: '700',
+    },
+    vocalNome: {
+      ...typography.body,
+      color: colors.text,
+      flex: 1,
+    },
+    vocalData: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+    },
+    vocalAcoes: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    adicionarRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingTop: spacing.xs,
+    },
+    adicionarTexto: {
+      ...typography.bodySmall,
+      color: colors.primary,
+      fontWeight: '600',
+    },
+    vocalBotoes: {
+      gap: spacing.sm,
+      marginTop: spacing.sm,
+    },
+    emptyText: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+    },
+    listCard: {
+      gap: spacing.sm,
+    },
+    musicaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    musicaNumero: {
+      ...typography.caption,
+      color: colors.textMuted,
+      width: 20,
+    },
+    musicaNome: {
+      ...typography.body,
+      color: colors.text,
+      flex: 1,
+    },
+    tomBadge: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      paddingHorizontal: 0,
+      paddingVertical: 0,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    tomBadgeText: {
+      fontSize: 14,
+    },
+    equipeRow: {
+      gap: spacing.md,
+    },
+    membroAvatarBlock: {
+      alignItems: 'center',
+      width: 72,
+      gap: 4,
+    },
+    avatar: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: colors.surfaceElevated,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    avatarText: {
+      ...typography.body,
+      color: colors.primary,
+      fontWeight: '700',
+    },
+    membroNome: {
+      ...typography.caption,
+      color: colors.text,
+    },
+    membroFuncao: {
+      ...typography.caption,
+      color: colors.textMuted,
+    },
+    suaFuncaoCard: {
+      borderColor: colors.primary,
+    },
+    suaFuncaoLabel: {
+      ...typography.caption,
+      color: colors.textSecondary,
+    },
+    suaFuncaoRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      marginTop: 4,
+    },
+    suaFuncaoValor: {
+      ...typography.h3,
+      color: colors.text,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      justifyContent: 'flex-end',
+    },
+    modalContent: {
+      backgroundColor: colors.surface,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      padding: spacing.lg,
+      gap: spacing.md,
+    },
+    modalTitle: {
+      ...typography.h3,
+      color: colors.text,
+    },
+    modalInput: {
+      backgroundColor: colors.background,
+      borderRadius: 14,
+      paddingHorizontal: spacing.md,
+      height: 56,
+      borderWidth: 1,
+      borderColor: colors.border,
+      justifyContent: 'center',
+    },
+    modalTextInput: {
+      ...typography.body,
+      color: colors.text,
+      ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null),
+    },
+    modalPlaceholder: {
+      ...typography.body,
+      color: colors.textMuted,
+    },
+    linkDica: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      marginTop: -spacing.xs,
+    },
+    modalButton: {
+      marginTop: spacing.xs,
+    },
+    modalContentPicker: {
+      backgroundColor: colors.surface,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      padding: spacing.lg,
+      gap: spacing.md,
+      maxHeight: '70%',
+    },
+    modalContentEnsaio: {
+      backgroundColor: colors.surface,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      padding: spacing.lg,
+      gap: spacing.md,
+      maxHeight: '85%',
+    },
+    modalLoading: {
+      marginVertical: spacing.lg,
+    },
+    modalList: {
+      maxHeight: 320,
+    },
+    modalItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    modalItemText: {
+      ...typography.body,
+      color: colors.text,
+    },
+    modalItemSubtext: {
+      ...typography.caption,
+      color: colors.textMuted,
+    },
+    comentarioItem: {
+      gap: 2,
+    },
+    comentarioCabecalho: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    comentarioAutor: {
+      ...typography.bodySmall,
+      color: colors.text,
+      fontWeight: '600',
+    },
+    comentarioHora: {
+      ...typography.caption,
+      color: colors.textMuted,
+    },
+    comentarioTexto: {
+      ...typography.body,
+      color: colors.textSecondary,
+    },
+    comentarioInputRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      gap: spacing.sm,
+    },
+    comentarioInput: {
+      flex: 1,
+      ...typography.body,
+      color: colors.text,
+      backgroundColor: colors.surface,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      minHeight: 48,
+      maxHeight: 120,
+      ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null),
+    },
+    comentarioEnviar: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    comentarioEnviarOff: {
+      opacity: 0.5,
+    },
+    historicoItem: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.sm,
+    },
+    historicoDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: colors.primary,
+      marginTop: 6,
+    },
+    historicoTexto: {
+      ...typography.bodySmall,
+      color: colors.text,
+    },
+    historicoHora: {
+      ...typography.caption,
+      color: colors.textMuted,
+      marginTop: 1,
+    },
+  });

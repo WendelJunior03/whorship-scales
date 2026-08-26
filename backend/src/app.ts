@@ -2,8 +2,6 @@ import express from 'express'
 import "dotenv/config"
 import cors from 'cors'
 import membroRoutes from './routes/membroRoutes';
-import escalaFixaRoutes from './routes/escalaFixaRoutes'
-import excecoesRoutes from './routes/excecoesRoutes'
 import escalaVocalRoutes from './routes/escalaVocalRoutes'
 import repertorioRoutes from './routes/repertorioRoutes'
 import cultoRoutes from './routes/cultoRoutes'
@@ -13,6 +11,7 @@ import organizacaoRoutes from './routes/organizacaoRoutes'
 import musicaRoutes from './routes/musicaRoutes'
 import videoRoutes from './routes/videoRoutes'
 import ministerioRoutes from './routes/ministerioRoutes'
+import ensaioRoutes from './routes/ensaioRoutes'
 import comentarioRoutes from './routes/comentarioRoutes'
 import historicoRoutes from './routes/historicoRoutes'
 
@@ -32,8 +31,6 @@ app.use(express.json());
 
 app.use('/organizacoes', organizacaoRoutes)
 app.use('/membros', membroRoutes)
-app.use('/escala-fixa', escalaFixaRoutes)
-app.use('/excecoes', excecoesRoutes)
 app.use('/escala-vocal', escalaVocalRoutes)
 app.use('/repertorio', repertorioRoutes)
 app.use('/cultos', cultoRoutes)
@@ -42,6 +39,7 @@ app.use('/notificacoes', notificacaoRoutes)
 app.use('/musicas', musicaRoutes)
 app.use('/videos', videoRoutes)
 app.use('/ministerios', ministerioRoutes)
+app.use('/ensaios', ensaioRoutes)
 app.use('/comentarios', comentarioRoutes)
 app.use('/historico', historicoRoutes)
 
