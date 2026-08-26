@@ -23,7 +23,8 @@ type RotaRecurso =
   | 'Ministerio'
   | 'Confirmacoes'
   | 'PanoramaEscalas'
-  | 'Indisponibilidades';
+  | 'Indisponibilidades'
+  | 'Aniversariantes';
 
 interface ItemRecurso {
   icon: IconName;
@@ -46,6 +47,12 @@ const PESSOAL: ItemRecurso[] = [
     label: 'Indisponibilidades',
     sublabel: 'Datas que não posso servir',
     route: 'Indisponibilidades',
+  },
+  {
+    icon: 'gift-outline',
+    label: 'Aniversariantes',
+    sublabel: 'Aniversários do mês',
+    route: 'Aniversariantes',
   },
 ];
 

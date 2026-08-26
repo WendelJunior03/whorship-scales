@@ -2,14 +2,28 @@ import bcrypt from 'bcrypt';
 import { query } from '../config/database';
 import { Request, Response } from 'express';
 import { createMembers, deactivateMember } from '../models/membroModel';
-import { findByEmail, findById, findAllMembers, updateMember, findByIdComSenha, updatePassword } from '../models/membroModel';
+import { findByEmail, findById, findAllMembers, updateMember, findByIdComSenha, updatePassword, findAniversariantesDoMes } from '../models/membroModel';
 import { assinarTokenMembro, assinarTokenResetSenha, verificarTokenResetSenha } from '../utils/token';
 import { podeAcessar, mesmoUsuario, PapelOrg, PapelMinisterio } from '../config/capacidades';
 import { enviarEmail } from '../services/emailService';
 
 
+const DATA_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Valida `dataNascimento` (campo opcional). `undefined`/vazio -> null;
+ * string fora do formato YYYY-MM-DD -> erro.
+ */
+function parseDataNascimento(valor: unknown): { erro: string } | { valor: string | null } {
+    if (valor === undefined || valor === null || valor === '') return { valor: null };
+    if (typeof valor !== 'string' || !DATA_RE.test(valor)) {
+        return { erro: 'dataNascimento deve estar no formato YYYY-MM-DD!' };
+    }
+    return { valor };
+}
+
 export async function cadastrarUser(req: Request, res: Response) {
-    const {name, email, passwordUser, papelOrg, papelMinisterio, instruments, phone} = req.body
+    const {name, email, passwordUser, papelOrg, papelMinisterio, instruments, phone, dataNascimento} = req.body
 
     if (!req.orgId) {
         return res.status(401).json({message: 'Não autenticado!'})
@@ -20,11 +34,15 @@ export async function cadastrarUser(req: Request, res: Response) {
         return res.status(400).json({message: 'Email duplicado'})
     }
 
+    const nascimento = parseDataNascimento(dataNascimento);
+    if ('erro' in nascimento) {
+        return res.status(400).json({ message: nascimento.erro });
+    }
 
     const hashPassword = await bcrypt.hash(passwordUser, 10)
 
     // Novo membro nasce na organização do admin que o cadastra.
-    await createMembers (name, phone, instruments ?? [], email, (papelOrg as PapelOrg) ?? 'membro', (papelMinisterio as PapelMinisterio) ?? null, hashPassword, req.orgId);
+    await createMembers (name, phone, instruments ?? [], email, (papelOrg as PapelOrg) ?? 'membro', (papelMinisterio as PapelMinisterio) ?? null, hashPassword, req.orgId, nascimento.valor);
 
     return res.status(201).json({message: 'Usuario cadastrado com sucesso!'})
 }
@@ -70,6 +88,26 @@ export async function listAllMembers(req: Request, res: Response) {
     return res.status(200).json(membros);
 }
 
+/** GET /membros/aniversariantes?mes=&ministerioId= — T-11.25. `mes` (1-12) default = mês atual. */
+export async function listarAniversariantesController(req: Request, res: Response) {
+    if (!req.user) {
+        return res.status(401).json({ message: 'Não autenticado!' })
+    }
+
+    const mesParam = Number(req.query.mes);
+    const mes = Number.isInteger(mesParam) && mesParam >= 1 && mesParam <= 12
+        ? mesParam
+        : new Date().getMonth() + 1;
+
+    const ministerioIdParam = Number(req.query.ministerioId);
+    const ministerioId = Number.isInteger(ministerioIdParam) && ministerioIdParam > 0
+        ? ministerioIdParam
+        : undefined;
+
+    const aniversariantes = await findAniversariantesDoMes(mes, ministerioId);
+    return res.status(200).json(aniversariantes);
+}
+
 export async function getMemberById(req: Request, res: Response) {
     const id = Number(req.params.id);
 
@@ -93,10 +131,15 @@ export async function getMemberById(req: Request, res: Response) {
 
 export async function updateMemberController (req: Request, res: Response) {
     const id = Number(req.params.id);
-    const {name, phone, instruments, email, papelOrg, papelMinisterio} = req.body;
+    const {name, phone, instruments, email, papelOrg, papelMinisterio, dataNascimento} = req.body;
 
     if ( !req.user ) {
         return res.status(401).json({message: 'Não autenticado!'})
+    }
+
+    const nascimento = parseDataNascimento(dataNascimento);
+    if ('erro' in nascimento) {
+        return res.status(400).json({ message: nascimento.erro });
     }
 
     const usuario = { papelOrg: req.user.papel_org, papelMinisterio: req.user.papel_ministerio ?? null };
@@ -143,7 +186,7 @@ export async function updateMemberController (req: Request, res: Response) {
         }
     }
 
-    await updateMember(id, name, phone, instruments, email, papelOrgEfetivo, papelMinisterioEfetivo);
+    await updateMember(id, name, phone, instruments, email, papelOrgEfetivo, papelMinisterioEfetivo, nascimento.valor);
 
     return res.status(200).json({message: 'Alterações realizadas com sucesso!'})
 }

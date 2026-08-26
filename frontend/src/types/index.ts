@@ -56,6 +56,15 @@ export interface Membro {
   papel_ministerio?: PapelMinisterio | null;
   instrumentos: string[];
   ativo?: boolean;
+  /** Opcional — usada pelo módulo de Aniversariantes (spec 11, módulo 8). */
+  data_nascimento?: string | null;
+}
+
+/** Formato de cada item de GET /membros/aniversariantes (módulo 8). */
+export interface Aniversariante {
+  id: number;
+  nome: string;
+  data_nascimento: string;
 }
 
 export interface Culto {

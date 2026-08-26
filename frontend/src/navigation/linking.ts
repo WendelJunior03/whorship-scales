@@ -32,6 +32,7 @@ export const linking: LinkingOptions<LinkingParamList> = {
       Membros: 'membros',
       DetalheMembro: 'membros/:membroId?',
       Indisponibilidades: 'indisponibilidades',
+      Aniversariantes: 'aniversariantes',
     },
   },
 };

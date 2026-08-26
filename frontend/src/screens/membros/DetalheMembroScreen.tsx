@@ -10,10 +10,12 @@ import {
   View,
 } from 'react-native';
 import { Icon } from '@/components/Icon';
+import { Calendar, DateData } from 'react-native-calendars';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
 import { Header } from '@/components/Header';
 import { Input } from '@/components/Input';
 import { SeletorInstrumentos } from '@/components/SeletorInstrumentos';
@@ -36,8 +38,14 @@ function labelPapelMinisterio(papel: PapelMinisterio | null): string {
   return papel ? papelMinisterioLabel[papel] : 'Nenhum';
 }
 
+/** "YYYY-MM-DD" -> "DD/MM/AAAA", parseando local (sem fuso) igual às outras telas com Calendar. */
+function formatDataCurta(iso: string): string {
+  const [ano, mes, dia] = iso.split('-');
+  return `${dia}/${mes}/${ano}`;
+}
+
 export function DetalheMembroScreen() {
-  const { colors } = useTheme();
+  const { colors, modo } = useTheme();
   const styles = useThemedStyles(criarEstilos);
   const route = useRoute<RouteProp<MainStackParamList, 'DetalheMembro'>>();
   const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();
@@ -55,6 +63,8 @@ export function DetalheMembroScreen() {
   const [papelPickerAberto, setPapelPickerAberto] = useState(false);
   const [papelMinisterio, setPapelMinisterio] = useState<PapelMinisterio | null>(null);
   const [papelMinisterioPickerAberto, setPapelMinisterioPickerAberto] = useState(false);
+  const [dataNascimento, setDataNascimento] = useState<string | null>(null);
+  const [dataNascimentoPickerAberto, setDataNascimentoPickerAberto] = useState(false);
 
   const [isLoading, setIsLoading] = useState(!isNovo);
   const [isSaving, setIsSaving] = useState(false);
@@ -73,6 +83,7 @@ export function DetalheMembroScreen() {
       setInstrumentos(membro.instrumentos ?? []);
       if (membro.papel_org) setPapelOrg(membro.papel_org);
       setPapelMinisterio(membro.papel_ministerio ?? null);
+      setDataNascimento(membro.data_nascimento ?? null);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Não foi possível carregar o membro.');
     } finally {
@@ -106,6 +117,7 @@ export function DetalheMembroScreen() {
           papelMinisterio,
           instruments: instrumentos,
           phone: telefone.trim(),
+          dataNascimento,
         });
         Alert.alert(
           'Membro cadastrado',
@@ -117,6 +129,7 @@ export function DetalheMembroScreen() {
           phone: telefone.trim(),
           instruments: instrumentos,
           email: email.trim(),
+          dataNascimento,
           // só manda papelOrg/papelMinisterio se quem edita é admin — o back-end
           // rejeita a troca de papel de qualquer outra pessoa, mesmo que seja o
           // valor atual, então nem vale a pena mandar nesse caso.
@@ -223,6 +236,15 @@ export function DetalheMembroScreen() {
           />
           <Text style={styles.label}>Instrumentos/funções</Text>
           <SeletorInstrumentos selecionados={instrumentos} onChange={setInstrumentos} />
+
+          <Text style={styles.label}>Data de nascimento (opcional)</Text>
+          <TouchableOpacity style={styles.selector} onPress={() => setDataNascimentoPickerAberto(true)}>
+            <Icon name="gift-outline" size={20} color={colors.textSecondary} />
+            <Text style={styles.selectorText}>
+              {dataNascimento ? formatDataCurta(dataNascimento) : 'Não informado'}
+            </Text>
+            <Icon name="chevron-forward" size={18} color={colors.textMuted} />
+          </TouchableOpacity>
 
           {isNovo && (
             <Input
@@ -340,6 +362,64 @@ export function DetalheMembroScreen() {
           </View>
         </View>
       </Modal>
+
+      <Modal
+        visible={dataNascimentoPickerAberto}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setDataNascimentoPickerAberto(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Data de nascimento</Text>
+            <Card style={styles.calendarCard}>
+              <Calendar
+                key={modo}
+                current={dataNascimento ?? undefined}
+                markedDates={
+                  dataNascimento
+                    ? { [dataNascimento]: { selected: true, selectedColor: colors.primary } }
+                    : {}
+                }
+                maxDate={new Date().toISOString().slice(0, 10)}
+                onDayPress={(day: DateData) => {
+                  setDataNascimento(day.dateString);
+                  setDataNascimentoPickerAberto(false);
+                }}
+                theme={{
+                  backgroundColor: colors.surface,
+                  calendarBackground: colors.surface,
+                  textSectionTitleColor: colors.textSecondary,
+                  selectedDayBackgroundColor: colors.primary,
+                  selectedDayTextColor: colors.textInverse,
+                  todayTextColor: colors.primary,
+                  dayTextColor: colors.text,
+                  textDisabledColor: colors.textMuted,
+                  monthTextColor: colors.text,
+                  arrowColor: colors.primary,
+                }}
+              />
+            </Card>
+            {dataNascimento && (
+              <Button
+                title="Limpar data"
+                variant="outline"
+                onPress={() => {
+                  setDataNascimento(null);
+                  setDataNascimentoPickerAberto(false);
+                }}
+                style={styles.modalCancelButton}
+              />
+            )}
+            <Button
+              title="Cancelar"
+              variant="outline"
+              onPress={() => setDataNascimentoPickerAberto(false)}
+              style={styles.modalCancelButton}
+            />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -451,5 +531,9 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
   },
   modalCancelButton: {
     marginTop: spacing.sm,
+  },
+  calendarCard: {
+    padding: 0,
+    overflow: 'hidden',
   },
 });

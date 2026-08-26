@@ -19,14 +19,15 @@ export async function createMembers(
     papelMinisterio: PapelMinisterio | null,
     password: string,
     orgId: number,
+    dataNascimento: string | null = null,
     client?: PoolClient) {
 
     // Papel legado (coluna `papel`) é só um reflexo dos dois eixos reais agora — ver
     // `derivarPapelLegado` sobre por que ele ainda existe.
     const papelLegado = derivarPapelLegado(papelOrg, papelMinisterio);
 
-    const sql = 'INSERT INTO membros (nome, telefone, instrumentos, email, papel, papel_org, papel_ministerio, senha, org_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *';
-    const params = [name, phone, instruments, email, papelLegado, papelOrg, papelMinisterio, password, orgId];
+    const sql = 'INSERT INTO membros (nome, telefone, instrumentos, email, papel, papel_org, papel_ministerio, senha, org_id, data_nascimento) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *';
+    const params = [name, phone, instruments, email, papelLegado, papelOrg, papelMinisterio, password, orgId, dataNascimento];
     const result = client ? await client.query(sql, params) : await query(sql, params);
 
     return result.rows[0];
@@ -42,12 +43,12 @@ export async function findByEmail(email: string) {
 }
 
 export async function findById(id: number) {
-    const membro = await query('SELECT id, nome, telefone, instrumentos, email, papel, papel_org, papel_ministerio FROM membros WHERE ativo = true AND id = $1', [id])
+    const membro = await query('SELECT id, nome, telefone, instrumentos, email, papel, papel_org, papel_ministerio, data_nascimento FROM membros WHERE ativo = true AND id = $1', [id])
     return membro.rows[0];
 }
 
 export async function findAllMembers() {
-    const membros = await query('SELECT id, nome, telefone, instrumentos, email, papel, papel_org, papel_ministerio FROM membros WHERE ativo = true');
+    const membros = await query('SELECT id, nome, telefone, instrumentos, email, papel, papel_org, papel_ministerio, data_nascimento FROM membros WHERE ativo = true');
     return membros.rows;
 }
 
@@ -59,16 +60,43 @@ export async function updateMember(
     email: string,
     papelOrg: PapelOrg,
     papelMinisterio: PapelMinisterio | null,
+    dataNascimento: string | null,
 ) {
     // `papelMinisterio` é sempre recalculado a partir dos instrumentos (também quando
     // quem edita não é admin) — só `papelOrg` exige a capacidade `membro.papel.alterar`,
     // já validada no controller antes de chegar aqui.
     const papelLegado = derivarPapelLegado(papelOrg, papelMinisterio);
     const alteracoes = await query(
-        'UPDATE membros SET nome = $1, telefone = $2, instrumentos = $3, email = $4, papel = $5, papel_org = $6, papel_ministerio = $7 WHERE id = $8 RETURNING *',
-        [name, phone, instruments, email, papelLegado, papelOrg, papelMinisterio, id],
+        'UPDATE membros SET nome = $1, telefone = $2, instrumentos = $3, email = $4, papel = $5, papel_org = $6, papel_ministerio = $7, data_nascimento = $8 WHERE id = $9 RETURNING *',
+        [name, phone, instruments, email, papelLegado, papelOrg, papelMinisterio, dataNascimento, id],
     );
     return alteracoes.rows[0];
+}
+
+/**
+ * Aniversariantes do mês (ativos, `data_nascimento` preenchida). `mes` é 1-12.
+ * `ministerioId` opcional filtra só quem está naquele ministério (T-11.25).
+ * Ordenado pelo dia do mês, não pelo ano de nascimento.
+ */
+export async function findAniversariantesDoMes(mes: number, ministerioId?: number) {
+    const params: (number)[] = [mes];
+    let filtroMinisterio = '';
+    if (ministerioId) {
+        params.push(ministerioId);
+        filtroMinisterio = `AND membros.id IN (
+            SELECT membro_id FROM ministerio_membros WHERE ministerio_id = $${params.length}
+        )`;
+    }
+    const result = await query(
+        `SELECT id, nome, data_nascimento
+           FROM membros
+          WHERE ativo = true AND data_nascimento IS NOT NULL
+            AND EXTRACT(MONTH FROM data_nascimento) = $1
+            ${filtroMinisterio}
+          ORDER BY EXTRACT(DAY FROM data_nascimento) ASC`,
+        params,
+    );
+    return result.rows;
 }
 
 export async function deactivateMember(id: number, ative: boolean) {
