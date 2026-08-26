@@ -146,6 +146,19 @@ export interface Repertorio {
   link_musica: string;
 }
 
+/** Item do roteiro/setlist cronometrado de um culto (spec 11, módulo 3). */
+export interface RoteiroItem {
+  id: number;
+  culto_id: number;
+  ordem: number;
+  tipo: 'musica' | 'momento';
+  musica_id: number | null;
+  titulo: string | null;
+  duracao_seg: number | null;
+  tom: string | null;
+  link_musica: string | null;
+}
+
 // --- Panorama de escalas (spec 11, módulo 6) ---
 
 export interface PanoramaMembro {

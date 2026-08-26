@@ -221,9 +221,18 @@ roteiro_itens
 > por culto). Migrar itens de `repertorio` para `roteiro_itens` (tipo='musica').
 
 **Tarefas:**
-- [ ] **T-11.9** — Migration `roteiro_itens` + migração dos dados de `repertorio`.
-- [ ] **T-11.10** — CRUD do roteiro (ordenar, definir tom/duração por culto) + soma de tempo.
-- [ ] **T-11.11** — UI: aba Roteiro (lista ordenável com duração e total) e aba Músicas (tom + YouTube).
+- [x] **T-11.9** — ✅ Migration `1788000000000_roteiro-itens-modulo3.sql`: `roteiro_itens`
+  (org_id, culto_id, ordem, tipo `musica`|`momento`, musica_id, titulo, duracao_seg, tom,
+  `link_musica` [extensão], created_at) com RLS por org. **Seed** a partir do `repertorio`
+  (cada música vira um item de roteiro na ordem).
+- [x] **T-11.10** — ✅ CRUD (`roteiroModel`/`Controller`/`Routes` em `/roteiro`, `autoriza
+  repertorio.gerenciar`): listar, criar (música/momento, ao fim), atualizar (título/tom/
+  duração), remover, **reordenar** (`PUT /roteiro/culto/:id/ordem`). Soma de tempo no cliente.
+- [x] **T-11.11** — ✅ Seção **Roteiro** na `DetalhesCultoScreen`: lista ordenada com nº,
+  título (+tom), duração (mm:ss) e **total**; admin move ↑/↓, edita e remove; modal de
+  adicionar (música/momento). **Músicas** = a seção **Repertório** que já existe (tom + link).
+  *(decisão: roteiro coexiste com o repertório — Músicas=repertorio, Roteiro=roteiro_itens
+  semeado dele — em vez de substituição total, menos invasivo e reversível.)*
 
 ---
 
