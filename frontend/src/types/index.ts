@@ -64,6 +64,17 @@ export interface Culto {
   tipo: string | null;
 }
 
+/** Culto com resumo para a lista de Escalas (mockup: avatares, status, contagens). */
+export interface CultoResumo {
+  id: number;
+  data_hora: string;
+  tipo: string | null;
+  total_musicas: number;
+  total_comentarios: number;
+  participantes: { membro_id: number; nome: string }[];
+  minha_situacao: 'confirmado' | 'pendente' | null;
+}
+
 // --- Ministérios (spec 11, módulo 1) ---
 
 export type PapelNoMinisterio = 'administrador' | 'membro';

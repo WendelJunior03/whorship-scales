@@ -1,9 +1,18 @@
 import { api } from './api';
-import { Culto } from '@/types';
+import { Culto, CultoResumo } from '@/types';
 
 export interface CriarCultoInput {
   dataHora: string;
   tipo?: string | null;
+}
+
+/**
+ * Lista os cultos com resumo (participantes, minha situação, nº de músicas e
+ * comentários) — usado na tela de Escalas.
+ */
+export async function getResumoCultos(): Promise<CultoResumo[]> {
+  const response = await api.get<CultoResumo[]>('/cultos/resumo');
+  return response.data;
 }
 
 /**
