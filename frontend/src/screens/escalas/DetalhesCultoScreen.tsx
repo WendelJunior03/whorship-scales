@@ -720,6 +720,16 @@ export function DetalhesCultoScreen() {
     }
   }
 
+  // Volta pra um lugar seguro — evita ficar preso quando o culto não existe mais
+  // (ex.: navegação restaurada apontando pra um culto apagado).
+  function voltarSeguro() {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation.navigate('MainTabs');
+    }
+  }
+
   if (isLoading) {
     return (
       <SafeAreaView style={[styles.screen, styles.centered]} edges={['top']}>
@@ -732,6 +742,7 @@ export function DetalhesCultoScreen() {
     return (
       <SafeAreaView style={[styles.screen, styles.centered]} edges={['top']}>
         <Text style={styles.errorText}>{error ?? 'Culto não encontrado.'}</Text>
+        <Button title="Voltar" onPress={voltarSeguro} style={styles.retryButton} />
         <Button
           title="Tentar novamente"
           onPress={carregarDados}
