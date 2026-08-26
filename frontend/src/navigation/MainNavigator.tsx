@@ -15,6 +15,7 @@ import { BibliotecaScreen } from '@/screens/biblioteca/BibliotecaScreen';
 import { DetalheMusicaScreen } from '@/screens/biblioteca/DetalheMusicaScreen';
 import { PadContinuoScreen } from '@/screens/padContinuo/PadContinuoScreen';
 import { MinisterioScreen } from '@/screens/ministerio/MinisterioScreen';
+import { PanoramaEscalasScreen } from '@/screens/escalas/PanoramaEscalasScreen';
 
 export type MainStackParamList = {
   MainTabs: undefined;
@@ -32,6 +33,7 @@ export type MainStackParamList = {
   DetalheMusica: { musicaId: number; nome?: string };
   PadContinuo: undefined;
   Ministerio: undefined;
+  PanoramaEscalas: undefined;
 };
 
 const Stack = createStackNavigator<MainStackParamList>();
@@ -54,6 +56,7 @@ export function MainNavigator() {
       <Stack.Screen name="DetalheMusica" component={DetalheMusicaScreen} />
       <Stack.Screen name="PadContinuo" component={PadContinuoScreen} />
       <Stack.Screen name="Ministerio" component={MinisterioScreen} />
+      <Stack.Screen name="PanoramaEscalas" component={PanoramaEscalasScreen} />
     </Stack.Navigator>
   );
 }

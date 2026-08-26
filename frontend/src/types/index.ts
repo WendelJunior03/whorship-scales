@@ -152,6 +152,21 @@ export interface Repertorio {
   link_musica: string;
 }
 
+// --- Panorama de escalas (spec 11, módulo 6) ---
+
+export interface PanoramaMembro {
+  membro_id: number;
+  nome: string;
+}
+
+/** Matriz do mês: `celulas[funcao][cultoId]` = membros escalados naquela célula. */
+export interface Panorama {
+  mes: string;
+  cultos: { id: number; data_hora: string }[];
+  funcoes: string[];
+  celulas: Record<string, Record<string, PanoramaMembro[]>>;
+}
+
 export interface LoginResponse {
   token: string;
   message: string;
