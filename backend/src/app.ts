@@ -11,6 +11,7 @@ import organizacaoRoutes from './routes/organizacaoRoutes'
 import musicaRoutes from './routes/musicaRoutes'
 import videoRoutes from './routes/videoRoutes'
 import ministerioRoutes from './routes/ministerioRoutes'
+import panoramaRoutes from './routes/panoramaRoutes'
 import ensaioRoutes from './routes/ensaioRoutes'
 import comentarioRoutes from './routes/comentarioRoutes'
 import historicoRoutes from './routes/historicoRoutes'
@@ -39,6 +40,7 @@ app.use('/notificacoes', notificacaoRoutes)
 app.use('/musicas', musicaRoutes)
 app.use('/videos', videoRoutes)
 app.use('/ministerios', ministerioRoutes)
+app.use('/panorama', panoramaRoutes)
 app.use('/ensaios', ensaioRoutes)
 app.use('/comentarios', comentarioRoutes)
 app.use('/historico', historicoRoutes)

@@ -302,8 +302,14 @@ avatares dos escalados nas células; filtros (equipe, extensa, todas as funçõe
 `cultos` × `funcoes`/`membro_funcoes` × escalas do mês. Precisa de um endpoint agregador.
 
 **Tarefas:**
-- [ ] **T-11.19** — Endpoint de panorama (matriz por mês/ministério).
-- [ ] **T-11.20** — UI: grade com filtros; toque na célula abre opções.
+- [x] **T-11.19** — ✅ Endpoint `GET /panorama?mes=YYYY-MM` (`panoramaModel`/`Controller`/
+  `Routes`, `autoriza('escala.visualizar')`): cruza os cultos do mês × escalas (fixa efetiva
+  do dia com substituição + vocal + avulsa não recusadas) e devolve `cultos`, `funcoes` e
+  `celulas[funcao][cultoId]`.
+- [~] **T-11.20** — ✅ `PanoramaEscalasScreen`: grade rolável (linhas = funções, colunas =
+  cultos, células com avatares), navegação de mês, toque na célula/coluna abre o culto;
+  entrada em **Recursos → Panorama**. ⬜ **Falta (follow-up):** filtros avançados do mockup
+  (membro, dias da semana, faixa de horário, compacta/todas as funções).
 
 ---
 
