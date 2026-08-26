@@ -16,6 +16,9 @@ const CHAVE = '@deepscales:sidebar-expandida';
 // Abas (nested em MainTabs) ou telas de stack acessíveis direto pelo menu.
 type RotaMenu = keyof MainTabParamList | 'Indisponibilidades';
 
+// Únicas rotas do menu que NÃO são aba do MainTabs (vivem direto no Stack raiz).
+const ROTAS_DE_STACK: RotaMenu[] = ['Indisponibilidades'];
+
 interface ItemNav {
   rota: RotaMenu;
   label: string;
@@ -73,11 +76,21 @@ export function PersistentSidebar() {
   };
 
   const navegar = (rota: RotaMenu) => {
-    if (navigationRef.isReady()) {
-      // Nome da aba resolve o navegador aninhado (MainTabs); nome de tela de
-      // stack (ex.: Indisponibilidades) navega direto na stack raiz.
+    if (!navigationRef.isReady()) return;
+    if (ROTAS_DE_STACK.includes(rota)) {
+      // Tela de stack (ex.: Indisponibilidades) — navega direto na stack raiz.
       navigationRef.navigate(rota as never);
+      return;
     }
+    // Aba do MainTabs — `navigate(nomeDaAba)` sozinho só funciona vindo de DENTRO do
+    // Tab Navigator aninhado; vindo de uma tela do Stack raiz (Afinador, Pad Contínuo,
+    // Octapad, etc.) ele falha silenciosamente ("not handled by any navigator") porque
+    // o Stack raiz não conhece esse nome — precisa apontar o navegador aninhado. O
+    // `RootNavParamList` do navigationRef é achatado (não modela o aninhamento), então o
+    // TS não consegue tipar essa forma `{ screen, params }` — cast pontual e pragmático.
+    (navigationRef.navigate as (name: string, params?: { screen: string }) => void)('MainTabs', {
+      screen: rota,
+    });
   };
 
   const largura = (expandida ? LARGURA_EXPANDIDA : LARGURA_RECOLHIDA) + insets.left;
