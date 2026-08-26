@@ -83,7 +83,9 @@ export function BibliotecaDrumsScreen() {
               style={[styles.chip, ativo && styles.chipAtivo]}
               activeOpacity={0.8}
             >
-              <Text style={[styles.chipTexto, ativo && styles.chipTextoAtivo]}>{nome}</Text>
+              <Text style={[styles.chipTexto, ativo && styles.chipTextoAtivo]} numberOfLines={1}>
+                {nome}
+              </Text>
             </TouchableOpacity>
           );
         })}
@@ -158,11 +160,13 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
   },
   chip: {
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    paddingVertical: spacing.sm,
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   chipAtivo: {
     backgroundColor: colors.primarySoft,
