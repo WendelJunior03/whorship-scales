@@ -1,8 +1,16 @@
 import { Request, Response } from 'express';
-import { findCultoById, createCulto, findAllCultos, deleteCulto } from '../models/cultoModel';
+import { findCultoById, createCulto, findAllCultos, deleteCulto, findResumoCultos } from '../models/cultoModel';
 
 export async function getAllCultosController(req: Request, res: Response) {
     const cultos = await findAllCultos();
+    return res.status(200).json(cultos);
+}
+
+export async function getResumoCultosController(req: Request, res: Response) {
+    if (!req.user) {
+        return res.status(401).json({ message: 'Não autorizado!' });
+    }
+    const cultos = await findResumoCultos(req.user.id);
     return res.status(200).json(cultos);
 }
 
