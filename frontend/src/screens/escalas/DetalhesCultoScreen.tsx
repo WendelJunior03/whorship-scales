@@ -32,14 +32,18 @@ import * as escalaAvulsaService from '@/services/escalaAvulsa';
 import * as escalaVocalService from '@/services/escalaVocal';
 import * as membrosService from '@/services/membros';
 import * as repertorioService from '@/services/repertorio';
+import * as comentariosService from '@/services/comentarios';
+import * as historicoService from '@/services/historico';
 import { ApiError } from '@/services/api';
 import { buscarTituloDoLink } from '@/utils/tituloLink';
 import {
+  Comentario,
   Culto,
   Ensaio,
   EnsaioParticipante,
   EscalaAvulsaDoCultoItem,
   EscalaVocalDoCultoItem,
+  HistoricoItem,
   Membro,
   Repertorio,
   StatusEscalaVocal,
@@ -71,6 +75,26 @@ const statusTone: Record<StatusEscalaVocal, 'warning' | 'success' | 'error'> = {
   recusado: 'error',
   falta: 'error',
 };
+
+function descreverHistorico(item: HistoricoItem): string {
+  const ator = item.ator_nome ?? 'Alguém';
+  const alvo = item.detalhe?.membro_nome ?? 'um membro';
+  const funcao = item.detalhe?.funcao ? ` (${item.detalhe.funcao})` : '';
+  switch (item.acao) {
+    case 'adicionou_membro':
+      return `${ator} adicionou ${alvo}${funcao}`;
+    case 'removeu_membro':
+      return `${ator} removeu ${alvo}${funcao}`;
+    case 'confirmou':
+      return `${ator} confirmou presença${funcao}`;
+    case 'recusou':
+      return `${ator} recusou a escala${funcao}`;
+    case 'falta':
+      return `${ator} registrou falta de ${alvo}${funcao}`;
+    default:
+      return `${ator}: ${item.acao}`;
+  }
+}
 
 interface EquipeItem {
   chave: string;
@@ -135,6 +159,12 @@ export function DetalhesCultoScreen() {
   const [indiceVocalEmEdicao, setIndiceVocalEmEdicao] = useState<number | null>(null);
   const [isPublicandoVocal, setIsPublicandoVocal] = useState(false);
 
+  const [comentarios, setComentarios] = useState<Comentario[]>([]);
+  const [novoComentario, setNovoComentario] = useState('');
+  const [enviandoComentario, setEnviandoComentario] = useState(false);
+
+  const [historico, setHistorico] = useState<HistoricoItem[]>([]);
+
   const carregarDados = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -147,6 +177,8 @@ export function DetalhesCultoScreen() {
         escalaAvulsaDoCulto,
         vocaisSugeridos,
         ensaioDoCulto,
+        comentariosDoCulto,
+        historicoDoCulto,
       ] = await Promise.all([
         repertorioService.getRepertorioDoCulto(cultoId),
         escalaVocalService.getEscalaVocalDoCulto(cultoId),
@@ -155,6 +187,10 @@ export function DetalhesCultoScreen() {
           ? escalaVocalService.getSugestaoVocais(cultoId)
           : Promise.resolve([]),
         ensaioService.getEnsaioDoCulto(cultoId),
+        comentariosService.listarComentarios(cultoId),
+        user && podeGerir(user)
+          ? historicoService.listarHistorico(cultoId)
+          : Promise.resolve([] as HistoricoItem[]),
       ]);
 
       // Quem recusou some da equipe sozinho — não precisa remover na mão (o
@@ -193,6 +229,8 @@ export function DetalhesCultoScreen() {
       setSuaFuncao(minhaEscalaAvulsa?.funcao ?? (minhaEscalaVocal ? 'Vocal' : null));
       setSugestaoVocal(vocaisSugeridos);
       setSelecionadosVocal(vocaisSugeridos);
+      setComentarios(comentariosDoCulto);
+      setHistorico(historicoDoCulto);
       setModoEdicaoVocal(Boolean(abrirEdicaoVocal));
       setEnsaio(ensaioDoCulto.ensaio);
       setEnsaioParticipantes(ensaioDoCulto.participantes);
@@ -666,6 +704,22 @@ export function DetalhesCultoScreen() {
     }
   }
 
+  async function handleEnviarComentario() {
+    const texto = novoComentario.trim();
+    if (!texto) return;
+
+    setEnviandoComentario(true);
+    try {
+      const criado = await comentariosService.criarComentario(cultoId, texto);
+      setComentarios((prev) => [...prev, criado]);
+      setNovoComentario('');
+    } catch (err) {
+      notifyAction('Erro', err instanceof ApiError ? err.message : 'Não foi possível enviar o comentário.');
+    } finally {
+      setEnviandoComentario(false);
+    }
+  }
+
   if (isLoading) {
     return (
       <SafeAreaView style={[styles.screen, styles.centered]} edges={['top']}>
@@ -1077,6 +1131,79 @@ export function DetalhesCultoScreen() {
               <Text style={styles.suaFuncaoValor}>{suaFuncao}</Text>
             </View>
           </Card>
+        )}
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Comentários</Text>
+        </View>
+        {comentarios.length === 0 ? (
+          <Card>
+            <Text style={styles.emptyText}>Nenhum comentário ainda. Seja o primeiro!</Text>
+          </Card>
+        ) : (
+          <Card style={styles.listCard}>
+            {comentarios.map((c) => (
+              <View key={c.id} style={styles.comentarioItem}>
+                <View style={styles.comentarioCabecalho}>
+                  <Text style={styles.comentarioAutor}>{c.autor_nome}</Text>
+                  <Text style={styles.comentarioHora}>{formatHora(c.created_at)}</Text>
+                </View>
+                <Text style={styles.comentarioTexto}>{c.texto}</Text>
+              </View>
+            ))}
+          </Card>
+        )}
+        <View style={styles.comentarioInputRow}>
+          <TextInput
+            style={styles.comentarioInput}
+            placeholder="Digite aqui…"
+            placeholderTextColor={colors.textMuted}
+            value={novoComentario}
+            onChangeText={setNovoComentario}
+            multiline
+            onSubmitEditing={handleEnviarComentario}
+          />
+          <TouchableOpacity
+            style={[styles.comentarioEnviar, (!novoComentario.trim() || enviandoComentario) && styles.comentarioEnviarOff]}
+            onPress={handleEnviarComentario}
+            disabled={!novoComentario.trim() || enviandoComentario}
+            accessibilityRole="button"
+            accessibilityLabel="Enviar comentário"
+          >
+            {enviandoComentario ? (
+              <ActivityIndicator size="small" color={colors.textInverse} />
+            ) : (
+              <Icon name="send" size={18} color={colors.textInverse} />
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {user && podeGerir(user) && (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Histórico</Text>
+            </View>
+            <Text style={styles.sectionSubtitle}>Apagado ~1 semana após a data da escala.</Text>
+            {historico.length === 0 ? (
+              <Card>
+                <Text style={styles.emptyText}>Nenhuma alteração registrada ainda.</Text>
+              </Card>
+            ) : (
+              <Card style={styles.listCard}>
+                {historico.map((h) => (
+                  <View key={h.id} style={styles.historicoItem}>
+                    <View style={styles.historicoDot} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.historicoTexto}>{descreverHistorico(h)}</Text>
+                      <Text style={styles.historicoHora}>
+                        {formatDiaCurto(h.created_at)} · {formatHora(h.created_at)}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </Card>
+            )}
+          </>
         )}
       </ScrollView>
 
@@ -1676,5 +1803,77 @@ const criarEstilos = (colors: Cores) =>
     modalItemSubtext: {
       ...typography.caption,
       color: colors.textMuted,
+    },
+    comentarioItem: {
+      gap: 2,
+    },
+    comentarioCabecalho: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    comentarioAutor: {
+      ...typography.bodySmall,
+      color: colors.text,
+      fontWeight: '600',
+    },
+    comentarioHora: {
+      ...typography.caption,
+      color: colors.textMuted,
+    },
+    comentarioTexto: {
+      ...typography.body,
+      color: colors.textSecondary,
+    },
+    comentarioInputRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      gap: spacing.sm,
+    },
+    comentarioInput: {
+      flex: 1,
+      ...typography.body,
+      color: colors.text,
+      backgroundColor: colors.surface,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      minHeight: 48,
+      maxHeight: 120,
+      ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null),
+    },
+    comentarioEnviar: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    comentarioEnviarOff: {
+      opacity: 0.5,
+    },
+    historicoItem: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.sm,
+    },
+    historicoDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: colors.primary,
+      marginTop: 6,
+    },
+    historicoTexto: {
+      ...typography.bodySmall,
+      color: colors.text,
+    },
+    historicoHora: {
+      ...typography.caption,
+      color: colors.textMuted,
+      marginTop: 1,
     },
   });

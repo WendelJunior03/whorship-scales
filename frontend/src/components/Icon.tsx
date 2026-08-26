@@ -49,6 +49,7 @@ import {
   LayoutGrid,
   List,
   type LucideProps,
+  MessageCircle,
   Moon,
   Music,
   Smartphone,
@@ -58,6 +59,7 @@ import {
   Plus,
   Repeat,
   Save,
+  Send,
   Settings,
   Share2,
   Shield,
@@ -151,6 +153,8 @@ const MAPA = {
   'sunny-outline': Sun,
   'moon-outline': Moon,
   'phone-portrait-outline': Smartphone,
+  send: Send,
+  'chatbubble-ellipses-outline': MessageCircle,
 } as const;
 
 export type IconName = keyof typeof MAPA;

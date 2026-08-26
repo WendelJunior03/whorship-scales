@@ -5,3 +5,5 @@ export * as membrosService from './membros';
 export * as escalaVocalService from './escalaVocal';
 export * as repertorioService from './repertorio';
 export * as ministeriosService from './ministerios';
+export * as comentariosService from './comentarios';
+export * as historicoService from './historico';

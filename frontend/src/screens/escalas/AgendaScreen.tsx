@@ -219,7 +219,6 @@ export function AgendaScreen() {
             ))}
           </>
         )}
-
       </ScrollView>
     </SafeAreaView>
   );

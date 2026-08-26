@@ -12,6 +12,8 @@ import musicaRoutes from './routes/musicaRoutes'
 import videoRoutes from './routes/videoRoutes'
 import ministerioRoutes from './routes/ministerioRoutes'
 import ensaioRoutes from './routes/ensaioRoutes'
+import comentarioRoutes from './routes/comentarioRoutes'
+import historicoRoutes from './routes/historicoRoutes'
 
 // App Express montado (sem escutar porta) — index.ts faz o listen; os testes de
 // integração importam este `app` direto (supertest), sem subir servidor.
@@ -38,5 +40,7 @@ app.use('/musicas', musicaRoutes)
 app.use('/videos', videoRoutes)
 app.use('/ministerios', ministerioRoutes)
 app.use('/ensaios', ensaioRoutes)
+app.use('/comentarios', comentarioRoutes)
+app.use('/historico', historicoRoutes)
 
 export default app

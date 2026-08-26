@@ -168,14 +168,20 @@ export async function esqueciSenhaController(req: Request, res: Response) {
     if (membro) {
         const token = assinarTokenResetSenha(membro.id);
         const link = `${process.env.FRONTEND_URL}/redefinir-senha?token=${token}`;
-        await enviarEmail(
-            membro.email,
-            'Redefinir senha — Deep Scales',
-            `<p>Olá, ${membro.nome}!</p>
-             <p>Clique no link abaixo para escolher uma nova senha. Ele vale por 30 minutos:</p>
-             <p><a href="${link}">${link}</a></p>
-             <p>Se você não pediu isso, pode ignorar este e-mail.</p>`,
-        );
+        try {
+            await enviarEmail(
+                membro.email,
+                'Redefinir senha — Deep Scales',
+                `<p>Olá, ${membro.nome}!</p>
+                 <p>Clique no link abaixo para escolher uma nova senha. Ele vale por 30 minutos:</p>
+                 <p><a href="${link}">${link}</a></p>
+                 <p>Se você não pediu isso, pode ignorar este e-mail.</p>`,
+            );
+        } catch (error) {
+            // Não deixa a falha de envio vazar pra resposta — a mensagem ao
+            // usuário é sempre a mesma (evita enumeração de contas por e-mail).
+            console.error('Erro ao enviar email:', error);
+        }
     }
 
     return res.status(200).json({ message: 'Se o e-mail existir, enviamos um link de redefinição.' });

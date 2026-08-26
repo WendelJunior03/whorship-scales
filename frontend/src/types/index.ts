@@ -165,6 +165,34 @@ export interface MinhaParticipacaoEnsaio {
   culto_id: number;
 }
 
+/** Comentário na thread de um culto/escala (spec 11, módulo 4). */
+export interface Comentario {
+  id: number;
+  culto_id: number;
+  membro_id: number;
+  texto: string;
+  created_at: string;
+  autor_nome: string;
+}
+
+export type AcaoHistorico =
+  | 'adicionou_membro'
+  | 'removeu_membro'
+  | 'confirmou'
+  | 'recusou'
+  | 'falta';
+
+/** Evento do histórico (audit log) de um culto (spec 11, módulo 5). */
+export interface HistoricoItem {
+  id: number;
+  culto_id: number;
+  ator_id: number | null;
+  acao: AcaoHistorico;
+  detalhe: { membro_nome?: string; funcao?: string };
+  created_at: string;
+  ator_nome: string | null;
+}
+
 export interface LoginResponse {
   token: string;
   message: string;
@@ -243,6 +271,7 @@ export type TipoNotificacao =
   | 'substituicao'
   | 'confirmacao'
   | 'falta'
+  | 'comentario'
   | 'repertorio'
   | 'ensaio'
   | 'lembrete';
