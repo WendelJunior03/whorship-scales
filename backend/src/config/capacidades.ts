@@ -197,6 +197,18 @@ const capacidades: Record<string, RegraCapacidade> = {
         papelMinisterio: [],
         escopo: ['organizacao']
     },
+    // Avisos / comunicados da organização (spec 11 — módulo 9)
+    'aviso.publicar':{
+        // Publicar/editar/excluir comunicados: admin da org ou líder.
+        papelOrg: ['administrador', 'lider'],
+        papelMinisterio: [],
+        escopo: ['organizacao']
+    },
+    'aviso.visualizar':{
+        papelOrg: ['administrador', 'lider', 'membro'],
+        papelMinisterio: [],
+        escopo: ['organizacao']
+    },
 }
 
 export function podeAcessar(usuario: {papelOrg: PapelOrg, papelMinisterio: PapelMinisterio | null}, capacidade: string): boolean {
