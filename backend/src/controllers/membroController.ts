@@ -165,13 +165,16 @@ export async function updateMemberController (req: Request, res: Response) {
     return res.status(200).json({message: 'Alterações realizadas com sucesso!'})
 }
 
-/** GET /membros/aniversariantes?mes=MM — aniversariantes do mês (1–12) da org. */
+/** GET /membros/aniversariantes?mes=MM&ministerioId= — aniversariantes do mês da org. */
 export async function getAniversariantesController(req: Request, res: Response) {
     const mes = req.query.mes ? Number(req.query.mes) : new Date().getMonth() + 1;
     if (!Number.isInteger(mes) || mes < 1 || mes > 12) {
         return res.status(400).json({ message: 'mes inválido (1–12)!' });
     }
-    return res.status(200).json(await findAniversariantesDoMes(mes));
+    const ministerioId = Number.isInteger(Number(req.query.ministerioId))
+        ? Number(req.query.ministerioId)
+        : undefined;
+    return res.status(200).json(await findAniversariantesDoMes(mes, ministerioId));
 }
 
 export async function deactivateMemberController(req: Request, res: Response) {

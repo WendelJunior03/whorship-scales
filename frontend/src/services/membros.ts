@@ -109,9 +109,16 @@ export async function cadastrarMembro(input: CadastrarMembroInput): Promise<void
 
 /**
  * Aniversariantes do mês (1–12; padrão = mês atual), da organização.
+ * `ministerioId` opcional restringe a quem está naquele ministério.
  */
-export async function getAniversariantesDoMes(mes?: number): Promise<Aniversariante[]> {
-  const query = mes ? `?mes=${mes}` : '';
-  const response = await api.get<Aniversariante[]>(`/membros/aniversariantes${query}`);
+export async function getAniversariantesDoMes(
+  mes?: number,
+  ministerioId?: number,
+): Promise<Aniversariante[]> {
+  const partes: string[] = [];
+  if (mes) partes.push(`mes=${mes}`);
+  if (ministerioId) partes.push(`ministerioId=${ministerioId}`);
+  const qs = partes.length ? `?${partes.join('&')}` : '';
+  const response = await api.get<Aniversariante[]>(`/membros/aniversariantes${qs}`);
   return response.data;
 }

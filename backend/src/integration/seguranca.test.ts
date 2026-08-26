@@ -112,6 +112,8 @@ afterAll(async () => {
     if (!pular && A.orgId && B.orgId) {
         const orgs = [A.orgId, B.orgId];
         await withBypass(async (client) => {
+            await client.query('DELETE FROM ministerio_membros WHERE org_id = ANY($1)', [orgs]);
+            await client.query('DELETE FROM ministerios WHERE org_id = ANY($1)', [orgs]);
             await client.query('DELETE FROM indisponibilidades WHERE org_id = ANY($1)', [orgs]);
             await client.query('DELETE FROM ensaio_participantes WHERE org_id = ANY($1)', [orgs]);
             await client.query('DELETE FROM ensaios WHERE org_id = ANY($1)', [orgs]);
@@ -299,6 +301,36 @@ describe('Indisponibilidades (módulo 7)', () => {
         if (pular) return;
         const res = await http().get('/membros/aniversariantes?mes=13').set('Authorization', auth(tokens.adminA));
         expect(res.status).toBe(400);
+    });
+
+    it('aniversariantes: filtro por ministério só traz quem está nele', async () => {
+        if (pular) return;
+        // Admin da A já faz aniversário em maio (teste anterior). Cria um ministério
+        // na A e coloca o admin nele.
+        const min = await withBypass(async (client) => {
+            await client.query("UPDATE membros SET data_nascimento = '1990-05-15' WHERE id = $1", [A.adminId]);
+            const m = (await client.query(
+                `INSERT INTO ministerios (org_id, nome) VALUES ($1, 'Louvor') RETURNING id`,
+                [A.orgId],
+            )).rows[0];
+            await client.query(
+                `INSERT INTO ministerio_membros (ministerio_id, membro_id, org_id) VALUES ($1, $2, $3)`,
+                [m.id, A.adminId, A.orgId],
+            );
+            return m.id as number;
+        });
+
+        // Com o ministério do admin: aparece.
+        const dentro = await http()
+            .get(`/membros/aniversariantes?mes=5&ministerioId=${min}`)
+            .set('Authorization', auth(tokens.adminA));
+        expect(dentro.body.map((m: { id: number }) => m.id)).toContain(A.adminId);
+
+        // Com um ministério inexistente: não aparece (lista vazia).
+        const fora = await http()
+            .get('/membros/aniversariantes?mes=5&ministerioId=99999999')
+            .set('Authorization', auth(tokens.adminA));
+        expect(fora.body.map((m: { id: number }) => m.id)).not.toContain(A.adminId);
     });
 
     it('sugestão de vocais EXCLUI quem marcou indisponibilidade na data do culto', async () => {

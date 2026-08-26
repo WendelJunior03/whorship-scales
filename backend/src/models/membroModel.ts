@@ -76,8 +76,17 @@ export async function updateMember(
 /**
  * Aniversariantes de um mês (1–12), da org (RLS). Ordena por dia. Retorna a
  * data já normalizada e o dia extraído pra facilitar o calendário/lista.
+ * `ministerioId` opcional restringe a quem está naquele ministério.
  */
-export async function findAniversariantesDoMes(mes: number) {
+export async function findAniversariantesDoMes(mes: number, ministerioId?: number) {
+    const params: number[] = [mes];
+    let filtroMinisterio = '';
+    if (ministerioId) {
+        params.push(ministerioId);
+        filtroMinisterio = `AND id IN (
+            SELECT membro_id FROM ministerio_membros WHERE ministerio_id = $${params.length}
+        )`;
+    }
     const result = await query(
         `SELECT id, nome, email,
                 to_char(data_nascimento, 'YYYY-MM-DD') AS data_nascimento,
@@ -86,8 +95,9 @@ export async function findAniversariantesDoMes(mes: number) {
           WHERE ativo = true
             AND data_nascimento IS NOT NULL
             AND EXTRACT(MONTH FROM data_nascimento) = $1
+            ${filtroMinisterio}
           ORDER BY dia ASC, nome ASC`,
-        [mes],
+        params,
     );
     return result.rows;
 }
