@@ -1,12 +1,6 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Badge } from '@/components/Badge';
 import { Card } from '@/components/Card';
 import { Icon } from '@/components/Icon';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -14,14 +8,39 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
 import { MainTabScreenNavigationProp } from '@/navigation/types';
 import * as notificacoesService from '@/services/notificacoes';
-import * as repertorioService from '@/services/repertorio';
+import * as ministeriosService from '@/services/ministerios';
+import * as cultosService from '@/services/cultos';
 import { ApiError } from '@/services/api';
-import { MeuProximoCulto } from '@/services/repertorio';
+import { CultoResumo, Ministerio } from '@/types';
 import { spacing, radius, typography, fonts, LARGURA_CONTEUDO } from '@/theme';
 import { Cores, Sombras } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
-import { formatDiaCompleto, formatHora } from '@/utils/date';
+import { formatDiaSemana, formatHora } from '@/utils/date';
 import { getSaudacao } from '@/utils/greeting';
+
+function inicioDoDia(d: Date): number {
+  const c = new Date(d);
+  c.setHours(0, 0, 0, 0);
+  return c.getTime();
+}
+
+function diaMesCurto(iso: string): string {
+  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' })
+    .format(new Date(iso))
+    .replace('.', '');
+}
+
+function rotuloRelativo(iso: string): string {
+  const dias = Math.round((inicioDoDia(new Date(iso)) - inicioDoDia(new Date())) / 86400000);
+  if (dias === 0) return 'Hoje';
+  if (dias === 1) return 'Amanhã';
+  return dias > 0 ? `daqui a ${dias} dias` : `há ${Math.abs(dias)} dias`;
+}
+
+function iniciais(nome: string): string {
+  const p = nome.trim().split(/\s+/);
+  return ((p[0]?.[0] ?? '') + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase();
+}
 
 export function HomeScreen() {
   const { colors } = useTheme();
@@ -29,7 +48,8 @@ export function HomeScreen() {
   const { user, org } = useAuth();
   const navigation = useNavigation<MainTabScreenNavigationProp<'Home'>>();
 
-  const [proximoCulto, setProximoCulto] = useState<MeuProximoCulto | null>(null);
+  const [ministerios, setMinisterios] = useState<Ministerio[]>([]);
+  const [minhasEscalas, setMinhasEscalas] = useState<CultoResumo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [temNotificacaoNaoLida, setTemNotificacaoNaoLida] = useState(false);
@@ -38,11 +58,18 @@ export function HomeScreen() {
     setIsLoading(true);
     setError(null);
     try {
-      const culto = await repertorioService.getMeuProximoCulto().catch((err) => {
-        if (err instanceof ApiError && err.status === 404) return null;
-        throw err;
-      });
-      setProximoCulto(culto);
+      const [mins, resumo] = await Promise.all([
+        ministeriosService.listarMinisterios(),
+        cultosService.getResumoCultos(),
+      ]);
+      const hoje = inicioDoDia(new Date());
+      setMinisterios(mins);
+      setMinhasEscalas(
+        resumo
+          .filter((c) => c.minha_situacao !== null && inicioDoDia(new Date(c.data_hora)) >= hoje)
+          .sort((a, b) => new Date(a.data_hora).getTime() - new Date(b.data_hora).getTime())
+          .slice(0, 3),
+      );
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Não foi possível carregar os dados.');
     } finally {
@@ -50,20 +77,22 @@ export function HomeScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    carregarDados();
-  }, [carregarDados]);
+  useFocusEffect(
+    useCallback(() => {
+      carregarDados();
+    }, [carregarDados]),
+  );
 
   useFocusEffect(
     useCallback(() => {
       notificacoesService
         .getMinhasNotificacoes()
         .then((notificacoes) => setTemNotificacaoNaoLida(notificacoes.some((n) => !n.lida)))
-        .catch(() => {
-          // o sino não é crítico pra tela funcionar, falha aqui é silenciosa
-        });
+        .catch(() => {});
     }, []),
   );
+
+  const primeiroNome = user?.nome?.split(' ')[0] ?? 'membro';
 
   if (isLoading) {
     return (
@@ -72,21 +101,6 @@ export function HomeScreen() {
       </SafeAreaView>
     );
   }
-
-  if (error) {
-    return (
-      <SafeAreaView style={[styles.screen, styles.centered]} edges={['top']}>
-        <Icon name="cloud-offline-outline" size={40} color={colors.textMuted} />
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={carregarDados}>
-          <Text style={styles.retryText}>Tentar novamente</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
-    );
-  }
-
-  const primeiroNome = user?.nome?.split(' ')[0] ?? 'membro';
-  const musicas = proximoCulto?.repertorios ?? [];
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -116,265 +130,249 @@ export function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        {proximoCulto ? (
-          <Card
-            onPress={() => navigation.navigate('DetalhesCulto', { cultoId: proximoCulto.culto.id })}
-            style={styles.hero}
-          >
-            <View style={styles.heroTop}>
-              <View style={styles.heroIcon}>
-                <Icon name="musical-notes-outline" size={18} color={colors.primary} />
-              </View>
-              <Text style={styles.heroLabel}>Próximo culto</Text>
-              <Icon name="chevron-forward" size={18} color={colors.textMuted} style={styles.heroChevron} />
-            </View>
-            <Text style={styles.heroData}>{formatDiaCompleto(proximoCulto.culto.data_hora)}</Text>
-            <View style={styles.heroFooter}>
-              <View style={styles.heroChip}>
-                <Icon name="time-outline" size={14} color={colors.primary} />
-                <Text style={styles.heroChipText}>{formatHora(proximoCulto.culto.data_hora)}</Text>
-              </View>
-              {proximoCulto.culto.tipo && <Text style={styles.heroTipo}>{proximoCulto.culto.tipo}</Text>}
-            </View>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+        {error ? (
+          <Card style={styles.centeredCard}>
+            <Icon name="cloud-offline-outline" size={32} color={colors.textMuted} />
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={carregarDados}>
+              <Text style={styles.retryText}>Tentar novamente</Text>
+            </TouchableOpacity>
           </Card>
-        ) : (
-          <Card style={styles.card}>
-            <Text style={styles.mutedText}>Nenhum culto agendado pra você no momento.</Text>
-          </Card>
-        )}
+        ) : null}
 
-        <Text style={styles.sectionTitle}>Músicas do próximo culto</Text>
-        {!proximoCulto ? (
-          <Card style={styles.card}>
-            <Text style={styles.mutedText}>Sem culto agendado — nenhuma música por enquanto.</Text>
-          </Card>
-        ) : musicas.length === 0 ? (
-          <Card style={styles.card}>
-            <Text style={styles.mutedText}>O repertório deste culto ainda não foi definido.</Text>
-          </Card>
+        {/* Ministérios */}
+        <SecaoHeader titulo="Ministérios" contador={ministerios.length} styles={styles} />
+        {ministerios.length === 0 ? (
+          <VazioCard texto="Você ainda não está em nenhum ministério." styles={styles} />
         ) : (
-          musicas.map((musica) => (
-            <Card
-              key={musica.id}
-              style={styles.musicaCard}
-              onPress={() => navigation.navigate('DetalhesCulto', { cultoId: proximoCulto.culto.id })}
-            >
-              <View style={styles.musicaIcon}>
-                <Icon name="musical-note-outline" size={18} color={colors.primary} />
+          ministerios.map((m) => (
+            <Card key={m.id} style={styles.ministerioCard} onPress={() => navigation.navigate('Ministerio')}>
+              <View style={styles.ministerioIcon}>
+                <Icon name="business-outline" size={22} color={colors.primary} />
               </View>
-              <Text style={styles.musicaNome} numberOfLines={1}>
-                {musica.nome}
-              </Text>
-              {!!musica.tom && (
-                <View style={styles.tomChip}>
-                  <Text style={styles.tomText}>{musica.tom}</Text>
-                </View>
-              )}
+              <View style={{ flex: 1 }}>
+                <Text style={styles.ministerioNome}>{m.nome}</Text>
+                <Text style={styles.ministerioMeta}>
+                  {(m.total_membros ?? 0)} membro{(m.total_membros ?? 0) === 1 ? '' : 's'}
+                </Text>
+              </View>
+              <Icon name="chevron-forward" size={18} color={colors.textMuted} />
             </Card>
           ))
         )}
+
+        {/* Minhas escalas (próximas) */}
+        <SecaoHeader
+          titulo="Minhas escalas"
+          subtitulo="Próximas"
+          contador={minhasEscalas.length}
+          acao={{ label: 'Ver todas', onPress: () => navigation.navigate('Escalas') }}
+          styles={styles}
+        />
+        {minhasEscalas.length === 0 ? (
+          <VazioCard texto="Nenhuma escala próxima." styles={styles} />
+        ) : (
+          minhasEscalas.map((c) => (
+            <Card key={c.id} style={styles.escalaCard} onPress={() => navigation.navigate('DetalhesCulto', { cultoId: c.id })}>
+              <View style={styles.escalaTopo}>
+                <Icon name="calendar-outline" size={16} color={colors.textSecondary} />
+                <Text style={styles.escalaData}>
+                  {formatDiaSemana(c.data_hora)}, {formatHora(c.data_hora)}
+                </Text>
+                <Text style={styles.escalaRelativo}>· {diaMesCurto(c.data_hora)} · {rotuloRelativo(c.data_hora)}</Text>
+              </View>
+              <Text style={styles.escalaTitulo}>
+                {c.tipo ?? `Culto de ${formatDiaSemana(c.data_hora)}`}
+              </Text>
+              {c.participantes.length > 0 && (
+                <View style={styles.avatares}>
+                  {c.participantes.slice(0, 5).map((p, i) => (
+                    <View key={p.membro_id} style={[styles.avatarPeq, i > 0 && styles.avatarSobreposto]}>
+                      <Text style={styles.avatarPeqText}>{iniciais(p.nome)}</Text>
+                    </View>
+                  ))}
+                  {c.participantes.length > 5 && (
+                    <View style={[styles.avatarPeq, styles.avatarSobreposto, styles.avatarMais]}>
+                      <Text style={styles.avatarPeqText}>+{c.participantes.length - 5}</Text>
+                    </View>
+                  )}
+                </View>
+              )}
+              <View style={styles.escalaRodape}>
+                {c.minha_situacao === 'confirmado' ? (
+                  <Badge label="Confirmado" tone="success" />
+                ) : (
+                  <Badge label="Pendente" tone="warning" />
+                )}
+                <View style={styles.contador}>
+                  <Icon name="musical-notes" size={14} color={colors.textMuted} />
+                  <Text style={styles.contadorText}>{c.total_musicas}</Text>
+                </View>
+                <View style={styles.contador}>
+                  <Icon name="chatbubble-ellipses-outline" size={14} color={colors.textMuted} />
+                  <Text style={styles.contadorText}>{c.total_comentarios}</Text>
+                </View>
+              </View>
+            </Card>
+          ))
+        )}
+
+        {/* Avisos (módulo 9 — em breve) */}
+        <SecaoHeader titulo="Avisos" subtitulo="Em destaque" styles={styles} />
+        <VazioCard texto="Lista vazia." styles={styles} />
+
+        {/* Aniversariantes (módulo 8 — em breve) */}
+        <SecaoHeader titulo="Aniversariantes" subtitulo="Este mês" styles={styles} />
+        <VazioCard texto="Lista vazia." styles={styles} />
+
+        {/* Mais tocadas — atalho pra biblioteca */}
+        <Card style={styles.promoCard} onPress={() => navigation.navigate('Biblioteca')}>
+          <View style={styles.promoIcon}>
+            <Icon name="musical-notes" size={20} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.promoTitulo}>Mais tocadas</Text>
+            <Text style={styles.promoSub}>Confira as músicas do repertório.</Text>
+          </View>
+          <Icon name="chevron-forward" size={18} color={colors.textMuted} />
+        </Card>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const criarEstilos = (colors: Cores, shadows: Sombras) => StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  centered: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-  },
-  errorText: {
-    ...typography.body,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  retryButton: {
-    borderWidth: 1,
-    borderColor: colors.primary,
-    borderRadius: radius.lg,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-  },
-  retryText: {
-    ...typography.body,
-    color: colors.primary,
-    fontFamily: fonts.semibold,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  headerBrand: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    flex: 1,
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.pill,
-    backgroundColor: colors.primarySoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    ...typography.h3,
-    color: colors.primary,
-  },
-  headerTexts: {
-    flex: 1,
-  },
-  greeting: {
-    ...typography.h3,
-    color: colors.text,
-  },
-  headerOrg: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-  },
-  bell: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...shadows.sm,
-  },
-  badgeDot: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.error,
-  },
-  scroll: {
-    flex: 1,
-  },
-  content: {
-    width: '100%',
-    maxWidth: LARGURA_CONTEUDO,
-    alignSelf: 'center',
-    padding: spacing.lg,
-    paddingTop: spacing.sm,
-    gap: spacing.md,
-  },
-  hero: {
-    borderRadius: radius.xl,
-    padding: spacing.lg,
-    ...shadows.md,
-  },
-  heroTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  heroIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.md,
-    backgroundColor: colors.primarySoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroLabel: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-  },
-  heroChevron: {
-    marginLeft: 'auto',
-  },
-  heroData: {
-    ...typography.h2,
-    color: colors.text,
-  },
-  heroFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.md,
-  },
-  heroChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    backgroundColor: colors.primarySoft,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: radius.pill,
-  },
-  heroChipText: {
-    ...typography.bodySmall,
-    color: colors.primary,
-    fontFamily: fonts.semibold,
-  },
-  heroTipo: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-  },
-  card: {
-    borderRadius: radius.xl,
-    ...shadows.sm,
-  },
-  mutedText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-  },
-  sectionTitle: {
-    ...typography.h3,
-    color: colors.text,
-    marginTop: spacing.sm,
-  },
-  musicaCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    borderRadius: radius.xl,
-    ...shadows.sm,
-  },
-  musicaIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.md,
-    backgroundColor: colors.primarySoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  musicaNome: {
-    ...typography.body,
-    color: colors.text,
-    fontFamily: fonts.semibold,
-    flex: 1,
-  },
-  tomChip: {
-    backgroundColor: colors.primarySoft,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: radius.pill,
-  },
-  tomText: {
-    ...typography.bodySmall,
-    color: colors.primary,
-    fontFamily: fonts.semibold,
-  },
-});
+function SecaoHeader({
+  titulo,
+  subtitulo,
+  contador,
+  acao,
+  styles,
+}: {
+  titulo: string;
+  subtitulo?: string;
+  contador?: number;
+  acao?: { label: string; onPress: () => void };
+  styles: ReturnType<typeof criarEstilos>;
+}) {
+  return (
+    <View style={styles.secaoHeader}>
+      <View style={styles.secaoTituloLinha}>
+        <Text style={styles.secaoTitulo}>{titulo}</Text>
+        {contador !== undefined && (
+          <View style={styles.secaoContador}>
+            <Text style={styles.secaoContadorText}>{contador}</Text>
+          </View>
+        )}
+        {subtitulo ? <Text style={styles.secaoSub}>{subtitulo}</Text> : null}
+      </View>
+      {acao ? (
+        <TouchableOpacity onPress={acao.onPress} hitSlop={6}>
+          <Text style={styles.secaoAcao}>{acao.label}</Text>
+        </TouchableOpacity>
+      ) : null}
+    </View>
+  );
+}
+
+function VazioCard({ texto, styles }: { texto: string; styles: ReturnType<typeof criarEstilos> }) {
+  return (
+    <Card>
+      <Text style={styles.vazioText}>{texto}</Text>
+    </Card>
+  );
+}
+
+const criarEstilos = (colors: Cores, shadows: Sombras) =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.background },
+    centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingHorizontal: spacing.lg },
+    centeredCard: { alignItems: 'center', gap: spacing.sm },
+    errorText: { ...typography.bodySmall, color: colors.textSecondary, textAlign: 'center' },
+    retryButton: { paddingVertical: spacing.xs, paddingHorizontal: spacing.md },
+    retryText: { ...typography.bodySmall, color: colors.primary, fontFamily: fonts.semibold },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.sm,
+      width: '100%',
+      maxWidth: LARGURA_CONTEUDO,
+      alignSelf: 'center',
+    },
+    headerBrand: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 },
+    avatar: { width: 44, height: 44, borderRadius: radius.pill, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
+    avatarText: { ...typography.h3, color: colors.primary },
+    headerTexts: { flex: 1 },
+    greeting: { ...typography.h3, color: colors.text },
+    headerOrg: { ...typography.bodySmall, color: colors.textSecondary },
+    bell: {
+      width: 44,
+      height: 44,
+      borderRadius: radius.pill,
+      backgroundColor: colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+      ...shadows.sm,
+    },
+    badgeDot: { position: 'absolute', top: 10, right: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.error },
+    scroll: { flex: 1 },
+    content: {
+      width: '100%',
+      maxWidth: LARGURA_CONTEUDO,
+      alignSelf: 'center',
+      padding: spacing.lg,
+      paddingTop: spacing.sm,
+      gap: spacing.sm,
+    },
+    secaoHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.md },
+    secaoTituloLinha: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 },
+    secaoTitulo: { ...typography.h3, color: colors.text },
+    secaoContador: {
+      minWidth: 22,
+      height: 22,
+      borderRadius: 11,
+      paddingHorizontal: 6,
+      backgroundColor: colors.surfaceElevated,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    secaoContadorText: { ...typography.caption, color: colors.textSecondary, fontFamily: fonts.semibold },
+    secaoSub: { ...typography.caption, color: colors.textMuted },
+    secaoAcao: { ...typography.bodySmall, color: colors.primary, fontFamily: fonts.semibold },
+    vazioText: { ...typography.bodySmall, color: colors.textSecondary },
+    ministerioCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    ministerioIcon: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
+    ministerioNome: { ...typography.body, color: colors.text, fontFamily: fonts.semibold },
+    ministerioMeta: { ...typography.caption, color: colors.textSecondary, marginTop: 1 },
+    escalaCard: { gap: spacing.xs },
+    escalaTopo: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
+    escalaData: { ...typography.bodySmall, color: colors.text, fontFamily: fonts.semibold },
+    escalaRelativo: { ...typography.caption, color: colors.textMuted },
+    escalaTitulo: { ...typography.body, color: colors.text, fontFamily: fonts.semibold },
+    avatares: { flexDirection: 'row', marginTop: 2 },
+    avatarPeq: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: colors.primarySoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 2,
+      borderColor: colors.surface,
+    },
+    avatarSobreposto: { marginLeft: -8 },
+    avatarMais: { backgroundColor: colors.surfaceElevated },
+    avatarPeqText: { ...typography.caption, color: colors.primary, fontWeight: '700', fontSize: 9 },
+    escalaRodape: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: 2 },
+    contador: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    contadorText: { ...typography.caption, color: colors.textMuted },
+    promoCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md },
+    promoIcon: { width: 40, height: 40, borderRadius: radius.md, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
+    promoTitulo: { ...typography.body, color: colors.text, fontFamily: fonts.semibold },
+    promoSub: { ...typography.caption, color: colors.textSecondary, marginTop: 1 },
+  });
