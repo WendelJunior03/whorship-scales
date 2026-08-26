@@ -163,21 +163,24 @@ export function EscalasScreen() {
           </Card>
         }
         renderItem={({ item }) => (
-          <Card
-            style={styles.cultoCard}
-            onPress={() => navigation.navigate('DetalhesCulto', { cultoId: item.id })}
-          >
-            <View style={styles.cultoIcon}>
-              <Icon name="musical-notes" size={18} color={colors.primary} />
-            </View>
-            <View style={styles.cultoInfo}>
-              <Text style={styles.cultoTitulo}>
-                {item.tipo ?? `Culto de ${formatDiaSemana(item.data_hora)}`}
-              </Text>
-              <Text style={styles.cultoData}>
-                {formatDiaCompleto(item.data_hora)} · {formatHora(item.data_hora)}
-              </Text>
-            </View>
+          <Card style={styles.cultoCard}>
+            <TouchableOpacity
+              style={styles.cultoToque}
+              onPress={() => navigation.navigate('DetalhesCulto', { cultoId: item.id })}
+            >
+              <View style={styles.cultoIcon}>
+                <Icon name="musical-notes" size={18} color={colors.primary} />
+              </View>
+              <View style={styles.cultoInfo}>
+                <Text style={styles.cultoTitulo}>
+                  {item.tipo ?? `Culto de ${formatDiaSemana(item.data_hora)}`}
+                </Text>
+                <Text style={styles.cultoData}>
+                  {formatDiaCompleto(item.data_hora)} · {formatHora(item.data_hora)}
+                </Text>
+              </View>
+              <Icon name="chevron-forward" size={18} color={colors.textMuted} />
+            </TouchableOpacity>
             {user?.papel === 'admin' && (
               <OptionsMenu
                 loading={excluindoId === item.id}
@@ -191,7 +194,6 @@ export function EscalasScreen() {
                 ]}
               />
             )}
-            <Icon name="chevron-forward" size={18} color={colors.textMuted} />
           </Card>
         )}
       />
@@ -324,6 +326,12 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     marginBottom: spacing.sm,
+  },
+  cultoToque: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   cultoIcon: {
     width: 36,

@@ -298,8 +298,8 @@ export function NotificacoesScreen() {
         renderItem={({ item }) => {
           const pendente = itemPendenteDaNotificacao(item);
           return (
-            <Card style={styles.item} onPress={() => handleAbrir(item)}>
-              <View style={styles.itemLinha}>
+            <Card style={styles.item}>
+              <TouchableOpacity style={styles.itemLinha} onPress={() => handleAbrir(item)} activeOpacity={0.7}>
                 <View style={styles.itemIcon}>
                   <Icon name={iconePorTipo[item.tipo]} size={18} color={colors.primary} />
                 </View>
@@ -313,7 +313,7 @@ export function NotificacoesScreen() {
                   <Text style={styles.itemHora}>{formatHora(item.created_at)}</Text>
                   {!item.lida && <View style={styles.dotNaoLido} />}
                 </View>
-              </View>
+              </TouchableOpacity>
               {pendente && (
                 <View style={styles.acoes}>
                   <Button
