@@ -358,8 +358,8 @@ indisponibilidades
 data_nascimento  DATE NULL     -- já aparece no perfil (ex.: 03/09/1996)
 ```
 **Tarefas:**
-- [ ] **T-11.24** — Migration: `membros.data_nascimento`.
-- [ ] **T-11.25** — Endpoint aniversariantes do mês (por org/ministério) + UI (calendário/lista).
+- [x] **T-11.24** — Migration: `membros.data_nascimento`.
+- [x] **T-11.25** — Endpoint `GET /membros/aniversariantes?mes` (por org) + UI (lista na Home + campo no cadastro/edição de membro).
 
 ---
 

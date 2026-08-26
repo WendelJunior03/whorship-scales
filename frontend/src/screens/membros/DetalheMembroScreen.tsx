@@ -17,6 +17,7 @@ import { Button } from '@/components/Button';
 import { Header } from '@/components/Header';
 import { Input } from '@/components/Input';
 import { SeletorInstrumentos } from '@/components/SeletorInstrumentos';
+import { formatarData, dataParaISO, isoParaData } from '@/components/EntradaData';
 import { MainStackParamList } from '@/navigation/MainNavigator';
 import { useAuth } from '@/contexts/AuthContext';
 import * as membrosService from '@/services/membros';
@@ -49,6 +50,7 @@ export function DetalheMembroScreen() {
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [telefone, setTelefone] = useState('');
+  const [dataNascimento, setDataNascimento] = useState(''); // mascarado DD/MM/AAAA
   const [instrumentos, setInstrumentos] = useState<string[]>([]);
   const [senha, setSenha] = useState('');
   const [papelOrg, setPapelOrg] = useState<PapelOrg>('membro');
@@ -70,6 +72,7 @@ export function DetalheMembroScreen() {
       setNome(membro.nome);
       setEmail(membro.email);
       setTelefone(membro.telefone ?? '');
+      setDataNascimento(isoParaData(membro.data_nascimento));
       setInstrumentos(membro.instrumentos ?? []);
       if (membro.papel_org) setPapelOrg(membro.papel_org);
       setPapelMinisterio(membro.papel_ministerio ?? null);
@@ -106,6 +109,7 @@ export function DetalheMembroScreen() {
           papelMinisterio,
           instruments: instrumentos,
           phone: telefone.trim(),
+          dataNascimento: dataParaISO(dataNascimento),
         });
         Alert.alert(
           'Membro cadastrado',
@@ -117,6 +121,7 @@ export function DetalheMembroScreen() {
           phone: telefone.trim(),
           instruments: instrumentos,
           email: email.trim(),
+          dataNascimento: dataParaISO(dataNascimento),
           // só manda papelOrg/papelMinisterio se quem edita é admin — o back-end
           // rejeita a troca de papel de qualquer outra pessoa, mesmo que seja o
           // valor atual, então nem vale a pena mandar nesse caso.
@@ -220,6 +225,14 @@ export function DetalheMembroScreen() {
             onChangeText={(text) => setTelefone(formatTelefone(text))}
             keyboardType="phone-pad"
             maxLength={15}
+          />
+          <Input
+            icon="calendar-outline"
+            placeholder="Nascimento (DD/MM/AAAA)"
+            value={dataNascimento}
+            onChangeText={(text) => setDataNascimento(formatarData(text))}
+            keyboardType="number-pad"
+            maxLength={10}
           />
           <Text style={styles.label}>Instrumentos/funções</Text>
           <SeletorInstrumentos selecionados={instrumentos} onChange={setInstrumentos} />

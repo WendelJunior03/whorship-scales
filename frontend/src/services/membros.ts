@@ -1,5 +1,5 @@
 import { api } from './api';
-import { Membro, PapelOrg, PapelMinisterio } from '@/types';
+import { Membro, Aniversariante, PapelOrg, PapelMinisterio } from '@/types';
 
 export interface AtualizarMembroInput {
   name: string;
@@ -10,6 +10,8 @@ export interface AtualizarMembroInput {
   papelOrg?: PapelOrg;
   /** Papel no ministério — mesma regra do papelOrg (só admin de fato aplica). `null` = nenhum. */
   papelMinisterio?: PapelMinisterio | null;
+  /** Data de nascimento (YYYY-MM-DD) ou null p/ limpar. Omitir = não mexe. */
+  dataNascimento?: string | null;
 }
 
 export interface AlterarSenhaInput {
@@ -30,6 +32,8 @@ export interface CadastrarMembroInput {
   papelMinisterio: PapelMinisterio | null;
   instruments: string[];
   phone: string;
+  /** Data de nascimento (YYYY-MM-DD), opcional. */
+  dataNascimento?: string | null;
 }
 
 /**
@@ -101,4 +105,13 @@ export async function redefinirSenha(input: RedefinirSenhaInput): Promise<void> 
  */
 export async function cadastrarMembro(input: CadastrarMembroInput): Promise<void> {
   await api.post('/membros/cadastro', input);
+}
+
+/**
+ * Aniversariantes do mês (1–12; padrão = mês atual), da organização.
+ */
+export async function getAniversariantesDoMes(mes?: number): Promise<Aniversariante[]> {
+  const query = mes ? `?mes=${mes}` : '';
+  const response = await api.get<Aniversariante[]>(`/membros/aniversariantes${query}`);
+  return response.data;
 }
