@@ -91,7 +91,7 @@ export function PadContinuoScreen() {
         title="Pads Contínuos"
         subtitle="Banco de Pads"
         showBack
-        rightIcon="settings-outline"
+        rightIcon="palette-outline"
         rightIconLabel="Personalizar aparência dos pads"
         onRightPress={() => setPainelAberto(true)}
       />
@@ -266,7 +266,7 @@ function ColunaCamada({
           <Text style={[styles.botaoToggleTexto, estado.mudo && styles.botaoToggleTextoAtivo]}>MUTE</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.botaoToggle, estiloInativo, estado.solo && { backgroundColor: corDestaque, borderColor: corDestaque }]}
+          style={[styles.botaoToggle, estiloInativo, estado.solo && { backgroundColor: colors.warning, borderColor: colors.warning }]}
           onPress={onAlternarSolo}
         >
           <Text style={[styles.botaoToggleTexto, estado.solo && styles.botaoToggleTextoAtivo]}>SOLO</Text>
