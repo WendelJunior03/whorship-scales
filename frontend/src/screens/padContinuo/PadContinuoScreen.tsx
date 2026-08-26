@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { useFocusEffect } from '@react-navigation/native';
 import { Icon } from '@/components/Icon';
@@ -146,6 +147,15 @@ export function PadContinuoScreen() {
                   ]}
                   onPress={() => selecionarNotaGlobal(nota)}
                 >
+                  {/* Textura leve — sheen diagonal + sombra sutil na base, pra tirar o aspecto liso. */}
+                  <LinearGradient
+                    colors={['rgba(255,255,255,0.28)', 'rgba(255,255,255,0)', 'rgba(0,0,0,0.06)']}
+                    locations={[0, 0.55, 1]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFillObject}
+                    pointerEvents="none"
+                  />
                   <Text style={[styles.notaBotaoTexto, ativa && styles.notaBotaoTextoAtivo]}>{nota}</Text>
                 </TouchableOpacity>
               );
@@ -379,6 +389,7 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     backgroundColor: colors.surfaceMuted,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   notaBotaoTexto: {
     ...typography.body,
