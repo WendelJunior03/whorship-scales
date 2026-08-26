@@ -1,6 +1,7 @@
 import { PoolClient } from 'pg';
 import { query, unscopedQuery } from '../config/database';
 import { derivarPapelLegado } from '../utils/papeis';
+import { predicadoIndisponivel } from './indisponibilidadeModel';
 import type { PapelOrg, PapelMinisterio } from '../config/capacidades';
 
 /**
@@ -103,6 +104,7 @@ export async function findMembrosDisponiveisParaCulto(cultoId: number, excluirMe
         params.push(papel);
         filtroPapel = `AND membros.papel = $${params.length}`;
     }
+    const indisponivel = predicadoIndisponivel('membros.id', '(SELECT data_hora FROM cultos WHERE id = $1)');
     const result = await query(
         `SELECT membros.id, membros.nome FROM membros
          WHERE membros.ativo = true AND membros.id <> $2 ${filtroPapel}
@@ -111,6 +113,7 @@ export async function findMembrosDisponiveisParaCulto(cultoId: number, excluirMe
              UNION
              SELECT membro_id FROM escala_avulsa WHERE culto_id = $1 AND status <> 'recusado'
            )
+           AND NOT ${indisponivel}
          ORDER BY membros.nome ASC`,
         params,
     );

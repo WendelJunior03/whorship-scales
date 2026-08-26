@@ -112,6 +112,7 @@ afterAll(async () => {
     if (!pular && A.orgId && B.orgId) {
         const orgs = [A.orgId, B.orgId];
         await withBypass(async (client) => {
+            await client.query('DELETE FROM indisponibilidades WHERE org_id = ANY($1)', [orgs]);
             await client.query('DELETE FROM ensaio_participantes WHERE org_id = ANY($1)', [orgs]);
             await client.query('DELETE FROM ensaios WHERE org_id = ANY($1)', [orgs]);
             await client.query('DELETE FROM repertorio WHERE org_id = ANY($1)', [orgs]);
@@ -219,5 +220,79 @@ describe('Isolamento entre organizações (Passo 4)', () => {
 
         const daA = await http().get(`/ensaios/culto/${B.cultoId}`).set('Authorization', auth(tokens.adminA));
         expect(daA.body.ensaio).toBeNull();
+    });
+});
+
+// Módulo 7 — indisponibilidades: escopo próprio, gestão e filtro na sugestão.
+describe('Indisponibilidades (módulo 7)', () => {
+    it('membro comum cria a PRÓPRIA indisponibilidade (201) e a vê no /me', async () => {
+        if (pular) return;
+        const criar = await http()
+            .post('/indisponibilidades')
+            .set('Authorization', auth(tokens.vocalA))
+            .send({ periodo: 'dia_inteiro', dataInicio: '2099-01-10', dataFim: '2099-01-10', descricao: 'Viagem' });
+        expect(criar.status).toBe(201);
+
+        const minhas = await http().get('/indisponibilidades/me').set('Authorization', auth(tokens.vocalA));
+        expect(minhas.status).toBe(200);
+        expect(minhas.body.some((i: { id: number }) => i.id === criar.body.id)).toBe(true);
+    });
+
+    it('membro comum NÃO cria indisponibilidade de OUTRO membro (403)', async () => {
+        if (pular) return;
+        const res = await http()
+            .post('/indisponibilidades')
+            .set('Authorization', auth(tokens.vocalA))
+            .send({ membroId: A.adminId, periodo: 'dia_inteiro', dataInicio: '2099-01-10', dataFim: '2099-01-10' });
+        expect(res.status).toBe(403);
+    });
+
+    it('datas inválidas → 400 (fim antes do início)', async () => {
+        if (pular) return;
+        const res = await http()
+            .post('/indisponibilidades')
+            .set('Authorization', auth(tokens.vocalA))
+            .send({ periodo: 'dia_inteiro', dataInicio: '2099-02-10', dataFim: '2099-02-01' });
+        expect(res.status).toBe(400);
+    });
+
+    it('A (gestor) não enxerga indisponibilidade de um membro da B (isolamento por org)', async () => {
+        if (pular) return;
+        // Semeia uma indisponibilidade pro vocal da B, direto no banco (bypass).
+        await withBypass(async (client) => {
+            await client.query(
+                `INSERT INTO indisponibilidades (membro_id, org_id, periodo, data_inicio, data_fim)
+                 VALUES ($1, $2, 'dia_inteiro', '2099-03-01', '2099-03-01')`,
+                [B.vocalId, B.orgId],
+            );
+        });
+        const res = await http()
+            .get(`/indisponibilidades/membro/${B.vocalId}`)
+            .set('Authorization', auth(tokens.adminA));
+        // RLS zera as linhas da outra org → lista vazia.
+        expect(Array.isArray(res.body) ? res.body.length : -1).toBe(0);
+    });
+
+    it('sugestão de vocais EXCLUI quem marcou indisponibilidade na data do culto', async () => {
+        if (pular) return;
+        // Antes: o vocal da A aparece na sugestão do culto da A.
+        const antes = await http()
+            .get(`/escala-vocal/sugestao?cultoId=${A.cultoId}`)
+            .set('Authorization', auth(tokens.adminA));
+        expect(antes.body.vocais.some((v: { id: number }) => v.id === A.vocalId)).toBe(true);
+
+        // Marca o vocal como indisponível no dia do culto (data_hora = NOW()).
+        const hoje = new Date().toISOString().slice(0, 10);
+        const criada = await http()
+            .post('/indisponibilidades')
+            .set('Authorization', auth(tokens.adminA))
+            .send({ membroId: A.vocalId, periodo: 'dia_inteiro', dataInicio: hoje, dataFim: hoje });
+        expect(criada.status).toBe(201);
+
+        // Depois: some da sugestão.
+        const depois = await http()
+            .get(`/escala-vocal/sugestao?cultoId=${A.cultoId}`)
+            .set('Authorization', auth(tokens.adminA));
+        expect(depois.body.vocais.some((v: { id: number }) => v.id === A.vocalId)).toBe(false);
     });
 });

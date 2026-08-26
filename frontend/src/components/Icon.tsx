@@ -1,6 +1,9 @@
 import React from 'react';
 import {
   Building2,
+  CalendarOff,
+  CloudSun,
+  X,
   CircleAlert,
   Gauge,
   Globe,
@@ -155,7 +158,10 @@ const MAPA = {
   'text-outline': Type,
   'search-outline': Search,
   'sunny-outline': Sun,
+  'calendar-off': CalendarOff,
+  'partly-sunny-outline': CloudSun,
   'moon-outline': Moon,
+  close: X,
   'phone-portrait-outline': Smartphone,
   send: Send,
   'chatbubble-ellipses-outline': MessageCircle,
