@@ -15,6 +15,7 @@ import panoramaRoutes from './routes/panoramaRoutes'
 import ensaioRoutes from './routes/ensaioRoutes'
 import comentarioRoutes from './routes/comentarioRoutes'
 import historicoRoutes from './routes/historicoRoutes'
+import roteiroRoutes from './routes/roteiroRoutes'
 
 // App Express montado (sem escutar porta) — index.ts faz o listen; os testes de
 // integração importam este `app` direto (supertest), sem subir servidor.
@@ -44,5 +45,6 @@ app.use('/panorama', panoramaRoutes)
 app.use('/ensaios', ensaioRoutes)
 app.use('/comentarios', comentarioRoutes)
 app.use('/historico', historicoRoutes)
+app.use('/roteiro', roteiroRoutes)
 
 export default app

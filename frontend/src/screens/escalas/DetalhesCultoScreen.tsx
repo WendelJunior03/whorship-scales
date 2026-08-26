@@ -32,6 +32,7 @@ import * as escalaAvulsaService from '@/services/escalaAvulsa';
 import * as escalaVocalService from '@/services/escalaVocal';
 import * as membrosService from '@/services/membros';
 import * as repertorioService from '@/services/repertorio';
+import * as roteiroService from '@/services/roteiro';
 import * as comentariosService from '@/services/comentarios';
 import * as historicoService from '@/services/historico';
 import { ApiError } from '@/services/api';
@@ -46,10 +47,11 @@ import {
   HistoricoItem,
   Membro,
   Repertorio,
+  RoteiroItem,
   StatusEscalaVocal,
   SugestaoVocal,
 } from '@/types';
-import { LARGURA_CONTEUDO, spacing, typography } from '@/theme';
+import { LARGURA_CONTEUDO, radius, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import {
@@ -94,6 +96,23 @@ function descreverHistorico(item: HistoricoItem): string {
     default:
       return `${ator}: ${item.acao}`;
   }
+}
+
+function formatDuracao(seg: number | null): string {
+  if (seg == null) return '--:--';
+  const m = Math.floor(seg / 60);
+  const s = seg % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+// Aceita "3:43" (mm:ss) ou segundos puros ("223"); null se vazio/ inválido.
+function parseDuracao(txt: string): number | null {
+  const t = txt.trim();
+  if (!t) return null;
+  const m = /^(\d+):([0-5]?\d)$/.exec(t);
+  if (m) return Number(m[1]) * 60 + Number(m[2]);
+  if (/^\d+$/.test(t)) return Number(t);
+  return null;
 }
 
 interface EquipeItem {
@@ -165,6 +184,15 @@ export function DetalhesCultoScreen() {
 
   const [historico, setHistorico] = useState<HistoricoItem[]>([]);
 
+  const [roteiro, setRoteiro] = useState<RoteiroItem[]>([]);
+  const [roteiroModalAberto, setRoteiroModalAberto] = useState(false);
+  const [roteiroEditandoId, setRoteiroEditandoId] = useState<number | null>(null);
+  const [roteiroTipo, setRoteiroTipo] = useState<'musica' | 'momento'>('musica');
+  const [roteiroTitulo, setRoteiroTitulo] = useState('');
+  const [roteiroTom, setRoteiroTom] = useState('');
+  const [roteiroDuracao, setRoteiroDuracao] = useState(''); // mm:ss
+  const [salvandoRoteiro, setSalvandoRoteiro] = useState(false);
+
   const carregarDados = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -179,6 +207,7 @@ export function DetalhesCultoScreen() {
         ensaioDoCulto,
         comentariosDoCulto,
         historicoDoCulto,
+        roteiroDoCulto,
       ] = await Promise.all([
         repertorioService.getRepertorioDoCulto(cultoId),
         escalaVocalService.getEscalaVocalDoCulto(cultoId),
@@ -191,6 +220,7 @@ export function DetalhesCultoScreen() {
         user && podeGerir(user)
           ? historicoService.listarHistorico(cultoId)
           : Promise.resolve([] as HistoricoItem[]),
+        roteiroService.listarRoteiro(cultoId),
       ]);
 
       // Quem recusou some da equipe sozinho — não precisa remover na mão (o
@@ -231,6 +261,7 @@ export function DetalhesCultoScreen() {
       setSelecionadosVocal(vocaisSugeridos);
       setComentarios(comentariosDoCulto);
       setHistorico(historicoDoCulto);
+      setRoteiro(roteiroDoCulto);
       setModoEdicaoVocal(Boolean(abrirEdicaoVocal));
       setEnsaio(ensaioDoCulto.ensaio);
       setEnsaioParticipantes(ensaioDoCulto.participantes);
@@ -720,6 +751,86 @@ export function DetalhesCultoScreen() {
     }
   }
 
+  function abrirRoteiroModal(item?: RoteiroItem) {
+    if (item) {
+      setRoteiroEditandoId(item.id);
+      setRoteiroTipo(item.tipo);
+      setRoteiroTitulo(item.titulo ?? '');
+      setRoteiroTom(item.tom ?? '');
+      setRoteiroDuracao(item.duracao_seg != null ? formatDuracao(item.duracao_seg) : '');
+    } else {
+      setRoteiroEditandoId(null);
+      setRoteiroTipo('musica');
+      setRoteiroTitulo('');
+      setRoteiroTom('');
+      setRoteiroDuracao('');
+    }
+    setRoteiroModalAberto(true);
+  }
+
+  async function handleSalvarRoteiro() {
+    if (!roteiroTitulo.trim()) {
+      notifyAction('Preencha', 'Informe o título do item.');
+      return;
+    }
+    const duracaoSeg = parseDuracao(roteiroDuracao);
+    setSalvandoRoteiro(true);
+    try {
+      if (roteiroEditandoId) {
+        await roteiroService.atualizarItem(roteiroEditandoId, {
+          titulo: roteiroTitulo.trim(),
+          tom: roteiroTom.trim() || null,
+          duracaoSeg,
+        });
+      } else {
+        await roteiroService.criarItem({
+          cultoId,
+          tipo: roteiroTipo,
+          titulo: roteiroTitulo.trim(),
+          tom: roteiroTom.trim() || null,
+          duracaoSeg,
+        });
+      }
+      setRoteiroModalAberto(false);
+      setRoteiro(await roteiroService.listarRoteiro(cultoId));
+    } catch (err) {
+      notifyAction('Erro', err instanceof ApiError ? err.message : 'Não foi possível salvar o item.');
+    } finally {
+      setSalvandoRoteiro(false);
+    }
+  }
+
+  function handleExcluirRoteiro(item: RoteiroItem) {
+    confirmAction(
+      {
+        title: 'Remover do roteiro',
+        message: `Remover "${item.titulo}" do roteiro?`,
+        confirmLabel: 'Remover',
+      },
+      async () => {
+        try {
+          await roteiroService.deletarItem(item.id);
+          setRoteiro((prev) => prev.filter((i) => i.id !== item.id));
+        } catch (err) {
+          notifyAction('Erro', err instanceof ApiError ? err.message : 'Não foi possível remover.');
+        }
+      },
+    );
+  }
+
+  async function handleMoverRoteiro(index: number, direcao: -1 | 1) {
+    const alvo = index + direcao;
+    if (alvo < 0 || alvo >= roteiro.length) return;
+    const reordenado = [...roteiro];
+    [reordenado[index], reordenado[alvo]] = [reordenado[alvo], reordenado[index]];
+    setRoteiro(reordenado);
+    try {
+      await roteiroService.reordenar(cultoId, reordenado.map((i) => i.id));
+    } catch {
+      setRoteiro(await roteiroService.listarRoteiro(cultoId));
+    }
+  }
+
   // Volta pra um lugar seguro — evita ficar preso quando o culto não existe mais
   // (ex.: navegação restaurada apontando pra um culto apagado).
   function voltarSeguro() {
@@ -841,6 +952,66 @@ export function DetalhesCultoScreen() {
                   />
                 )}
               </TouchableOpacity>
+            ))}
+          </Card>
+        )}
+
+        {/* Roteiro (setlist cronometrado) */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Roteiro</Text>
+          {user && podeGerir(user) && (
+            <TouchableOpacity
+              onPress={() => abrirRoteiroModal()}
+              accessibilityRole="button"
+              accessibilityLabel="Adicionar item ao roteiro"
+            >
+              <Icon name="add-circle-outline" size={22} color={colors.primary} />
+            </TouchableOpacity>
+          )}
+        </View>
+        {roteiro.length > 0 && (
+          <Text style={styles.sectionSubtitle}>
+            Total: {formatDuracao(roteiro.reduce((s, i) => s + (i.duracao_seg ?? 0), 0))}
+          </Text>
+        )}
+        {roteiro.length === 0 ? (
+          <Card>
+            <Text style={styles.emptyText}>Roteiro vazio.</Text>
+          </Card>
+        ) : (
+          <Card style={styles.listCard}>
+            {roteiro.map((item, index) => (
+              <View key={item.id} style={styles.roteiroRow}>
+                <View style={styles.roteiroNum}>
+                  <Text style={styles.roteiroNumText}>{index + 1}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.roteiroTitulo} numberOfLines={1}>
+                    {item.titulo}
+                    {item.tipo === 'musica' && item.tom ? (
+                      <Text style={styles.roteiroTom}>{'  ·  '}{item.tom}</Text>
+                    ) : null}
+                  </Text>
+                  {item.tipo === 'momento' ? <Text style={styles.roteiroTag}>momento</Text> : null}
+                </View>
+                <Text style={styles.roteiroDuracao}>{formatDuracao(item.duracao_seg)}</Text>
+                {user && podeGerir(user) && (
+                  <View style={styles.roteiroAcoes}>
+                    <TouchableOpacity onPress={() => handleMoverRoteiro(index, -1)} hitSlop={6} disabled={index === 0}>
+                      <Icon name="chevron-up" size={18} color={index === 0 ? colors.textMuted : colors.textSecondary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleMoverRoteiro(index, 1)} hitSlop={6} disabled={index === roteiro.length - 1}>
+                      <Icon name="chevron-down" size={18} color={index === roteiro.length - 1 ? colors.textMuted : colors.textSecondary} />
+                    </TouchableOpacity>
+                    <OptionsMenu
+                      actions={[
+                        { label: 'Editar', icon: 'create-outline', onPress: () => abrirRoteiroModal(item) },
+                        { label: 'Remover', icon: 'trash-outline', destructive: true, onPress: () => handleExcluirRoteiro(item) },
+                      ]}
+                    />
+                  </View>
+                )}
+              </View>
             ))}
           </Card>
         )}
@@ -1274,6 +1445,90 @@ export function DetalhesCultoScreen() {
               variant="outline"
               onPress={() => setRepertorioModalAberto(false)}
               disabled={salvandoMusica}
+              style={styles.modalButton}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal: adicionar/editar item do roteiro */}
+      <Modal
+        visible={roteiroModalAberto}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setRoteiroModalAberto(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>
+              {roteiroEditandoId ? 'Editar item' : 'Adicionar ao roteiro'}
+            </Text>
+
+            {!roteiroEditandoId && (
+              <View style={styles.roteiroTipoLinha}>
+                {(['musica', 'momento'] as const).map((t) => (
+                  <TouchableOpacity
+                    key={t}
+                    style={[styles.roteiroTipoChip, roteiroTipo === t && styles.roteiroTipoChipAtivo]}
+                    onPress={() => setRoteiroTipo(t)}
+                  >
+                    <Text style={[styles.roteiroTipoText, roteiroTipo === t && styles.roteiroTipoTextAtivo]}>
+                      {t === 'musica' ? 'Música' : 'Momento'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            <Text style={styles.formLabel}>Título</Text>
+            <View style={styles.modalInput}>
+              <TextInput
+                style={styles.modalTextInput}
+                placeholder={roteiroTipo === 'musica' ? 'Nome da música' : 'Ex: Oração, Avisos'}
+                placeholderTextColor={colors.textMuted}
+                value={roteiroTitulo}
+                onChangeText={setRoteiroTitulo}
+              />
+            </View>
+
+            {roteiroTipo === 'musica' && (
+              <>
+                <Text style={styles.formLabel}>Tom (opcional)</Text>
+                <View style={styles.modalInput}>
+                  <TextInput
+                    style={styles.modalTextInput}
+                    placeholder="Ex: G, Em"
+                    placeholderTextColor={colors.textMuted}
+                    value={roteiroTom}
+                    onChangeText={setRoteiroTom}
+                  />
+                </View>
+              </>
+            )}
+
+            <Text style={styles.formLabel}>Duração (mm:ss, opcional)</Text>
+            <View style={styles.modalInput}>
+              <TextInput
+                style={styles.modalTextInput}
+                placeholder="3:43"
+                placeholderTextColor={colors.textMuted}
+                value={roteiroDuracao}
+                onChangeText={setRoteiroDuracao}
+                keyboardType="numbers-and-punctuation"
+              />
+            </View>
+
+            <Button
+              title={roteiroEditandoId ? 'Salvar' : 'Adicionar'}
+              onPress={handleSalvarRoteiro}
+              loading={salvandoRoteiro}
+              style={styles.modalButton}
+            />
+            <Button
+              title="Cancelar"
+              variant="outline"
+              onPress={() => setRoteiroModalAberto(false)}
+              disabled={salvandoRoteiro}
               style={styles.modalButton}
             />
           </View>
@@ -1887,4 +2142,32 @@ const criarEstilos = (colors: Cores) =>
       color: colors.textMuted,
       marginTop: 1,
     },
+    roteiroRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    roteiroNum: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: colors.primarySoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    roteiroNumText: { ...typography.caption, color: colors.primary, fontWeight: '700' },
+    roteiroTitulo: { ...typography.body, color: colors.text },
+    roteiroTom: { ...typography.caption, color: colors.textSecondary },
+    roteiroTag: { ...typography.caption, color: colors.textMuted },
+    roteiroDuracao: { ...typography.bodySmall, color: colors.textSecondary, fontVariant: ['tabular-nums'] },
+    roteiroAcoes: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+    roteiroTipoLinha: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
+    roteiroTipoChip: {
+      flex: 1,
+      alignItems: 'center',
+      paddingVertical: spacing.sm,
+      borderRadius: radius.pill,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    roteiroTipoChipAtivo: { backgroundColor: colors.primary, borderColor: colors.primary },
+    roteiroTipoText: { ...typography.bodySmall, color: colors.textSecondary },
+    roteiroTipoTextAtivo: { color: colors.textInverse, fontWeight: '700' },
   });
