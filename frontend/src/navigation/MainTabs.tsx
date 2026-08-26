@@ -2,7 +2,6 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator, BottomTabBar } from '@react-navigation/bottom-tabs';
 import { Icon, IconName } from '@/components/Icon';
-import { SidebarNav } from '@/components/SidebarNav';
 import { spacing, radius } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
@@ -34,19 +33,18 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 export function MainTabs() {
   const { colors } = useTheme();
   const styles = useThemedStyles(criarEstilos);
-  // A partir do breakpoint `lg` (desktop / tablet paisagem) as bottom tabs viram
-  // uma sidebar fixa à esquerda com botão de expandir/recolher (SidebarNav).
+  // No desktop a navegação principal fica na `PersistentSidebar` (fixa, no
+  // MainNavigator, ao lado do Stack) — então aqui escondemos a tab bar. No
+  // mobile mantemos a bottom tab bar padrão.
   const { isDesktop } = useBreakpoint();
 
   return (
     <Tab.Navigator
-      tabBar={(props) =>
-        isDesktop ? <SidebarNav {...props} tabIcon={tabIcon} /> : <BottomTabBar {...props} />
-      }
+      tabBar={(props) => (isDesktop ? null : <BottomTabBar {...props} />)}
       screenOptions={({ route }) => ({
         headerShown: false,
         sceneStyle: { flex: 1, backgroundColor: colors.background },
-        tabBarPosition: isDesktop ? 'left' : 'bottom',
+        tabBarPosition: 'bottom',
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: styles.label,
