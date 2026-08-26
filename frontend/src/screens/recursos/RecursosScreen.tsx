@@ -22,7 +22,8 @@ type RotaRecurso =
   | 'Membros'
   | 'Ministerio'
   | 'Confirmacoes'
-  | 'PanoramaEscalas';
+  | 'PanoramaEscalas'
+  | 'Indisponibilidades';
 
 interface ItemRecurso {
   icon: IconName;
@@ -37,6 +38,15 @@ const INSTRUMENTOS: ItemRecurso[] = [
   { icon: 'timer-outline', label: 'Metrônomo', sublabel: 'BPM e tap tempo', route: 'Metronomo' },
   { icon: 'pulse-outline', label: 'Pads Contínuos', sublabel: 'Banco de pads', route: 'PadContinuo' },
   { icon: 'videocam-outline', label: 'Biblioteca', sublabel: 'Vídeos das músicas', route: 'Biblioteca' },
+];
+
+const PESSOAL: ItemRecurso[] = [
+  {
+    icon: 'calendar-outline',
+    label: 'Indisponibilidades',
+    sublabel: 'Datas que não posso servir',
+    route: 'Indisponibilidades',
+  },
 ];
 
 const GESTAO: (ItemRecurso & { soAdmin?: boolean })[] = [
@@ -80,6 +90,9 @@ export function RecursosScreen() {
       >
         <Text style={styles.sectionTitle}>Instrumentos</Text>
         <View style={styles.grid}>{INSTRUMENTOS.map(renderCard)}</View>
+
+        <Text style={styles.sectionTitle}>Pessoal</Text>
+        <View style={styles.grid}>{PESSOAL.map(renderCard)}</View>
 
         {mostrarGestao && (
           <>

@@ -159,6 +159,26 @@ export interface RoteiroItem {
   link_musica: string | null;
 }
 
+// --- Indisponibilidades (spec 11, módulo 7) ---
+
+export type PeriodoIndisp = 'dia_inteiro' | 'matutino' | 'vespertino' | 'noturno';
+export type RecorrenciaIndisp = 'nenhuma' | 'semanal' | 'mensal';
+
+export interface Indisponibilidade {
+  id: number;
+  membro_id: number;
+  ministerio_id: number | null;
+  /** Só presente quando o solicitante pode ver (dono ou gestor). */
+  descricao?: string | null;
+  periodo: PeriodoIndisp;
+  data_inicio: string; // YYYY-MM-DD
+  data_fim: string; // YYYY-MM-DD
+  recorrencia: RecorrenciaIndisp;
+  created_at?: string;
+  /** Presente em GET /indisponibilidades/ministerio/:id (visão de gestão). */
+  membro_nome?: string;
+}
+
 // --- Panorama de escalas (spec 11, módulo 6) ---
 
 export interface PanoramaMembro {

@@ -342,9 +342,9 @@ indisponibilidades
 > indisponível na data.
 
 **Tarefas:**
-- [ ] **T-11.21** — Migration `indisponibilidades`.
-- [ ] **T-11.22** — CRUD (calendário) + integração com a sugestão de escala.
-- [ ] **T-11.23** — UI: calendário de indisponibilidades.
+- [x] **T-11.21** — Migration `indisponibilidades` (com `periodo`, `descricao`, `recorrencia`).
+- [x] **T-11.22** — CRUD + filtro na sugestão de escala (`sugerirVocais` / `findMembrosDisponiveisParaCulto`), período-aware.
+- [x] **T-11.23** — UI: tela dedicada (calendário + painel de Membros + modal de criação).
 
 ---
 

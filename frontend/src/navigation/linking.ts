@@ -31,6 +31,7 @@ export const linking: LinkingOptions<LinkingParamList> = {
       DetalhesCulto: 'cultos/:cultoId',
       Membros: 'membros',
       DetalheMembro: 'membros/:membroId?',
+      Indisponibilidades: 'indisponibilidades',
     },
   },
 };
