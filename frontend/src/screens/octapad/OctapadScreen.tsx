@@ -160,7 +160,7 @@ export function OctapadScreen() {
               </View>
 
               <Card style={styles.proCard} onPress={() => navigation.navigate('BibliotecaDrums')}>
-                <Icon name="musical-notes-outline" size={20} color={colors.primaryLight} />
+                <Icon name="library-outline" size={20} color={colors.primaryLight} />
                 <View style={styles.proTexto}>
                   <Text style={styles.proTitulo}>Biblioteca de Drums</Text>
                   <Text style={styles.proSub}>58 sons prontos pra personalizar seus pads.</Text>

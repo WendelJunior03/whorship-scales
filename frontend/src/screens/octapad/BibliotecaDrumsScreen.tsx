@@ -1,7 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { RouteProp, useRoute } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '@/components/Card';
 import { Header } from '@/components/Header';
@@ -17,13 +16,36 @@ import { fonts, LARGURA_CONTEUDO, radius, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 
-type Nav = StackNavigationProp<MainStackParamList, 'BibliotecaDrums'>;
+// Mesma cor de "borracha" do Octapad de verdade (spec 05), só em miniatura e lisa —
+// aqui é seletor de instrumento, não toca nada, então sem textura/estado pressionado.
+const MINI_BORRACHA = '#20242C';
+
+interface MiniOctapadProps {
+  nome: string;
+  cor: string;
+  selecionado: boolean;
+  onPress: () => void;
+}
+
+/** Mini réplica visual de um pad do Octapad — aqui é só atalho pra saber qual instrumento você está editando. */
+function MiniOctapad({ nome, cor, selecionado, onPress }: MiniOctapadProps) {
+  const styles = useThemedStyles(criarEstilos);
+  return (
+    <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={styles.miniColuna}>
+      <View style={[styles.miniPad, selecionado && { borderColor: cor }]}>
+        <View style={[styles.miniLed, selecionado && { backgroundColor: cor, shadowColor: cor }]} />
+      </View>
+      <Text style={[styles.miniNome, selecionado && { color: cor }]} numberOfLines={1}>
+        {nome}
+      </Text>
+    </TouchableOpacity>
+  );
+}
 
 /** Biblioteca de Drums (recurso PRO `pads.pack_premium`) — escolhe um som pronto pra um pad do Octapad. */
 export function BibliotecaDrumsScreen() {
   const { colors } = useTheme();
   const styles = useThemedStyles(criarEstilos);
-  const navigation = useNavigation<Nav>();
   const route = useRoute<RouteProp<MainStackParamList, 'BibliotecaDrums'>>();
 
   const { aparencia, definirSomPad } = useOctapadAparencia();
@@ -58,38 +80,28 @@ export function BibliotecaDrumsScreen() {
   }
 
   function usar(item: SomBiblioteca | null) {
-    // Som + nome numa chamada só (ver comentário em definirSomPad — evita perder o nome
-    // numa corrida entre a gravação e o goBack recarregando a tela anterior).
+    // Não volta pro Octapad sozinho — o usuário pode querer escolher som pra vários pads
+    // seguidos (trocando pela grade aí em cima) antes de voltar manualmente.
     definirSomPad(padId, item ? item.id : null, item ? item.nome : null);
-    navigation.goBack();
   }
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <Header title="Biblioteca de Drums" subtitle={`Escolher som — ${nomePad}`} showBack />
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.chipsLinha}
-        style={styles.chipsScroll}
-      >
-        {KIT_PADRAO.map((p) => {
-          const nome = aparencia.nomesPads[p.id] ?? p.nome;
-          const ativo = p.id === padId;
-          return (
-            <TouchableOpacity
+      <Header title="Biblioteca de Drums" showBack />
+      <Card style={styles.gradeCard}>
+        <Text style={styles.gradeTitulo}>{`Escolher som — ${nomePad}`}</Text>
+        <View style={styles.grade}>
+          {KIT_PADRAO.map((p) => (
+            <MiniOctapad
               key={p.id}
+              cor={aparencia.coresPads[p.id] ?? p.cor}
+              nome={aparencia.nomesPads[p.id] ?? p.nome}
+              selecionado={p.id === padId}
               onPress={() => setPadId(p.id)}
-              style={[styles.chip, ativo && styles.chipAtivo]}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.chipTexto, ativo && styles.chipTextoAtivo]} numberOfLines={1}>
-                {nome}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+            />
+          ))}
+        </View>
+      </Card>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Card style={styles.aviso}>
           <SeloPro />
@@ -151,34 +163,59 @@ export function BibliotecaDrumsScreen() {
 
 const criarEstilos = (colors: Cores) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  chipsScroll: { flexGrow: 0 },
-  chipsLinha: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.sm,
+  // Painel atrás da grade (mesmo Card usado no resto do app) pra não parecer que os
+  // pads estão flutuando soltos na tela.
+  gradeCard: {
+    width: '100%',
+    maxWidth: LARGURA_CONTEUDO,
+    alignSelf: 'center',
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.md,
+    alignItems: 'center',
   },
-  chip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+  gradeTitulo: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    marginBottom: spacing.md,
+  },
+  // 4 colunas fixas (largura do item + gap), centralizada no painel — 8 pads viram 2
+  // fileiras de 4 em vez de uma fileira só, então cabem confortavelmente em qualquer largura.
+  grade: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    width: 64 * 4 + spacing.md * 3,
+    gap: spacing.md,
+  },
+  miniColuna: {
+    alignItems: 'center',
+    gap: 4,
+    width: 64,
+  },
+  miniPad: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: MINI_BORRACHA,
+    borderWidth: 2,
+    borderColor: '#05070A',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  chipAtivo: {
-    backgroundColor: colors.primarySoft,
-    borderColor: colors.primary,
+  miniLed: {
+    width: 18,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#0D0F13',
+    shadowOpacity: 0.6,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 0 },
   },
-  chipTexto: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-  },
-  chipTextoAtivo: {
-    color: colors.primary,
-    fontFamily: fonts.semibold,
+  miniNome: {
+    ...typography.caption,
+    color: colors.textMuted,
+    fontSize: 10,
+    textAlign: 'center',
   },
   content: {
     width: '100%',
