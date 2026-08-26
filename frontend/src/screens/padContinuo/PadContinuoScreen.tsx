@@ -209,7 +209,9 @@ function ColunaCamada({
           {carregando ? (
             <Icon name="cloud-download-outline" size={14} color={estado.ligada ? colors.textInverse : colors.textSecondary} />
           ) : (
-            <Text style={[styles.botaoToggleTexto, estado.ligada && styles.botaoToggleTextoAtivo]}>ON</Text>
+            <Text style={[styles.botaoToggleTexto, estado.ligada && styles.botaoToggleTextoAtivo]}>
+              {estado.ligada ? 'ON' : 'OFF'}
+            </Text>
           )}
         </TouchableOpacity>
         <TouchableOpacity
