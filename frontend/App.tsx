@@ -15,6 +15,7 @@ import {
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ConfirmDialogHost } from '@/components/ConfirmDialogHost';
 import { RootNavigator } from '@/navigation/RootNavigator';
+import { navigationRef } from '@/navigation/navigationRef';
 import { linking } from '@/navigation/linking';
 import { NAVIGATION_PERSISTENCE_KEY } from '@/navigation/persistence';
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
@@ -92,6 +93,7 @@ function RaizApp({ pronto, initialState }: { pronto: boolean; initialState?: Ini
 
   return (
     <NavigationContainer
+      ref={navigationRef}
       linking={linking}
       initialState={initialState}
       onStateChange={(state) =>

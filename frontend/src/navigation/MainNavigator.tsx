@@ -1,6 +1,9 @@
 import React from 'react';
+import { View } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { MainTabs } from './MainTabs';
+import { PersistentSidebar } from '@/components/PersistentSidebar';
+import { useBreakpoint } from '@/hooks/useBreakpoint';
 import { EscalasScreen } from '@/screens/escalas/EscalasScreen';
 import { ConfirmacoesScreen } from '@/screens/escalas/ConfirmacoesScreen';
 import { DetalhesCultoScreen } from '@/screens/escalas/DetalhesCultoScreen';
@@ -36,7 +39,7 @@ export type MainStackParamList = {
 
 const Stack = createStackNavigator<MainStackParamList>();
 
-export function MainNavigator() {
+function StackNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, cardStyle: { flex: 1 } }}>
       <Stack.Screen name="MainTabs" component={MainTabs} />
@@ -56,4 +59,24 @@ export function MainNavigator() {
       <Stack.Screen name="PanoramaEscalas" component={PanoramaEscalasScreen} />
     </Stack.Navigator>
   );
+}
+
+export function MainNavigator() {
+  // No desktop a sidebar fica FIXA ao lado do Stack — assim ela persiste em
+  // qualquer tela (inclusive nas de stack, tipo detalhe do culto), não só nas
+  // abas. No mobile, cada tela usa a bottom tab normal.
+  const { isDesktop } = useBreakpoint();
+
+  if (isDesktop) {
+    return (
+      <View style={{ flex: 1, flexDirection: 'row' }}>
+        <PersistentSidebar />
+        <View style={{ flex: 1 }}>
+          <StackNavigator />
+        </View>
+      </View>
+    );
+  }
+
+  return <StackNavigator />;
 }
