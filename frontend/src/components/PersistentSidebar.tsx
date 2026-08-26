@@ -13,16 +13,20 @@ const LARGURA_EXPANDIDA = 240;
 const LARGURA_RECOLHIDA = 76;
 const CHAVE = '@deepscales:sidebar-expandida';
 
+// Abas (nested em MainTabs) ou telas de stack acessíveis direto pelo menu.
+type RotaMenu = keyof MainTabParamList | 'Indisponibilidades';
+
 interface ItemNav {
-  rota: keyof MainTabParamList;
+  rota: RotaMenu;
   label: string;
   icon: IconName;
 }
 
-// As mesmas 5 entradas das abas, agora fixas em qualquer tela (desktop).
+// As 5 abas + atalhos de stack fixos em qualquer tela (desktop).
 const ITENS: ItemNav[] = [
   { rota: 'Home', label: 'Início', icon: 'home' },
   { rota: 'Agenda', label: 'Agenda', icon: 'calendar' },
+  { rota: 'Indisponibilidades', label: 'Indisponibilidades', icon: 'calendar-off' },
   { rota: 'Recursos', label: 'Recursos', icon: 'grid' },
   { rota: 'Notificacoes', label: 'Avisos', icon: 'notifications' },
   { rota: 'Perfil', label: 'Perfil', icon: 'person' },
@@ -68,10 +72,11 @@ export function PersistentSidebar() {
     });
   };
 
-  const navegar = (rota: keyof MainTabParamList) => {
+  const navegar = (rota: RotaMenu) => {
     if (navigationRef.isReady()) {
-      // Nome da aba resolve o navegador aninhado (MainTabs) automaticamente.
-      navigationRef.navigate(rota);
+      // Nome da aba resolve o navegador aninhado (MainTabs); nome de tela de
+      // stack (ex.: Indisponibilidades) navega direto na stack raiz.
+      navigationRef.navigate(rota as never);
     }
   };
 
