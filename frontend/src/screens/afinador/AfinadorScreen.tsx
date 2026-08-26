@@ -101,7 +101,7 @@ export function AfinadorScreen() {
           <Aviso
             icon="globe-outline"
             titulo="Disponível na versão web"
-            texto="O afinador usa o microfone via navegador. No app nativo chega numa próxima fase — abra o Deep Scales no navegador pra usar agora."
+            texto="O afinador usa o microfone via navegador. No app nativo chega numa próxima fase — abra o Worship Stage no navegador pra usar agora."
           />
         ) : estado === 'negado' ? (
           <Aviso

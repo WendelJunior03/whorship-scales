@@ -1,4 +1,4 @@
-# Banco de desenvolvimento local do Deep Scales.
+# Banco de desenvolvimento local do Worship Stage.
 # Uso:
 #   docker compose up -d      # sobe o Postgres em localhost:5432
 #   npm run migrate:up        # cria o schema (baseline)

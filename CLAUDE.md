@@ -1,4 +1,4 @@
-# Instruções do Projeto — Deep Scales
+# Instruções do Projeto — Worship Stage
 
 Você é o agente principal de desenvolvimento deste projeto. Trabalhe de forma
 autônoma sempre que possível.
