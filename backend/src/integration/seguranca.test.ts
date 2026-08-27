@@ -112,6 +112,7 @@ afterAll(async () => {
     if (!pular && A.orgId && B.orgId) {
         const orgs = [A.orgId, B.orgId];
         await withBypass(async (client) => {
+            await client.query('DELETE FROM assinaturas WHERE org_id = ANY($1)', [orgs]);
             await client.query('DELETE FROM pasta_musicas WHERE org_id = ANY($1)', [orgs]);
             await client.query('DELETE FROM pastas WHERE org_id = ANY($1)', [orgs]);
             await client.query('DELETE FROM videos WHERE org_id = ANY($1)', [orgs]);
@@ -159,6 +160,9 @@ const ACOES_RESTRITAS: { m: 'post' | 'get' | 'delete' | 'put'; path: string }[] 
     { m: 'post', path: '/musicas' },
     { m: 'post', path: '/pastas' },
     { m: 'delete', path: '/pastas/999999' },
+    { m: 'get', path: '/assinaturas' },
+    { m: 'post', path: '/assinaturas' },
+    { m: 'put', path: '/ministerios/999999/vagas' },
 ];
 
 describe('Autorização por capacidade (Passo 5)', () => {
@@ -483,5 +487,48 @@ describe('Repertório+ (módulo 10)', () => {
             .send({ nome: 'Reckless Love', audioUrl: 'https://www.youtube.com/watch?v=Q3rXbHNW4Xk' });
         expect(criar.status).toBe(201);
         expect(criar.body.capa_url).toBe('https://img.youtube.com/vi/Q3rXbHNW4Xk/hqdefault.jpg');
+    });
+});
+
+// Módulo 12 — vagas e assinaturas: pool comprado, distribuição e limite.
+describe('Vagas e assinaturas (módulo 12)', () => {
+    it('comprar pacote aumenta o pool; distribuir respeita o disponível; excesso → 409', async () => {
+        if (pular) return;
+        // Ministério na org A pra receber vagas.
+        const min = await withBypass(async (client) => {
+            const m = (await client.query(
+                `INSERT INTO ministerios (org_id, nome, vagas_gratis, vagas_extras) VALUES ($1, 'Louvor Vagas', 10, 0) RETURNING id`,
+                [A.orgId],
+            )).rows[0];
+            return m.id as number;
+        });
+
+        // Compra um pacote de +10.
+        const compra = await http().post('/assinaturas').set('Authorization', auth(tokens.adminA)).send({ vagasTotal: 10 });
+        expect(compra.status).toBe(201);
+
+        const resumo = await http().get('/assinaturas').set('Authorization', auth(tokens.adminA));
+        expect(resumo.body.resumo.comprado).toBeGreaterThanOrEqual(10);
+        const disponivelAntes = resumo.body.resumo.disponivel;
+
+        // Distribui 10 ao ministério (dentro do disponível).
+        const ok = await http().put(`/ministerios/${min}/vagas`).set('Authorization', auth(tokens.adminA)).send({ vagasExtras: 10 });
+        expect(ok.status).toBe(200);
+        expect(ok.body.vagas_extras).toBe(10);
+
+        // Tentar alocar além do pool → 409.
+        const excesso = await http()
+            .put(`/ministerios/${min}/vagas`)
+            .set('Authorization', auth(tokens.adminA))
+            .send({ vagasExtras: disponivelAntes + 999 });
+        expect(excesso.status).toBe(409);
+    });
+
+    it('assinatura da org A não vaza pra org B (isolamento)', async () => {
+        if (pular) return;
+        await http().post('/assinaturas').set('Authorization', auth(tokens.adminA)).send({ vagasTotal: 5 });
+        const resumoB = await http().get('/assinaturas').set('Authorization', auth(tokens.adminB));
+        // Org B tem o próprio pool (não enxerga o pacote da A).
+        expect(resumoB.body.resumo.comprado).toBe(0);
     });
 });

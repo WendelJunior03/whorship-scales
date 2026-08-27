@@ -27,6 +27,7 @@ import {
 } from '../controllers/ministerioController';
 import { authMiddleware } from '../middlewares/authMiddleware';
 import { autoriza } from '../middlewares/roleMiddleware';
+import { distribuirVagasController } from '../controllers/assinaturaController';
 
 const router = Router();
 
@@ -36,6 +37,8 @@ router.get('/:id', authMiddleware, autoriza('ministerio.visualizar'), getMiniste
 router.post('/', authMiddleware, autoriza('ministerio.gerenciar'), criarMinisterioController);
 router.put('/:id', authMiddleware, autoriza('ministerio.gerenciar'), atualizarMinisterioController);
 router.delete('/:id', authMiddleware, autoriza('ministerio.gerenciar'), apagarMinisterioController);
+// Vagas extras alocadas ao ministério (módulo 12) — só admin (assinatura.gerenciar).
+router.put('/:id/vagas', authMiddleware, autoriza('assinatura.gerenciar'), distribuirVagasController);
 
 // Membros do ministério
 router.get('/:id/membros', authMiddleware, autoriza('ministerio.visualizar'), listarMembrosController);

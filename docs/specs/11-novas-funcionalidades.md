@@ -488,9 +488,10 @@ assinaturas
 > bloqueia adicionar membro acima do limite. Billing por loja (IAP) ou gateway — decidir.
 
 **Tarefas:**
-- [ ] **T-11.34** — Migration `assinaturas` + regra de limite por ministério (`vagas_gratis + vagas_extras`).
-- [ ] **T-11.35** — Fluxo de compra/distribuição de vagas + "Minhas assinaturas".
+- [x] **T-11.34** — Migration `assinaturas` + regra de limite por ministério (`vagas_gratis + vagas_extras`, ao adicionar membro → 409).
+- [x] **T-11.35** — Distribuição de vagas (PUT `/ministerios/:id/vagas`, limitada ao pool) + tela "Vagas e planos" (compra é **stub**, sem gateway ainda).
 - [ ] **T-11.36** — Definir quais módulos ficam atrás de **PRO** (spec 03) no modelo híbrido.
+- [ ] **Billing real** (App Store/Play/Stripe) — hoje a compra de pacote é stub (registra direto).
 
 ---
 

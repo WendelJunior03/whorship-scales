@@ -51,6 +51,15 @@ export async function apagarMinisterio(id: number) {
     return result.rows[0];
 }
 
+/** Define quantas vagas extras estão alocadas a este ministério (módulo 12). */
+export async function alterarVagasExtras(id: number, vagasExtras: number) {
+    const result = await query(
+        'UPDATE ministerios SET vagas_extras = $1 WHERE id = $2 RETURNING *',
+        [vagasExtras, id],
+    );
+    return result.rows[0];
+}
+
 // --- Membros do ministério (vínculo N:N) ---
 
 export async function listarMembros(ministerioId: number) {

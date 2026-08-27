@@ -22,6 +22,7 @@ import { PanoramaEscalasScreen } from '@/screens/escalas/PanoramaEscalasScreen';
 import { IndisponibilidadesScreen } from '@/screens/indisponibilidades/IndisponibilidadesScreen';
 import { AniversariantesScreen } from '@/screens/membros/AniversariantesScreen';
 import { ComunicadosScreen } from '@/screens/comunicados/ComunicadosScreen';
+import { AssinaturasScreen } from '@/screens/assinaturas/AssinaturasScreen';
 
 export type MainStackParamList = {
   MainTabs: undefined;
@@ -43,6 +44,7 @@ export type MainStackParamList = {
   Indisponibilidades: undefined;
   Aniversariantes: undefined;
   Comunicados: { abrirId?: number } | undefined;
+  Assinaturas: undefined;
 };
 
 const Stack = createStackNavigator<MainStackParamList>();
@@ -69,6 +71,7 @@ function StackNavigator() {
       <Stack.Screen name="Indisponibilidades" component={IndisponibilidadesScreen} />
       <Stack.Screen name="Aniversariantes" component={AniversariantesScreen} />
       <Stack.Screen name="Comunicados" component={ComunicadosScreen} />
+      <Stack.Screen name="Assinaturas" component={AssinaturasScreen} />
     </Stack.Navigator>
   );
 }
