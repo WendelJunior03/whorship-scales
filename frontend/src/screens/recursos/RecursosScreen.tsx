@@ -18,6 +18,7 @@ type RotaRecurso =
   | 'Metronomo'
   | 'PadContinuo'
   | 'Biblioteca'
+  | 'Multitrack'
   | 'Escalas'
   | 'Membros'
   | 'Ministerio'
@@ -41,6 +42,7 @@ const INSTRUMENTOS: ItemRecurso[] = [
   { icon: 'timer-outline', label: 'Metrônomo', sublabel: 'BPM e tap tempo', route: 'Metronomo' },
   { icon: 'pulse-outline', label: 'Pads Contínuos', sublabel: 'Banco de pads', route: 'PadContinuo' },
   { icon: 'musical-notes-outline', label: 'Biblioteca', sublabel: 'Músicas, pastas e vídeos', route: 'Biblioteca' },
+  { icon: 'options-outline', label: 'Multitrack / VS', sublabel: 'Player de multitracks', route: 'Multitrack' },
 ];
 
 const PESSOAL: ItemRecurso[] = [

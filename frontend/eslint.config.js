@@ -42,6 +42,10 @@ module.exports = [
         DynamicsCompressorNode: 'readonly',
         AudioNode: 'readonly',
         MediaStream: 'readonly',
+        File: 'readonly',
+        HTMLElement: 'readonly',
+        Event: 'readonly',
+        DragEvent: 'readonly',
       },
     },
     plugins: {
