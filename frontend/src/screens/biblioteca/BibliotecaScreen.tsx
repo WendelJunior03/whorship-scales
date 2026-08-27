@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Image,
   Modal,
   StyleSheet,
   Text,
@@ -158,9 +159,13 @@ export function BibliotecaScreen() {
       style={styles.card}
       onPress={() => navigation.navigate('DetalheMusica', { musicaId: item.id, nome: item.nome })}
     >
-      <View style={styles.cardIcone}>
-        <Icon name="musical-notes-outline" size={20} color={colors.primary} />
-      </View>
+      {item.capa_url ? (
+        <Image source={{ uri: item.capa_url }} style={styles.cardCapa} />
+      ) : (
+        <View style={styles.cardIcone}>
+          <Icon name="musical-notes-outline" size={20} color={colors.primary} />
+        </View>
+      )}
       <View style={styles.cardInfo}>
         <Text style={styles.cardNome}>{item.nome}</Text>
         <Text style={styles.cardMeta}>{metaMusica(item)}</Text>
@@ -329,6 +334,7 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
   vazio: { ...typography.bodySmall, color: colors.textMuted, textAlign: 'center', marginTop: spacing.xl },
   card: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, borderRadius: radius.xl },
   cardIcone: { width: 40, height: 40, borderRadius: radius.md, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
+  cardCapa: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.surfaceMuted },
   cardInfo: { flex: 1, gap: 2 },
   cardNome: { ...typography.body, color: colors.text, fontFamily: fonts.semibold },
   cardMeta: { ...typography.caption, color: colors.textMuted },

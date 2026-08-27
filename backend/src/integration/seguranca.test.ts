@@ -474,4 +474,14 @@ describe('Repertório+ (módulo 10)', () => {
         expect(musicas.status).toBe(200);
         expect(pastas.status).toBe(200);
     });
+
+    it('link do YouTube no áudio gera capa_url automaticamente', async () => {
+        if (pular) return;
+        const criar = await http()
+            .post('/musicas')
+            .set('Authorization', auth(tokens.adminA))
+            .send({ nome: 'Reckless Love', audioUrl: 'https://www.youtube.com/watch?v=Q3rXbHNW4Xk' });
+        expect(criar.status).toBe(201);
+        expect(criar.body.capa_url).toBe('https://img.youtube.com/vi/Q3rXbHNW4Xk/hqdefault.jpg');
+    });
 });

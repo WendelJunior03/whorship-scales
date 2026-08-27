@@ -30,6 +30,8 @@ export interface Musica {
   artista?: string | null;
   cifra_url?: string | null;
   audio_url?: string | null;
+  /** Capa derivada do link de áudio (YouTube/Spotify). */
+  capa_url?: string | null;
   created_at?: string;
 }
 

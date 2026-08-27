@@ -10,13 +10,14 @@ export interface MusicaInput {
     artista: string | null;
     cifraUrl: string | null;
     audioUrl: string | null;
+    capaUrl: string | null;
 }
 
 export async function criarMusica(input: MusicaInput) {
     const result = await query(
-        `INSERT INTO musicas (nome, tom_padrao, bpm, artista, cifra_url, audio_url)
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-        [input.nome, input.tomPadrao, input.bpm, input.artista, input.cifraUrl, input.audioUrl],
+        `INSERT INTO musicas (nome, tom_padrao, bpm, artista, cifra_url, audio_url, capa_url)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        [input.nome, input.tomPadrao, input.bpm, input.artista, input.cifraUrl, input.audioUrl, input.capaUrl],
     );
     return result.rows[0];
 }
@@ -34,9 +35,9 @@ export async function buscarMusica(id: number) {
 export async function atualizarMusica(id: number, input: MusicaInput) {
     const result = await query(
         `UPDATE musicas
-            SET nome = $1, tom_padrao = $2, bpm = $3, artista = $4, cifra_url = $5, audio_url = $6
-          WHERE id = $7 RETURNING *`,
-        [input.nome, input.tomPadrao, input.bpm, input.artista, input.cifraUrl, input.audioUrl, id],
+            SET nome = $1, tom_padrao = $2, bpm = $3, artista = $4, cifra_url = $5, audio_url = $6, capa_url = $7
+          WHERE id = $8 RETURNING *`,
+        [input.nome, input.tomPadrao, input.bpm, input.artista, input.cifraUrl, input.audioUrl, input.capaUrl, id],
     );
     return result.rows[0];
 }

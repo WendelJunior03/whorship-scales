@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Linking,
   Modal,
   ScrollView,
@@ -187,6 +188,9 @@ export function DetalheMusicaScreen() {
       ) : (
         <ScrollView contentContainerStyle={styles.conteudo} showsVerticalScrollIndicator={false}>
           <View style={styles.cabecalho}>
+            {musica?.capa_url ? (
+              <Image source={{ uri: musica.capa_url }} style={styles.capa} resizeMode="cover" />
+            ) : null}
             {musica?.artista ? <Text style={styles.artista}>{musica.artista}</Text> : null}
             <Text style={styles.meta}>
               {[musica?.tom_padrao ? `Tom ${musica.tom_padrao}` : null, musica?.bpm ? `${musica.bpm} BPM` : null]
@@ -315,6 +319,7 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
   centro: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   conteudo: { width: '100%', maxWidth: LARGURA_CONTEUDO, alignSelf: 'center', padding: spacing.lg, gap: spacing.md },
   cabecalho: { gap: spacing.sm },
+  capa: { width: '100%', height: 200, borderRadius: radius.xl, backgroundColor: colors.surfaceMuted },
   artista: { ...typography.body, color: colors.text, fontFamily: fonts.semibold },
   meta: { ...typography.body, color: colors.textSecondary },
   linksRow: { flexDirection: 'row', gap: spacing.sm },

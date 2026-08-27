@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import * as model from '../models/musicaModel';
+import { resolverCapaMusica } from '../utils/capaMusica';
 
 function validarBpm(bpm: unknown): { ok: true; valor: number | null } | { ok: false } {
     if (bpm === undefined || bpm === null || bpm === '') {
@@ -17,14 +18,17 @@ function textoOuNull(v: unknown): string | null {
     return typeof v === 'string' && v.trim() ? v.trim() : null;
 }
 
-function montarInput(body: Record<string, unknown>, bpm: number | null): model.MusicaInput {
+async function montarInput(body: Record<string, unknown>, bpm: number | null): Promise<model.MusicaInput> {
+    const audioUrl = textoOuNull(body.audioUrl);
     return {
         nome: String(body.nome).trim(),
         tomPadrao: textoOuNull(body.tomPadrao),
         bpm,
         artista: textoOuNull(body.artista),
         cifraUrl: textoOuNull(body.cifraUrl),
-        audioUrl: textoOuNull(body.audioUrl),
+        audioUrl,
+        // Capa derivada do link de áudio (YouTube/Spotify) — null se não der.
+        capaUrl: await resolverCapaMusica(audioUrl),
     };
 }
 
@@ -37,7 +41,7 @@ export async function criarMusicaController(req: Request, res: Response) {
     if (!b.ok) {
         return res.status(400).json({ message: 'BPM inválido (entre 20 e 400).' });
     }
-    const musica = await model.criarMusica(montarInput(req.body, b.valor));
+    const musica = await model.criarMusica(await montarInput(req.body, b.valor));
     return res.status(201).json(musica);
 }
 
@@ -68,7 +72,7 @@ export async function atualizarMusicaController(req: Request, res: Response) {
     if (!b.ok) {
         return res.status(400).json({ message: 'BPM inválido (entre 20 e 400).' });
     }
-    const musica = await model.atualizarMusica(id, montarInput(req.body, b.valor));
+    const musica = await model.atualizarMusica(id, await montarInput(req.body, b.valor));
     if (!musica) {
         return res.status(404).json({ message: 'Música não encontrada!' });
     }
