@@ -145,7 +145,12 @@ export function PadContinuoScreen() {
         rightActions={[{ icon: 'menu-outline', label: 'Opções', onPress: () => setMenuAberto(true) }]}
       />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.colunasScroll}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.colunasScroll}
+          contentContainerStyle={styles.colunasConteudo}
+        >
           <View style={styles.colunas}>
             {camadasVisiveis.map((camada) => (
               <ColunaCamada
@@ -358,9 +363,16 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
   colunasScroll: {
     flexGrow: 0,
   },
+  // `flexGrow: 1` faz o conteúdo ocupar a largura visível do ScrollView (pra
+  // `justifyContent: 'center'` ter espaço sobrando pra centralizar quando as colunas
+  // couberem); se não couber, o conteúdo só volta a rolar normalmente.
+  colunasConteudo: {
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
   colunas: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: spacing.md,
     paddingBottom: spacing.xs,
   },
   coluna: {
