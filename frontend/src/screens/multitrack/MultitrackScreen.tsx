@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '@/components/Header';
 import { Card } from '@/components/Card';
 import { Icon } from '@/components/Icon';
+import { LogoCarregando } from '@/components/LogoCarregando';
 import { Waveform } from './Waveform';
 import { SliderFaixa } from './SliderFaixa';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
@@ -146,6 +147,10 @@ export function MultitrackScreen() {
             (computador) para usar.
           </Text>
         </View>
+      ) : mt.carregando ? (
+        <View style={styles.centroFull}>
+          <LogoCarregando texto="Carregando faixas…" />
+        </View>
       ) : semFaixas ? (
         <ScrollView contentContainerStyle={styles.centro}>
           <Pressable ref={dropRef} style={styles.dropzone} onPress={abrirSeletor}>
@@ -157,7 +162,6 @@ export function MultitrackScreen() {
             </View>
             <Text style={styles.dropFormatos}>WAV, MP3, M4A, OGG</Text>
           </Pressable>
-          {mt.carregando && <Text style={styles.carregando}>Carregando faixas…</Text>}
 
           {projetos.length > 0 && (
             <View style={styles.projetos}>
@@ -375,6 +379,7 @@ const criarEstilos = (colors: Cores) =>
     avisoTexto: { ...typography.bodySmall, color: colors.textSecondary, textAlign: 'center' },
 
     centro: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg, gap: spacing.md },
+    centroFull: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
     dropzone: {
       width: '100%', maxWidth: 520, alignItems: 'center', gap: spacing.sm,
       paddingVertical: spacing.xl, paddingHorizontal: spacing.lg,
