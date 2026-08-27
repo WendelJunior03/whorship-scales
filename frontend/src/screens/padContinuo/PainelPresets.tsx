@@ -3,6 +3,7 @@ import { Modal, Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } 
 import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
 import { Icon } from '@/components/Icon';
 import { PadPreset } from '@/hooks/usePadPresets';
+import { confirmAction } from '@/utils/confirm';
 import { fonts, radius, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
@@ -35,20 +36,12 @@ export const PainelPresets = forwardRef<PainelPresetsHandle, PainelPresetsProps>
   const styles = useThemedStyles(criarEstilos);
   const [aberto, setAberto] = useState(false);
   const [mostrarToast, setMostrarToast] = useState(false);
-  // Id do preset com a lixeira "armada" — confirmação de exclusão fica dentro do próprio
-  // balão (vira ✓/✕ no lugar da lixeira), em vez de abrir outro Modal por cima deste
-  // (dois <Modal> do RN empilhados travavam a tela — foco/overlay do segundo brigava com
-  // o primeiro, ficando preso mesmo depois de fechar).
-  const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
 
   const abrir = (opcoes?: { sucesso?: boolean }) => {
     setAberto(true);
     if (opcoes?.sucesso) setMostrarToast(true);
   };
-  const fechar = () => {
-    setAberto(false);
-    setConfirmandoId(null);
-  };
+  const fechar = () => setAberto(false);
 
   useImperativeHandle(ref, () => ({ abrir }), []);
 
@@ -76,9 +69,14 @@ export const PainelPresets = forwardRef<PainelPresetsHandle, PainelPresetsProps>
     fechar();
   }
 
-  function confirmarExclusao(id: string) {
-    setConfirmandoId(null);
-    onExcluir(id);
+  // Fecha ESTE painel primeiro, só depois abre o diálogo de confirmação — dois <Modal> do
+  // RN abertos ao mesmo tempo travava a tela (foco/overlay brigando entre si).
+  function pedirExclusao(preset: PadPreset) {
+    fechar();
+    confirmAction(
+      { title: 'Excluir preset', message: `Excluir "${preset.nome}"? Essa ação não pode ser desfeita.` },
+      () => onExcluir(preset.id),
+    );
   }
 
   return (
@@ -88,26 +86,29 @@ export const PainelPresets = forwardRef<PainelPresetsHandle, PainelPresetsProps>
         <Text style={styles.acaoTexto}>Meus presets</Text>
       </TouchableOpacity>
 
-      <Modal visible={aberto} transparent animationType="fade" onRequestClose={fechar}>
-        <Pressable style={styles.overlay} onPress={fechar} accessibilityLabel="Fechar" />
-        {/* `box-none`: a área vazia ao redor do diálogo deixa o toque passar pro overlay
-            (fecha clicando fora); o diálogo em si continua clicável normalmente. */}
-        <View style={styles.centro} pointerEvents="box-none">
-          <View style={styles.dialogo}>
-            <View style={styles.cabecalho}>
-              <Text style={styles.titulo}>Meus presets</Text>
-              <TouchableOpacity onPress={fechar} hitSlop={8} accessibilityRole="button" accessibilityLabel="Fechar sem escolher">
-                <Icon name="close" size={20} color={colors.textMuted} />
-              </TouchableOpacity>
-            </View>
+      {/* Só existe (monta o Modal/portal) enquanto está de fato aberto — o RN Web cria um
+          <div> extra no body assim que o Modal MONTA, mesmo com visible=false, e só
+          remove ao desmontar. Deixar sempre montado (visible controlando só a exibição)
+          arrisca acumular portais órfãos se este componente remontar mais de uma vez. */}
+      {aberto && (
+        <Modal visible transparent animationType="fade" onRequestClose={fechar}>
+          <Pressable style={styles.overlay} onPress={fechar} accessibilityLabel="Fechar" />
+          {/* `box-none`: a área vazia ao redor do diálogo deixa o toque passar pro overlay
+              (fecha clicando fora); o diálogo em si continua clicável normalmente. */}
+          <View style={styles.centro} pointerEvents="box-none">
+            <View style={styles.dialogo}>
+              <View style={styles.cabecalho}>
+                <Text style={styles.titulo}>Meus presets</Text>
+                <TouchableOpacity onPress={fechar} hitSlop={8} accessibilityRole="button" accessibilityLabel="Fechar sem escolher">
+                  <Icon name="close" size={20} color={colors.textMuted} />
+                </TouchableOpacity>
+              </View>
 
-            {presets.length === 0 ? (
-              <Text style={styles.vazioTexto}>Nenhum preset salvo ainda.</Text>
-            ) : (
-              <View style={styles.lista}>
-                {presets.map((preset) => {
-                  const confirmando = confirmandoId === preset.id;
-                  return (
+              {presets.length === 0 ? (
+                <Text style={styles.vazioTexto}>Nenhum preset salvo ainda.</Text>
+              ) : (
+                <View style={styles.lista}>
+                  {presets.map((preset) => (
                     <View key={preset.id} style={styles.balao}>
                       <View style={styles.balaoIcone}>
                         <Icon name="options-outline" size={20} color={colors.primary} />
@@ -122,55 +123,34 @@ export const PainelPresets = forwardRef<PainelPresetsHandle, PainelPresetsProps>
                           {preset.nome}
                         </Text>
                       </TouchableOpacity>
-                      {confirmando ? (
-                        <View style={styles.confirmarLinha}>
-                          <TouchableOpacity
-                            onPress={() => confirmarExclusao(preset.id)}
-                            hitSlop={8}
-                            accessibilityRole="button"
-                            accessibilityLabel={`Confirmar exclusão de ${preset.nome}`}
-                          >
-                            <Icon name="checkmark" size={20} color={colors.error} />
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            onPress={() => setConfirmandoId(null)}
-                            hitSlop={8}
-                            accessibilityRole="button"
-                            accessibilityLabel="Cancelar exclusão"
-                          >
-                            <Icon name="close" size={20} color={colors.textMuted} />
-                          </TouchableOpacity>
-                        </View>
-                      ) : (
-                        <TouchableOpacity
-                          onPress={() => setConfirmandoId(preset.id)}
-                          hitSlop={8}
-                          accessibilityRole="button"
-                          accessibilityLabel={`Excluir ${preset.nome}`}
-                        >
-                          <Icon name="trash-outline" size={20} color={colors.textMuted} />
-                        </TouchableOpacity>
-                      )}
+                      <TouchableOpacity
+                        onPress={() => pedirExclusao(preset)}
+                        hitSlop={8}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Excluir ${preset.nome}`}
+                      >
+                        <Icon name="trash-outline" size={20} color={colors.textMuted} />
+                      </TouchableOpacity>
                     </View>
-                  );
-                })}
-              </View>
-            )}
+                  ))}
+                </View>
+              )}
+            </View>
           </View>
-        </View>
 
-        {mostrarToast && (
-          <Animated.View
-            style={styles.toast}
-            pointerEvents="none"
-            entering={FadeInDown.duration(220)}
-            exiting={FadeOutDown.duration(220)}
-          >
-            <Icon name="checkmark-circle" size={18} color={colors.textInverse} />
-            <Text style={styles.toastTexto}>Preset salvo com sucesso</Text>
-          </Animated.View>
-        )}
-      </Modal>
+          {mostrarToast && (
+            <Animated.View
+              style={styles.toast}
+              pointerEvents="none"
+              entering={FadeInDown.duration(220)}
+              exiting={FadeOutDown.duration(220)}
+            >
+              <Icon name="checkmark-circle" size={18} color={colors.textInverse} />
+              <Text style={styles.toastTexto}>Preset salvo com sucesso</Text>
+            </Animated.View>
+          )}
+        </Modal>
+      )}
     </>
   );
 });
@@ -246,11 +226,6 @@ const criarEstilos = (colors: Cores) =>
     },
     balaoBotaoAplicar: {
       flex: 1,
-    },
-    confirmarLinha: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.md,
     },
     balaoNome: {
       ...typography.body,
