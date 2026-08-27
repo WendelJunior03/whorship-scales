@@ -56,7 +56,7 @@ export function useMultitrack() {
         // placeholder enquanto decodifica
         setFaixas((atual) => [
           ...atual,
-          { id, nome: meta.nome, icone: meta.icone, buffer: null, volume: 1, mudo: false, solo: false },
+          { id, nome: meta.nome, icone: meta.icone, cor: null, buffer: null, volume: 1, mudo: false, solo: false },
         ]);
         try {
           await engine().adicionarArquivo(id, arquivo);
@@ -128,6 +128,14 @@ export function useMultitrack() {
     );
   }, []);
 
+  const renomearFaixa = useCallback((id: string, nome: string) => {
+    setFaixas((atual) => atual.map((f) => (f.id === id ? { ...f, nome } : f)));
+  }, []);
+
+  const definirCor = useCallback((id: string, cor: string | null) => {
+    setFaixas((atual) => atual.map((f) => (f.id === id ? { ...f, cor } : f)));
+  }, []);
+
   const removerFaixa = useCallback((id: string) => {
     engine().removerFaixa(id);
     setFaixas((atual) => atual.filter((f) => f.id !== id));
@@ -157,6 +165,8 @@ export function useMultitrack() {
     setVolume,
     toggleMudo,
     toggleSolo,
+    renomearFaixa,
+    definirCor,
     removerFaixa,
   };
 }

@@ -6,13 +6,15 @@ interface SliderFaixaProps {
   valor: number; // 0..1
   onChange: (v: number) => void;
   mudo?: boolean;
+  /** Cor de destaque da faixa (sobrepõe a primária quando não estiver muda). */
+  cor?: string | null;
 }
 
 const KNOB = 22;
 
 /** Slider de volume com knob (círculo com miolo) no estilo do mockup, usando a
  *  cor do tema. Toque/arraste define o valor pela posição (sem lib externa). */
-export function SliderFaixa({ valor, onChange, mudo }: SliderFaixaProps) {
+export function SliderFaixa({ valor, onChange, mudo, cor }: SliderFaixaProps) {
   const { colors } = useTheme();
   const [largura, setLargura] = useState(1);
 
@@ -21,7 +23,7 @@ export function SliderFaixa({ valor, onChange, mudo }: SliderFaixaProps) {
     onChange(Math.min(1, Math.max(0, x / largura)));
   }
 
-  const corPreenchida = mudo ? colors.textMuted : colors.primary;
+  const corPreenchida = mudo ? colors.textMuted : cor ?? colors.primary;
 
   return (
     <View

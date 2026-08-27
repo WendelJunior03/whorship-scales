@@ -5,6 +5,8 @@ export interface Faixa {
   id: string;
   nome: string;
   icone: IconName;
+  /** Cor de destaque escolhida pelo usuário (hex) ou null. */
+  cor: string | null;
   /** buffer decodificado; null enquanto carrega. */
   buffer: AudioBuffer | null;
   volume: number; // 0..1

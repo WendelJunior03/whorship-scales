@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -22,6 +23,9 @@ import { spacing, radius, typography, fonts } from '@/theme';
 import { Cores } from '@/theme/palettes';
 
 const SEMITONS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+// Paleta discreta de cores por faixa (accent do usuário, não do tema).
+const PALETA = ['#EF4444', '#F59E0B', '#EAB308', '#22C55E', '#14B8A6', '#3B82F6', '#8B5CF6', '#EC4899'];
 
 function formatarTempo(seg: number): string {
   if (!Number.isFinite(seg) || seg < 0) seg = 0;
@@ -49,7 +53,10 @@ export function MultitrackScreen() {
 
   const [bpm, setBpm] = useState('');
   const [tomIndex, setTomIndex] = useState(0);
+  const [editandoId, setEditandoId] = useState<string | null>(null);
   const dropRef = useRef<View>(null);
+
+  const editando = editandoId ? mt.faixas.find((f) => f.id === editandoId) ?? null : null;
 
   const suportado = Platform.OS === 'web';
   const duasColunas = width >= 720;
@@ -145,9 +152,16 @@ export function MultitrackScreen() {
                 >
                   <Text style={[styles.msTexto, f.solo && styles.msTextoAtivo]}>S</Text>
                 </TouchableOpacity>
-                <Icon name={f.icone} size={22} color={f.buffer === null ? colors.textMuted : colors.text} />
-                <View style={styles.faixaSlider}>
-                  <SliderFaixa valor={f.volume} onChange={(v) => mt.setVolume(f.id, v)} mudo={f.mudo} />
+                <TouchableOpacity onPress={() => setEditandoId(f.id)} style={styles.iconeBtn} accessibilityLabel="Editar faixa">
+                  <Icon name={f.icone} size={22} color={f.cor ?? (f.buffer === null ? colors.textMuted : colors.text)} />
+                </TouchableOpacity>
+                <View style={styles.faixaCentro}>
+                  <TouchableOpacity onPress={() => setEditandoId(f.id)}>
+                    <Text style={styles.faixaNome} numberOfLines={1}>
+                      {f.nome}
+                    </Text>
+                  </TouchableOpacity>
+                  <SliderFaixa valor={f.volume} onChange={(v) => mt.setVolume(f.id, v)} mudo={f.mudo} cor={f.cor} />
                 </View>
                 <TouchableOpacity onPress={() => mt.removerFaixa(f.id)} hitSlop={8} style={styles.remover}>
                   <Icon name="close" size={16} color={colors.textMuted} />
@@ -202,6 +216,46 @@ export function MultitrackScreen() {
           <View style={{ height: spacing.xl }} />
         </ScrollView>
       )}
+
+      {/* Editor de faixa: nome + cor */}
+      <Modal visible={!!editando} animationType="slide" transparent onRequestClose={() => setEditandoId(null)}>
+        <View style={styles.overlay}>
+          <View style={styles.modal}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setEditandoId(null)} hitSlop={8}>
+                <Icon name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+              <Text style={styles.modalTitulo}>Editar faixa</Text>
+              <View style={{ width: 24 }} />
+            </View>
+
+            <TextInput
+              value={editando?.nome ?? ''}
+              onChangeText={(t) => editando && mt.renomearFaixa(editando.id, t)}
+              placeholder="Nome da faixa"
+              placeholderTextColor={colors.textMuted}
+              style={styles.nomeInput}
+            />
+
+            <Text style={styles.corLabel}>Cor</Text>
+            <View style={styles.paleta}>
+              <TouchableOpacity
+                onPress={() => editando && mt.definirCor(editando.id, null)}
+                style={[styles.swatch, styles.swatchSemCor, !editando?.cor && styles.swatchSel]}
+              >
+                <Icon name="close" size={14} color={colors.textMuted} />
+              </TouchableOpacity>
+              {PALETA.map((cor) => (
+                <TouchableOpacity
+                  key={cor}
+                  onPress={() => editando && mt.definirCor(editando.id, cor)}
+                  style={[styles.swatch, { backgroundColor: cor }, editando?.cor === cor && styles.swatchSel]}
+                />
+              ))}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -250,7 +304,9 @@ const criarEstilos = (colors: Cores) =>
     msSolo: { backgroundColor: colors.primary },
     msTexto: { ...typography.caption, color: colors.textSecondary, fontFamily: fonts.bold },
     msTextoAtivo: { color: colors.textInverse },
-    faixaSlider: { flex: 1, marginLeft: spacing.xs },
+    iconeBtn: { width: 30, alignItems: 'center' },
+    faixaCentro: { flex: 1, gap: 4, marginLeft: spacing.xs },
+    faixaNome: { ...typography.caption, color: colors.textSecondary, fontFamily: fonts.semibold },
     remover: { padding: spacing.xs },
 
     // Rodapé discreto
@@ -270,4 +326,22 @@ const criarEstilos = (colors: Cores) =>
 
     adicionar: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
     adicionarTexto: { ...typography.body, color: colors.primary, fontFamily: fonts.semibold },
+
+    // Editor de faixa
+    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+    modal: {
+      backgroundColor: colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20,
+      padding: spacing.lg, gap: spacing.md,
+    },
+    modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    modalTitulo: { ...typography.h3, color: colors.text },
+    nomeInput: {
+      ...typography.body, color: colors.text, borderWidth: 1, borderColor: colors.border,
+      borderRadius: radius.md, paddingHorizontal: spacing.md, height: 48,
+    },
+    corLabel: { ...typography.bodySmall, color: colors.textSecondary, fontFamily: fonts.semibold },
+    paleta: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, paddingBottom: spacing.sm },
+    swatch: { width: 34, height: 34, borderRadius: 17, borderWidth: 2, borderColor: 'transparent' },
+    swatchSemCor: { backgroundColor: colors.surfaceMuted, alignItems: 'center', justifyContent: 'center' },
+    swatchSel: { borderColor: colors.text },
   });
