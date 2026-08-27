@@ -301,6 +301,7 @@ const criarEstilos = (colors: Cores) =>
       position: 'relative',
     },
     balao: {
+      width: '100%',
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.md,
@@ -331,6 +332,10 @@ const criarEstilos = (colors: Cores) =>
       ...typography.body,
       color: colors.text,
       flex: 1,
+      // Sem isso, o <input> web não encolhe/cresce direito num flex row — o item flex
+      // fica "preso" na largura de conteúdo em vez de respeitar o `flex: 1`, apertando o
+      // resto da linha (era o que estava deixando o campo/ícone somem na edição).
+      minWidth: 0,
       paddingVertical: 2,
     },
     // Menu "⋮" — dropdown simples, sem Modal (nada de portal novo), ancorado no próprio
