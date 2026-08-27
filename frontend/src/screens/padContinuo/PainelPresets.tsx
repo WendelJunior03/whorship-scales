@@ -67,6 +67,8 @@ export function PainelPresets({ visible, onClose, presets, onAplicar, onSalvar, 
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Fechar presets" />
       <View style={styles.popover}>
+        <Text style={styles.titulo}>Presets</Text>
+
         <View style={styles.salvarInputWrap}>
           <TextInput
             value={nomeNovo}
@@ -133,6 +135,10 @@ const criarEstilos = (colors: Cores) =>
       shadowOpacity: 0.15,
       shadowRadius: 12,
       elevation: 8,
+    },
+    titulo: {
+      ...typography.h3,
+      color: colors.text,
     },
     salvarInputWrap: {
       backgroundColor: colors.surfaceMuted,
