@@ -11,10 +11,13 @@ import { KnobGiratorio } from '@/components/KnobGiratorio';
 import { Card } from '@/components/Card';
 import { SeloPro } from '@/components/SeloPro';
 import { useRecurso } from '@/hooks/useRecurso';
+import { useBreakpoint } from '@/hooks/useBreakpoint';
 import { usePadContinuo } from '@/hooks/usePadContinuo';
 import { usePadAparencia } from '@/hooks/usePadAparencia';
+import { usePadPresets, PadPreset } from '@/hooks/usePadPresets';
 import { PainelPersonalizarPads } from './PainelPersonalizarPads';
-import { EstadoCamada, NOTAS } from '@/audio/padContinuo';
+import { PainelPresets } from './PainelPresets';
+import { CamadaId, EstadoCamada, NOTAS } from '@/audio/padContinuo';
 import { hexParaRgba } from '@/utils/cor';
 import { fonts, radius, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
@@ -50,9 +53,56 @@ export function PadContinuoScreen() {
   } = usePadContinuo();
   const { liberado: camadasExtrasLiberadas, isPro } = useRecurso('pads.camadas_extras');
   const { aparencia, atualizar, restaurarPadrao } = usePadAparencia();
+  const { presets, salvarPreset, renomearPreset, excluirPreset, ultimoPresetId, definirUltimoPreset } = usePadPresets();
+  const { isDesktop } = useBreakpoint();
   const [painelAberto, setPainelAberto] = useState(false);
+  const [presetsAberto, setPresetsAberto] = useState(false);
 
   const camadasVisiveis = camadas.filter((c) => !c.somenteNoPro || camadasExtrasLiberadas);
+
+  // Salva o mix atual (camada ligada/volume/cutoff de cada + master) com o nome dado.
+  function salvarPresetAtual(nome: string) {
+    const camadasSnapshot: PadPreset['camadas'] = {};
+    for (const camada of camadas) {
+      const e = estados[camada.id];
+      camadasSnapshot[camada.id] = { ligada: e.ligada, volume: e.volume, cutoff: e.cutoff };
+    }
+    salvarPreset(nome, camadasSnapshot, { volume: volumeMaster, cutoff: cutoffMaster, loFilter: loFilterMaster });
+  }
+
+  // Restaura camada por camada (só liga/desliga se o estado atual for diferente do salvo,
+  // já que `alternarLigada` é um toggle) + master. Também marca esse preset como o
+  // último aplicado, pra tela restaurar sozinha da próxima vez que abrir.
+  function aplicarPreset(preset: PadPreset) {
+    (Object.keys(preset.camadas) as CamadaId[]).forEach((id) => {
+      const alvo = preset.camadas[id];
+      if (!alvo) return;
+      if (estados[id].ligada !== alvo.ligada) alternarLigada(id);
+      ajustarVolume(id, alvo.volume);
+      ajustarCutoff(id, alvo.cutoff);
+    });
+    ajustarVolumeMaster(preset.master.volume);
+    ajustarCutoffMaster(preset.master.cutoff);
+    ajustarLoFilterMaster(preset.master.loFilter);
+    definirUltimoPreset(preset.id);
+  }
+
+  // Sempre com a versão mais recente de `aplicarPreset` — evita entrar como dependência
+  // do efeito de restauração abaixo (senão ele rodaria de novo a cada toggle de camada).
+  const aplicarPresetRef = useRef(aplicarPreset);
+  aplicarPresetRef.current = aplicarPreset;
+
+  // Ao abrir a tela, restaura sozinho o último preset aplicado (uma vez só) — assim não
+  // precisa escolher o mix de novo toda vez que volta pra essa tela.
+  const restauradoRef = useRef(false);
+  useEffect(() => {
+    if (restauradoRef.current || !ultimoPresetId) return;
+    const preset = presets.find((p) => p.id === ultimoPresetId);
+    if (preset) {
+      restauradoRef.current = true;
+      aplicarPresetRef.current(preset);
+    }
+  }, [presets, ultimoPresetId]);
 
   // Cor de destaque (fader, knob, banco de pads, SOLO) — personalizável; `brilho`
   // modula a intensidade sem nunca deixar totalmente apagada.
@@ -92,45 +142,61 @@ export function PadContinuoScreen() {
         title="Pads Contínuos"
         subtitle="Banco de Pads"
         showBack
-        rightIcon="palette-outline"
-        rightIconLabel="Personalizar aparência dos pads"
-        onRightPress={() => setPainelAberto(true)}
+        rightActions={[
+          { icon: 'palette-outline', label: 'Personalizar aparência dos pads', onPress: () => setPainelAberto(true) },
+          // No desktop o painel de presets já fica fixo ao lado das colunas — o ícone só
+          // faz sentido no mobile, onde ele abre como folha deslizante.
+          ...(!isDesktop
+            ? [{ icon: 'bookmark-outline' as const, label: 'Presets', onPress: () => setPresetsAberto(true) }]
+            : []),
+        ]}
       />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Card style={styles.aviso}>
-          <Icon name="information-circle-outline" size={18} color={colors.textSecondary} />
-          <Text style={styles.avisoTexto}>
-            Escolha uma nota lá embaixo e ligue as camadas que quiser — todas tocam essa mesma nota, em loop contínuo.
-          </Text>
-        </Card>
+        <View style={[isDesktop && styles.colunasLinha]}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.colunasScroll}>
+            <View style={styles.colunas}>
+              {camadasVisiveis.map((camada) => (
+                <ColunaCamada
+                  key={camada.id}
+                  rotulo={camada.rotulo}
+                  estado={estados[camada.id]}
+                  carregando={!!carregando[camada.id]}
+                  corDestaque={corDestaque}
+                  corInativa={corInativa}
+                  onAlternarLigada={() => alternarLigada(camada.id)}
+                  onAjustarVolume={(v) => ajustarVolume(camada.id, v)}
+                  onAjustarCutoff={(v) => ajustarCutoff(camada.id, v)}
+                  onAlternarMudo={() => alternarMudo(camada.id)}
+                  onAlternarSolo={() => alternarSolo(camada.id)}
+                />
+              ))}
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.colunasScroll}>
-          <View style={styles.colunas}>
-            {camadasVisiveis.map((camada) => (
-              <ColunaCamada
-                key={camada.id}
-                rotulo={camada.rotulo}
-                estado={estados[camada.id]}
-                carregando={!!carregando[camada.id]}
-                corDestaque={corDestaque}
-                corInativa={corInativa}
-                onAlternarLigada={() => alternarLigada(camada.id)}
-                onAjustarVolume={(v) => ajustarVolume(camada.id, v)}
-                onAjustarCutoff={(v) => ajustarCutoff(camada.id, v)}
-                onAlternarMudo={() => alternarMudo(camada.id)}
-                onAlternarSolo={() => alternarSolo(camada.id)}
+              {!camadasExtrasLiberadas && (
+                <Card style={styles.colunaBloqueada}>
+                  <Icon name="grid-outline" size={22} color={colors.textSecondary} />
+                  <Text style={styles.colunaBloqueadaTexto}>+7 camadas</Text>
+                  <SeloPro />
+                </Card>
+              )}
+            </View>
+          </ScrollView>
+
+          {isDesktop && (
+            // `flex: 1` aqui absorve o espaço vazio que sobra depois das colunas e
+            // centraliza o painel (largura fixa) dentro dele — sem isso o painel ficava
+            // grudado logo depois das colunas em vez de centralizado no vazio.
+            <View style={styles.presetsArea}>
+              <PainelPresets
+                variante="coluna"
+                presets={presets}
+                onAplicar={aplicarPreset}
+                onSalvar={salvarPresetAtual}
+                onRenomear={renomearPreset}
+                onExcluir={excluirPreset}
               />
-            ))}
-
-            {!camadasExtrasLiberadas && (
-              <Card style={styles.colunaBloqueada}>
-                <Icon name="grid-outline" size={22} color={colors.textSecondary} />
-                <Text style={styles.colunaBloqueadaTexto}>+7 camadas</Text>
-                <SeloPro />
-              </Card>
-            )}
-          </View>
-        </ScrollView>
+            </View>
+          )}
+        </View>
 
         <Text style={styles.secaoTitulo}>Banco de pads</Text>
         <Card style={styles.notasCard}>
@@ -193,6 +259,19 @@ export function PadContinuoScreen() {
         atualizar={atualizar}
         restaurarPadrao={restaurarPadrao}
       />
+
+      {!isDesktop && (
+        <PainelPresets
+          variante="modal"
+          visible={presetsAberto}
+          onClose={() => setPresetsAberto(false)}
+          presets={presets}
+          onAplicar={aplicarPreset}
+          onSalvar={salvarPresetAtual}
+          onRenomear={renomearPreset}
+          onExcluir={excluirPreset}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -298,19 +377,19 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     padding: spacing.lg,
     gap: spacing.md,
   },
-  aviso: {
+  // Desktop: colunas (largura natural, só rola se não couber) + área de presets que
+  // absorve o resto da largura e centraliza o painel nela.
+  colunasLinha: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    borderRadius: radius.lg,
-  },
-  avisoTexto: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    flex: 1,
+    gap: spacing.md,
+    alignItems: 'flex-start',
   },
   colunasScroll: {
     flexGrow: 0,
+  },
+  presetsArea: {
+    flex: 1,
+    alignItems: 'center',
   },
   colunas: {
     flexDirection: 'row',
