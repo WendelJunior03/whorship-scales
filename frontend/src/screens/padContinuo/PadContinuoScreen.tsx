@@ -92,23 +92,17 @@ export function PadContinuoScreen() {
   aplicarPresetRef.current = aplicarPreset;
 
   // Ao abrir a tela (uma vez só): se já tem "último preset usado" (o usuário já está "em"
-  // um preset), aplica ele sozinho, sem mostrar nada. Sem último usado mas COM presets
-  // salvos, mostra "Meus presets" sozinho pra escolher. Sem nenhum preset salvo, não faz
-  // nada — mixer fica no padrão.
-  const decididoRef = useRef(false);
+  // um preset), aplica ele sozinho, sem abrir nada — só ajusta os sliders/cutoffs. Sem
+  // "abertura automática" de painel nenhum (tirado por ser fonte de bugs de Modal
+  // duplicando em certas condições) — "Meus presets" fica só no link do rodapé, acessível
+  // a qualquer momento, mas nunca aberto sozinho.
+  const aplicadoRef = useRef(false);
   useEffect(() => {
-    if (decididoRef.current) return;
-    if (ultimoPresetId) {
-      const preset = presets.find((p) => p.id === ultimoPresetId);
-      if (preset) {
-        decididoRef.current = true;
-        aplicarPresetRef.current(preset);
-      }
-      return;
-    }
-    if (presets.length > 0) {
-      decididoRef.current = true;
-      painelPresetsRef.current?.abrir();
+    if (aplicadoRef.current || !ultimoPresetId) return;
+    const preset = presets.find((p) => p.id === ultimoPresetId);
+    if (preset) {
+      aplicadoRef.current = true;
+      aplicarPresetRef.current(preset);
     }
   }, [presets, ultimoPresetId]);
 
