@@ -36,6 +36,7 @@ export const linking: LinkingOptions<LinkingParamList> = {
       Comunicados: 'comunicados/:abrirId?',
       Pasta: 'pastas/:pastaId',
       Assinaturas: 'assinaturas',
+      Multitrack: 'multitrack',
     },
   },
 };
