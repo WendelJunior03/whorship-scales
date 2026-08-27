@@ -3,10 +3,6 @@
 Plataforma **multi-igreja** para organizar as escalas do ministério de louvor, substituindo a
 planilha manual enviada por foto. Cada membro passa a ter visão individual da própria agenda,
 com confirmação de presença, comunicados e notificações a cada publicação ou alteração.
-
-**App em produção:** [deep-scales.vercel.app](https://deep-scales.vercel.app) — instalável
-como PWA direto do navegador (mobile e desktop).
-
 ---
 
 ## Visão Geral
