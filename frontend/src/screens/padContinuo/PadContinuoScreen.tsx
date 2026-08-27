@@ -16,6 +16,7 @@ import { usePadAparencia } from '@/hooks/usePadAparencia';
 import { usePadPresets, PadPreset } from '@/hooks/usePadPresets';
 import { PainelPersonalizarPads } from './PainelPersonalizarPads';
 import { PainelPresets } from './PainelPresets';
+import { MenuOpcoesPad } from './MenuOpcoesPad';
 import { CamadaId, EstadoCamada, NOTAS } from '@/audio/padContinuo';
 import { hexParaRgba } from '@/utils/cor';
 import { fonts, radius, spacing, typography } from '@/theme';
@@ -53,7 +54,9 @@ export function PadContinuoScreen() {
   const { liberado: camadasExtrasLiberadas, isPro } = useRecurso('pads.camadas_extras');
   const { aparencia, atualizar, restaurarPadrao } = usePadAparencia();
   const { presets, salvarPreset, excluirPreset, ultimoPresetId, definirUltimoPreset } = usePadPresets();
+  const [menuAberto, setMenuAberto] = useState(false);
   const [painelAberto, setPainelAberto] = useState(false);
+  const [presetsAberto, setPresetsAberto] = useState(false);
 
   const camadasVisiveis = camadas.filter((c) => !c.somenteNoPro || camadasExtrasLiberadas);
 
@@ -139,15 +142,9 @@ export function PadContinuoScreen() {
         title="Pads Contínuos"
         subtitle="Banco de Pads"
         showBack
-        rightActions={[
-          { icon: 'palette-outline', label: 'Personalizar aparência dos pads', onPress: () => setPainelAberto(true) },
-        ]}
+        rightActions={[{ icon: 'menu-outline', label: 'Opções', onPress: () => setMenuAberto(true) }]}
       />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.presetsLinha}>
-          <PainelPresets presets={presets} onAplicar={aplicarPreset} onSalvar={salvarPresetAtual} onExcluir={excluirPreset} />
-        </View>
-
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.colunasScroll}>
           <View style={styles.colunas}>
             {camadasVisiveis.map((camada) => (
@@ -230,12 +227,28 @@ export function PadContinuoScreen() {
         </Card>
       </ScrollView>
 
+      <MenuOpcoesPad
+        visible={menuAberto}
+        onClose={() => setMenuAberto(false)}
+        onPersonalizar={() => setPainelAberto(true)}
+        onPresets={() => setPresetsAberto(true)}
+      />
+
       <PainelPersonalizarPads
         visible={painelAberto}
         onClose={() => setPainelAberto(false)}
         aparencia={aparencia}
         atualizar={atualizar}
         restaurarPadrao={restaurarPadrao}
+      />
+
+      <PainelPresets
+        visible={presetsAberto}
+        onClose={() => setPresetsAberto(false)}
+        presets={presets}
+        onAplicar={aplicarPreset}
+        onSalvar={salvarPresetAtual}
+        onExcluir={excluirPreset}
       />
     </SafeAreaView>
   );
@@ -341,10 +354,6 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
   content: {
     padding: spacing.lg,
     gap: spacing.md,
-  },
-  presetsLinha: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
   },
   colunasScroll: {
     flexGrow: 0,
