@@ -32,8 +32,8 @@ export function Logo({ size = 112 }: LogoProps) {
         />
       </LinearGradient>
       <Text style={styles.wordmark}>
-        <Text style={styles.wordmarkDark}>Deep</Text>
-        <Text style={styles.wordmarkPrimary}> Scales</Text>
+        <Text style={styles.wordmarkDark}>Worship</Text>
+        <Text style={styles.wordmarkPrimary}> Stage</Text>
       </Text>
     </View>
   );
