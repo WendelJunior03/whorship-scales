@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Modal, Platform, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { Icon } from '@/components/Icon';
 import { Button } from '@/components/Button';
 import { PadPreset } from '@/hooks/usePadPresets';
@@ -49,11 +49,25 @@ export function PainelPresets({ presets, onAplicar, onSalvar, onExcluir }: Paine
     setAberto(false);
   }
 
+  // Esc fecha o popover (web) — o `onRequestClose` do Modal já cobre o botão físico/gesto
+  // de voltar do Android, mas não o teclado no navegador.
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !aberto) return;
+    // Tipo mínimo local — o tsconfig não inclui a lib "dom" (mesmo padrão de
+    // useAfinador.ts), então não dá pra usar o `KeyboardEvent` global do navegador.
+    const aoTeclar = (e: { key: string }) => {
+      if (e.key === 'Escape') fechar();
+    };
+    document.addEventListener('keydown', aoTeclar);
+    return () => document.removeEventListener('keydown', aoTeclar);
+  }, [aberto]);
+
   function salvar() {
     const nome = nomeNovo.trim();
     if (!nome) return;
     onSalvar(nome);
     setNomeNovo('');
+    fechar();
   }
 
   function aplicar(preset: PadPreset) {
