@@ -11,10 +11,14 @@ const LARGURA_POPOVER = 240;
 
 interface PopoverSalvarPresetProps {
   onSalvar: (nome: string) => void;
+  /** Chamado depois de salvar com sucesso (fechado este popover) — usado pra abrir a
+   * lista "Meus presets" em seguida, o preset novo já aparecendo nela como confirmação
+   * visual de que salvou. */
+  onSalvo?: () => void;
 }
 
 /** Link "Salvar preset" (rodapé do mixer) — abre um popover com só o nome + Salvar. */
-export function PopoverSalvarPreset({ onSalvar }: PopoverSalvarPresetProps) {
+export function PopoverSalvarPreset({ onSalvar, onSalvo }: PopoverSalvarPresetProps) {
   const { colors } = useTheme();
   const styles = useThemedStyles(criarEstilos);
   const { gatilhoRef, aberto, pos, abrir, fechar } = usePopoverAncorado(LARGURA_POPOVER);
@@ -38,6 +42,7 @@ export function PopoverSalvarPreset({ onSalvar }: PopoverSalvarPresetProps) {
     onSalvar(valor);
     setNome('');
     fechar();
+    onSalvo?.();
   }
 
   return (
