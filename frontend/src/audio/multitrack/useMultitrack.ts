@@ -18,6 +18,7 @@ export function useMultitrack() {
   const [posicao, setPosicao] = useState(0);
   const [duracao, setDuracao] = useState(0);
   const [carregando, setCarregando] = useState(false);
+  const [peaks, setPeaks] = useState<number[]>([]);
 
   function engine(): MultitrackEngine {
     if (!engineRef.current) engineRef.current = new MultitrackEngine();
@@ -55,7 +56,7 @@ export function useMultitrack() {
         // placeholder enquanto decodifica
         setFaixas((atual) => [
           ...atual,
-          { id, nome: meta.nome, emoji: meta.emoji, buffer: null, volume: 1, mudo: false, solo: false },
+          { id, nome: meta.nome, icone: meta.icone, buffer: null, volume: 1, mudo: false, solo: false },
         ]);
         try {
           await engine().adicionarArquivo(id, arquivo);
@@ -66,6 +67,7 @@ export function useMultitrack() {
         }
       }
       setDuracao(engine().duracao);
+      setPeaks(engine().getPeaks(140));
     } finally {
       setCarregando(false);
     }
@@ -130,6 +132,7 @@ export function useMultitrack() {
     engine().removerFaixa(id);
     setFaixas((atual) => atual.filter((f) => f.id !== id));
     setDuracao(engine().duracao);
+    setPeaks(engine().getPeaks(140));
   }, []);
 
   useEffect(() => {
@@ -145,6 +148,7 @@ export function useMultitrack() {
     posicao,
     duracao,
     carregando,
+    peaks,
     adicionarArquivos,
     play,
     pause,

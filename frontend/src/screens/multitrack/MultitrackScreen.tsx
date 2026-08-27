@@ -7,13 +7,15 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '@/components/Header';
 import { Card } from '@/components/Card';
 import { Icon } from '@/components/Icon';
-import { BarraDeslizante } from '@/components/BarraDeslizante';
+import { Waveform } from './Waveform';
+import { SliderFaixa } from './SliderFaixa';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { useMultitrack } from '@/audio/multitrack/useMultitrack';
 import { spacing, radius, typography, fonts } from '@/theme';
@@ -28,7 +30,6 @@ function formatarTempo(seg: number): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-/** Abre o seletor de arquivos do navegador e resolve com os arquivos escolhidos. */
 function escolherArquivos(): Promise<File[]> {
   return new Promise((resolve) => {
     const input = document.createElement('input');
@@ -43,17 +44,16 @@ function escolherArquivos(): Promise<File[]> {
 export function MultitrackScreen() {
   const { colors } = useTheme();
   const styles = useThemedStyles(criarEstilos);
+  const { width } = useWindowDimensions();
   const mt = useMultitrack();
 
-  const [nomeMusica, setNomeMusica] = useState('');
-  const [artista, setArtista] = useState('');
   const [bpm, setBpm] = useState('');
   const [tomIndex, setTomIndex] = useState(0);
   const dropRef = useRef<View>(null);
 
   const suportado = Platform.OS === 'web';
+  const duasColunas = width >= 720;
 
-  // Drag & drop (web) na área de soltar.
   useEffect(() => {
     if (!suportado) return;
     const el = dropRef.current as unknown as HTMLElement | null;
@@ -95,7 +95,6 @@ export function MultitrackScreen() {
           </Text>
         </View>
       ) : mt.faixas.length === 0 ? (
-        // Área de carregamento
         <View style={styles.centro}>
           <Pressable ref={dropRef} style={styles.dropzone} onPress={abrirSeletor}>
             <Icon name="upload-outline" size={40} color={colors.primary} />
@@ -110,76 +109,80 @@ export function MultitrackScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.conteudo} showsVerticalScrollIndicator={false}>
-          {/* Cabeçalho: nome/artista opcionais */}
-          <TextInput
-            value={nomeMusica}
-            onChangeText={setNomeMusica}
-            placeholder="Nome da música"
-            placeholderTextColor={colors.textMuted}
-            style={styles.tituloInput}
-          />
-          <TextInput
-            value={artista}
-            onChangeText={setArtista}
-            placeholder="Artista"
-            placeholderTextColor={colors.textMuted}
-            style={styles.artistaInput}
-          />
+          {/* Player: play grande + waveform */}
+          <Card style={styles.player}>
+            <TouchableOpacity
+              style={styles.playCirculo}
+              onPress={() => (mt.tocando ? mt.pause() : mt.play())}
+              accessibilityLabel={mt.tocando ? 'Pausar' : 'Tocar'}
+            >
+              <Icon name={mt.tocando ? 'pause' : 'play'} size={28} color={colors.background} />
+            </TouchableOpacity>
+            <View style={styles.playerDir}>
+              <Waveform peaks={mt.peaks} frac={frac} onSeek={(f) => mt.seek(f * mt.duracao)} />
+              <View style={styles.tempoRow}>
+                <Text style={styles.tempo}>{formatarTempo(mt.posicao)}</Text>
+                <Text style={styles.tempo}>{formatarTempo(mt.duracao)}</Text>
+              </View>
+            </View>
+          </Card>
 
-          {/* Faixas */}
-          <View style={styles.faixas}>
-            {mt.faixas.map((f) => {
-              const carregandoFaixa = f.buffer === null;
-              return (
-                <Card key={f.id} style={styles.faixa}>
-                  <Text style={styles.faixaEmoji}>{f.emoji}</Text>
-                  <View style={styles.faixaInfo}>
-                    <Text style={styles.faixaNome} numberOfLines={1}>
-                      {f.nome}
-                      {carregandoFaixa ? ' · carregando…' : ''}
-                    </Text>
-                    <BarraDeslizante
-                      valor={f.volume}
-                      onChange={(v) => mt.setVolume(f.id, v)}
-                      corPreenchida={f.mudo ? colors.textMuted : colors.primary}
-                      corBolinha={colors.primary}
-                    />
-                  </View>
-                  <TouchableOpacity onPress={() => mt.toggleMudo(f.id)} hitSlop={6} style={styles.faixaBtn}>
-                    <Icon
-                      name={f.mudo ? 'volume-mute-outline' : 'volume-high-outline'}
-                      size={20}
-                      color={f.mudo ? colors.textMuted : colors.text}
-                    />
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => mt.toggleSolo(f.id)} hitSlop={6} style={[styles.solo, f.solo && styles.soloAtivo]}>
-                    <Text style={[styles.soloTexto, f.solo && styles.soloTextoAtivo]}>S</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => mt.removerFaixa(f.id)} hitSlop={6} style={styles.faixaBtn}>
-                    <Icon name="trash-outline" size={18} color={colors.textMuted} />
-                  </TouchableOpacity>
-                </Card>
-              );
-            })}
+          {/* Faixas — grid 2 colunas */}
+          <View style={styles.grid}>
+            {mt.faixas.map((f) => (
+              <Card key={f.id} style={StyleSheet.flatten([styles.faixa, { width: duasColunas ? '48.5%' : '100%' }])}>
+                <TouchableOpacity
+                  style={[styles.ms, f.mudo && styles.msMudo]}
+                  onPress={() => mt.toggleMudo(f.id)}
+                  accessibilityLabel="Mudo"
+                >
+                  <Text style={[styles.msTexto, f.mudo && styles.msTextoAtivo]}>M</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.ms, f.solo && styles.msSolo]}
+                  onPress={() => mt.toggleSolo(f.id)}
+                  accessibilityLabel="Solo"
+                >
+                  <Text style={[styles.msTexto, f.solo && styles.msTextoAtivo]}>S</Text>
+                </TouchableOpacity>
+                <Icon name={f.icone} size={22} color={f.buffer === null ? colors.textMuted : colors.text} />
+                <View style={styles.faixaSlider}>
+                  <SliderFaixa valor={f.volume} onChange={(v) => mt.setVolume(f.id, v)} mudo={f.mudo} />
+                </View>
+                <TouchableOpacity onPress={() => mt.removerFaixa(f.id)} hitSlop={8} style={styles.remover}>
+                  <Icon name="close" size={16} color={colors.textMuted} />
+                </TouchableOpacity>
+              </Card>
+            ))}
           </View>
 
-          {/* Tom e BPM */}
-          <View style={styles.tomBpm}>
-            <View style={styles.tomBox}>
-              <Text style={styles.tomLabel}>Tom</Text>
-              <View style={styles.tomControle}>
-                <TouchableOpacity style={styles.tomBtn} onPress={() => setTomIndex((i) => (i + 11) % 12)}>
-                  <Text style={styles.tomBtnTexto}>−</Text>
-                </TouchableOpacity>
-                <Text style={styles.tomValor}>{SEMITONS[tomIndex]}</Text>
-                <TouchableOpacity style={styles.tomBtn} onPress={() => setTomIndex((i) => (i + 1) % 12)}>
-                  <Text style={styles.tomBtnTexto}>+</Text>
-                </TouchableOpacity>
-              </View>
-              <Text style={styles.tomNota}>transposição de áudio: em breve</Text>
-            </View>
-            <View style={styles.bpmBox}>
-              <Text style={styles.tomLabel}>BPM</Text>
+          {/* Rodapé discreto: transporte extra + tom + bpm + adicionar */}
+          <View style={styles.rodape}>
+            <View style={styles.transRow}>
+              <TouchableOpacity onPress={() => mt.seek(mt.posicao - 10)} style={styles.transBtn}>
+                <Icon name="play-back" size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={mt.stop} style={styles.transBtn}>
+                <Icon name="stop" size={16} color={colors.textSecondary} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => mt.seek(mt.posicao + 10)} style={styles.transBtn}>
+                <Icon name="play-forward" size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+
+              <View style={styles.rodapeSep} />
+
+              <Text style={styles.rodapeLabel}>Tom</Text>
+              <TouchableOpacity style={styles.tomBtn} onPress={() => setTomIndex((i) => (i + 11) % 12)}>
+                <Text style={styles.tomBtnTexto}>−</Text>
+              </TouchableOpacity>
+              <Text style={styles.tomValor}>{SEMITONS[tomIndex]}</Text>
+              <TouchableOpacity style={styles.tomBtn} onPress={() => setTomIndex((i) => (i + 1) % 12)}>
+                <Text style={styles.tomBtnTexto}>+</Text>
+              </TouchableOpacity>
+
+              <View style={styles.rodapeSep} />
+
+              <Text style={styles.rodapeLabel}>BPM</Text>
               <TextInput
                 value={bpm}
                 onChangeText={(t) => setBpm(t.replace(/\D/g, '').slice(0, 3))}
@@ -189,46 +192,13 @@ export function MultitrackScreen() {
                 style={styles.bpmInput}
               />
             </View>
-          </View>
+            <Text style={styles.tomNota}>Transposição de áudio sem alterar o BPM: em breve.</Text>
 
-          {/* Transporte */}
-          <View style={styles.transporte}>
-            <TouchableOpacity onPress={() => mt.seek(mt.posicao - 10)} hitSlop={8} style={styles.transBtn}>
-              <Icon name="play-back" size={22} color={colors.text} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => (mt.tocando ? mt.pause() : mt.play())}
-              style={styles.playBtn}
-              accessibilityLabel={mt.tocando ? 'Pausar' : 'Tocar'}
-            >
-              <Icon name={mt.tocando ? 'pause' : 'play'} size={26} color={colors.textInverse} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => mt.seek(mt.posicao + 10)} hitSlop={8} style={styles.transBtn}>
-              <Icon name="play-forward" size={22} color={colors.text} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={mt.stop} hitSlop={8} style={styles.transBtn}>
-              <Icon name="stop" size={20} color={colors.text} />
+            <TouchableOpacity style={styles.adicionar} onPress={abrirSeletor}>
+              <Icon name="add-circle-outline" size={20} color={colors.primary} />
+              <Text style={styles.adicionarTexto}>Adicionar faixas</Text>
             </TouchableOpacity>
           </View>
-
-          {/* Progresso */}
-          <View style={styles.progresso}>
-            <Text style={styles.tempo}>{formatarTempo(mt.posicao)}</Text>
-            <View style={styles.progressoBarra}>
-              <BarraDeslizante
-                valor={frac}
-                onChange={(v) => mt.seek(v * mt.duracao)}
-                corPreenchida={colors.primary}
-                corBolinha={colors.primary}
-              />
-            </View>
-            <Text style={styles.tempo}>{formatarTempo(mt.duracao)}</Text>
-          </View>
-
-          <TouchableOpacity style={styles.adicionar} onPress={abrirSeletor}>
-            <Icon name="add-circle-outline" size={20} color={colors.primary} />
-            <Text style={styles.adicionarTexto}>Adicionar faixas</Text>
-          </TouchableOpacity>
           <View style={{ height: spacing.xl }} />
         </ScrollView>
       )}
@@ -257,46 +227,47 @@ const criarEstilos = (colors: Cores) =>
     dropFormatos: { ...typography.caption, color: colors.textMuted, marginTop: spacing.xs },
     carregando: { ...typography.bodySmall, color: colors.textSecondary },
 
-    conteudo: { padding: spacing.lg, gap: spacing.sm, maxWidth: 720, width: '100%', alignSelf: 'center' },
-    tituloInput: { ...typography.h2, color: colors.text, padding: 0 },
-    artistaInput: { ...typography.body, color: colors.textSecondary, padding: 0, marginBottom: spacing.sm },
+    conteudo: { padding: spacing.lg, gap: spacing.md, maxWidth: 900, width: '100%', alignSelf: 'center' },
 
-    faixas: { gap: spacing.sm },
-    faixa: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md },
-    faixaEmoji: { fontSize: 22 },
-    faixaInfo: { flex: 1, gap: spacing.xs },
-    faixaNome: { ...typography.bodySmall, color: colors.text, fontFamily: fonts.semibold },
-    faixaBtn: { padding: spacing.xs },
-    solo: {
-      width: 30, height: 30, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center',
-      borderWidth: 1, borderColor: colors.border,
-    },
-    soloAtivo: { backgroundColor: colors.primary, borderColor: colors.primary },
-    soloTexto: { ...typography.caption, color: colors.textSecondary, fontFamily: fonts.bold },
-    soloTextoAtivo: { color: colors.textInverse },
-
-    tomBpm: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
-    tomBox: { flex: 1, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, gap: spacing.xs, alignItems: 'center' },
-    bpmBox: { width: 120, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, gap: spacing.xs, alignItems: 'center' },
-    tomLabel: { ...typography.caption, color: colors.textSecondary },
-    tomControle: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-    tomBtn: { width: 34, height: 34, borderRadius: radius.md, backgroundColor: colors.surfaceMuted, alignItems: 'center', justifyContent: 'center' },
-    tomBtnTexto: { ...typography.h3, color: colors.primary },
-    tomValor: { ...typography.h2, color: colors.text, minWidth: 40, textAlign: 'center' },
-    tomNota: { ...typography.caption, color: colors.textMuted, fontSize: 10 },
-    bpmInput: { ...typography.h2, color: colors.text, textAlign: 'center', minWidth: 60, padding: 0 },
-
-    transporte: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.lg, marginTop: spacing.md },
-    transBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-    playBtn: {
-      width: 64, height: 64, borderRadius: 32, backgroundColor: colors.primary,
+    // Player
+    player: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, padding: spacing.lg },
+    playCirculo: {
+      width: 72, height: 72, borderRadius: 36, backgroundColor: colors.text,
       alignItems: 'center', justifyContent: 'center',
     },
+    playerDir: { flex: 1, gap: spacing.xs },
+    tempoRow: { flexDirection: 'row', justifyContent: 'space-between' },
+    tempo: { ...typography.caption, color: colors.textSecondary },
 
-    progresso: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md },
-    progressoBarra: { flex: 1 },
-    tempo: { ...typography.caption, color: colors.textSecondary, minWidth: 40, textAlign: 'center' },
+    // Grid de faixas
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, justifyContent: 'space-between' },
+    faixa: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md },
+    ms: {
+      width: 30, height: 30, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center',
+      backgroundColor: colors.surfaceMuted,
+    },
+    msMudo: { backgroundColor: colors.error },
+    msSolo: { backgroundColor: colors.primary },
+    msTexto: { ...typography.caption, color: colors.textSecondary, fontFamily: fonts.bold },
+    msTextoAtivo: { color: colors.textInverse },
+    faixaSlider: { flex: 1, marginLeft: spacing.xs },
+    remover: { padding: spacing.xs },
 
-    adicionar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, marginTop: spacing.lg },
+    // Rodapé discreto
+    rodape: { gap: spacing.sm, marginTop: spacing.sm },
+    transRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' },
+    transBtn: {
+      width: 36, height: 36, borderRadius: radius.md, backgroundColor: colors.surface,
+      alignItems: 'center', justifyContent: 'center',
+    },
+    rodapeSep: { width: 1, height: 24, backgroundColor: colors.border, marginHorizontal: spacing.xs },
+    rodapeLabel: { ...typography.caption, color: colors.textSecondary },
+    tomBtn: { width: 30, height: 30, borderRadius: radius.md, backgroundColor: colors.surfaceMuted, alignItems: 'center', justifyContent: 'center' },
+    tomBtnTexto: { ...typography.h3, color: colors.primary },
+    tomValor: { ...typography.body, color: colors.text, fontFamily: fonts.semibold, minWidth: 26, textAlign: 'center' },
+    bpmInput: { ...typography.body, color: colors.text, minWidth: 44, padding: 0 },
+    tomNota: { ...typography.caption, color: colors.textMuted },
+
+    adicionar: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
     adicionarTexto: { ...typography.body, color: colors.primary, fontFamily: fonts.semibold },
   });

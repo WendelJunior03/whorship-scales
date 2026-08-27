@@ -1,36 +1,37 @@
+import { IconName } from '@/components/Icon';
+
 // Identifica o instrumento pelo nome do arquivo (seção 10 da spec). Ordem importa:
-// "backing vocal" antes de "vocal", etc. Retorna rótulo + emoji pra UI.
+// "backing vocal" antes de "vocal", etc. Retorna rótulo + ícone (linha) pra UI.
 
 interface Regra {
   chaves: string[];
   nome: string;
-  emoji: string;
+  icone: IconName;
 }
 
 const REGRAS: Regra[] = [
-  { chaves: ['backing', 'bvox', 'bvcl', 'bv', 'coro'], nome: 'Backing Vocal', emoji: '🎤' },
-  { chaves: ['vocal', 'voz', 'vox', 'lead'], nome: 'Vocal', emoji: '🎤' },
-  { chaves: ['violao', 'violão', 'acoustic', 'ac gtr', 'nylon'], nome: 'Violão', emoji: '🎸' },
-  { chaves: ['guitar', 'guitarra', 'gtr', 'elec'], nome: 'Guitarra', emoji: '🎸' },
-  { chaves: ['bass', 'baixo'], nome: 'Baixo', emoji: '🎸' },
-  { chaves: ['piano'], nome: 'Piano', emoji: '🎹' },
-  { chaves: ['key', 'teclado', 'synth', 'pad', 'organ'], nome: 'Teclado', emoji: '🎹' },
-  { chaves: ['drum', 'bateria', 'kit', 'batera'], nome: 'Bateria', emoji: '🥁' },
-  { chaves: ['perc', 'shaker', 'conga'], nome: 'Percussão', emoji: '🪘' },
-  { chaves: ['click', 'metron', 'guia'], nome: 'Click', emoji: '🎧' },
+  { chaves: ['backing', 'bvox', 'bvcl', 'bv', 'coro'], nome: 'Backing Vocal', icone: 'mic-vocal-outline' },
+  { chaves: ['vocal', 'voz', 'vox', 'lead'], nome: 'Vocal', icone: 'mic-outline' },
+  { chaves: ['violao', 'violão', 'acoustic', 'ac gtr', 'nylon'], nome: 'Violão', icone: 'guitar-outline' },
+  { chaves: ['guitar', 'guitarra', 'gtr', 'elec'], nome: 'Guitarra', icone: 'guitar-outline' },
+  { chaves: ['bass', 'baixo'], nome: 'Baixo', icone: 'guitar-outline' },
+  { chaves: ['piano'], nome: 'Piano', icone: 'piano-outline' },
+  { chaves: ['key', 'teclado', 'synth', 'pad', 'organ'], nome: 'Teclado', icone: 'piano-outline' },
+  { chaves: ['drum', 'bateria', 'kit', 'batera'], nome: 'Bateria', icone: 'drum-outline' },
+  { chaves: ['perc', 'shaker', 'conga'], nome: 'Percussão', icone: 'drum-outline' },
+  { chaves: ['click', 'metron', 'guia'], nome: 'Click', icone: 'musical-note-outline' },
 ];
 
-/** Remove extensão e normaliza (minúsculo, sem acento em chaves comuns). */
 function baseNome(arquivo: string): string {
   return arquivo.replace(/\.[^.]+$/, '').toLowerCase();
 }
 
-export function identificarInstrumento(arquivo: string, indice: number): { nome: string; emoji: string } {
+export function identificarInstrumento(arquivo: string, indice: number): { nome: string; icone: IconName } {
   const base = baseNome(arquivo);
   for (const regra of REGRAS) {
     if (regra.chaves.some((c) => base.includes(c))) {
-      return { nome: regra.nome, emoji: regra.emoji };
+      return { nome: regra.nome, icone: regra.icone };
     }
   }
-  return { nome: `Faixa ${indice + 1}`, emoji: '🎵' };
+  return { nome: `Faixa ${indice + 1}`, icone: 'musical-note-outline' };
 }

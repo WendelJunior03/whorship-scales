@@ -35,6 +35,34 @@ export class MultitrackEngine {
     return this.faixas.reduce((max, f) => Math.max(max, f.buffer.duration), 0);
   }
 
+  /**
+   * Picos normalizados (0..1) do áudio, pra desenhar a waveform. Usa a faixa mais
+   * longa como referência e reduz o canal 0 a `n` colunas (máximo por bloco).
+   */
+  getPeaks(n: number): number[] {
+    const ref = this.faixas.reduce<FaixaInterna | null>(
+      (maior, f) => (!maior || f.buffer.duration > maior.buffer.duration ? f : maior),
+      null,
+    );
+    if (!ref) return [];
+    const dados = ref.buffer.getChannelData(0);
+    const bloco = Math.max(1, Math.floor(dados.length / n));
+    const picos: number[] = [];
+    let maxGlobal = 0;
+    for (let i = 0; i < n; i++) {
+      let max = 0;
+      const ini = i * bloco;
+      for (let j = 0; j < bloco; j++) {
+        const v = Math.abs(dados[ini + j] ?? 0);
+        if (v > max) max = v;
+      }
+      picos.push(max);
+      if (max > maxGlobal) maxGlobal = max;
+    }
+    // Normaliza pra 0..1 (evita divisão por zero em áudio silencioso).
+    return maxGlobal > 0 ? picos.map((p) => p / maxGlobal) : picos;
+  }
+
   get estaTocando(): boolean {
     return this.tocando;
   }
