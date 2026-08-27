@@ -8,10 +8,12 @@ import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 
 const LARGURA_DIALOGO = 360;
+const DURACAO_TOAST_MS = 2200;
 
 export interface PainelPresetsHandle {
-  /** Abre o painel programaticamente (usado pra mostrar sozinho ao entrar na tela). */
-  abrir: () => void;
+  /** Abre o painel programaticamente. `sucesso: true` também mostra o toast de
+   * confirmação (usado logo depois de salvar um preset novo). */
+  abrir: (opcoes?: { sucesso?: boolean }) => void;
 }
 
 interface PainelPresetsProps {
@@ -32,11 +34,22 @@ export const PainelPresets = forwardRef<PainelPresetsHandle, PainelPresetsProps>
   const { colors } = useTheme();
   const styles = useThemedStyles(criarEstilos);
   const [aberto, setAberto] = useState(false);
+  const [mostrarToast, setMostrarToast] = useState(false);
 
-  const abrir = () => setAberto(true);
+  const abrir = (opcoes?: { sucesso?: boolean }) => {
+    setAberto(true);
+    if (opcoes?.sucesso) setMostrarToast(true);
+  };
   const fechar = () => setAberto(false);
 
   useImperativeHandle(ref, () => ({ abrir }), []);
+
+  // Toast de "salvo com sucesso" some sozinho depois de um tempo.
+  useEffect(() => {
+    if (!mostrarToast) return;
+    const id = setTimeout(() => setMostrarToast(false), DURACAO_TOAST_MS);
+    return () => clearTimeout(id);
+  }, [mostrarToast]);
 
   // Esc fecha o painel (web) — o `onRequestClose` do Modal já cobre o botão físico/gesto
   // de voltar do Android, mas não o teclado no navegador.
@@ -64,7 +77,7 @@ export const PainelPresets = forwardRef<PainelPresetsHandle, PainelPresetsProps>
 
   return (
     <>
-      <TouchableOpacity style={styles.acao} onPress={abrir} accessibilityRole="button" accessibilityLabel="Meus presets">
+      <TouchableOpacity style={styles.acao} onPress={() => abrir()} accessibilityRole="button" accessibilityLabel="Meus presets">
         <Icon name="list-outline" size={16} color={colors.primary} />
         <Text style={styles.acaoTexto}>Meus presets</Text>
       </TouchableOpacity>
@@ -115,6 +128,13 @@ export const PainelPresets = forwardRef<PainelPresetsHandle, PainelPresetsProps>
             )}
           </View>
         </View>
+
+        {mostrarToast && (
+          <View style={styles.toast} pointerEvents="none">
+            <Icon name="checkmark-circle" size={18} color={colors.textInverse} />
+            <Text style={styles.toastTexto}>Preset salvo com sucesso</Text>
+          </View>
+        )}
       </Modal>
     </>
   );
@@ -195,6 +215,28 @@ const criarEstilos = (colors: Cores) =>
     balaoNome: {
       ...typography.body,
       color: colors.text,
+      fontFamily: fonts.semibold,
+    },
+    toast: {
+      position: 'absolute',
+      bottom: spacing.xxl,
+      alignSelf: 'center',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      backgroundColor: colors.success,
+      borderRadius: radius.pill,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 12,
+      elevation: 8,
+    },
+    toastTexto: {
+      ...typography.bodySmall,
+      color: colors.textInverse,
       fontFamily: fonts.semibold,
     },
   });
