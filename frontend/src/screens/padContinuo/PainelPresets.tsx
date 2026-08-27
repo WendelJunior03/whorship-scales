@@ -1,4 +1,4 @@
-import React, { forwardRef, useEffect, useImperativeHandle } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 import { Modal, Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Icon } from '@/components/Icon';
 import { PadPreset } from '@/hooks/usePadPresets';
@@ -6,12 +6,11 @@ import { confirmAction } from '@/utils/confirm';
 import { fonts, radius, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
-import { usePopoverAncorado } from './usePopoverAncorado';
 
-const LARGURA_POPOVER = 260;
+const LARGURA_DIALOGO = 360;
 
 export interface PainelPresetsHandle {
-  /** Abre o popover programaticamente (usado pra mostrar sozinho ao entrar na tela). */
+  /** Abre o painel programaticamente (usado pra mostrar sozinho ao entrar na tela). */
   abrir: () => void;
 }
 
@@ -22,9 +21,9 @@ interface PainelPresetsProps {
 }
 
 /**
- * Link "Meus presets" (rodapé do mixer) — abre um popover com a lista de presets salvos
- * (nome clicável aplica, lixeira exclui). Também pode ser aberto programaticamente (ref)
- * pra aparecer sozinho quando a tela abre sem um "último preset usado" definido.
+ * Link "Meus presets" (rodapé do mixer) — abre um painel centralizado na tela com a lista
+ * de presets salvos, cada um num "balão" (nome clicável aplica, lixeira exclui). Também
+ * pode ser aberto programaticamente (ref) pra aparecer sozinho ao entrar na tela.
  */
 export const PainelPresets = forwardRef<PainelPresetsHandle, PainelPresetsProps>(function PainelPresets(
   { presets, onAplicar, onExcluir },
@@ -32,11 +31,14 @@ export const PainelPresets = forwardRef<PainelPresetsHandle, PainelPresetsProps>
 ) {
   const { colors } = useTheme();
   const styles = useThemedStyles(criarEstilos);
-  const { gatilhoRef, aberto, pos, abrir, fechar } = usePopoverAncorado(LARGURA_POPOVER);
+  const [aberto, setAberto] = useState(false);
 
-  useImperativeHandle(ref, () => ({ abrir }), [abrir]);
+  const abrir = () => setAberto(true);
+  const fechar = () => setAberto(false);
 
-  // Esc fecha o popover (web) — o `onRequestClose` do Modal já cobre o botão físico/gesto
+  useImperativeHandle(ref, () => ({ abrir }), []);
+
+  // Esc fecha o painel (web) — o `onRequestClose` do Modal já cobre o botão físico/gesto
   // de voltar do Android, mas não o teclado no navegador.
   useEffect(() => {
     if (Platform.OS !== 'web' || !aberto) return;
@@ -62,49 +64,56 @@ export const PainelPresets = forwardRef<PainelPresetsHandle, PainelPresetsProps>
 
   return (
     <>
-      <TouchableOpacity ref={gatilhoRef} style={styles.acao} onPress={abrir} accessibilityRole="button" accessibilityLabel="Meus presets">
+      <TouchableOpacity style={styles.acao} onPress={abrir} accessibilityRole="button" accessibilityLabel="Meus presets">
         <Icon name="list-outline" size={16} color={colors.primary} />
         <Text style={styles.acaoTexto}>Meus presets</Text>
       </TouchableOpacity>
 
-      <Modal visible={aberto} transparent animationType="none" onRequestClose={fechar}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={fechar} accessibilityLabel="Fechar" />
-        <View style={[styles.popover, { bottom: pos.bottom, left: pos.left }]}>
-          <View style={styles.cabecalho}>
-            <Text style={styles.titulo}>Meus presets</Text>
-            <TouchableOpacity onPress={fechar} hitSlop={8} accessibilityRole="button" accessibilityLabel="Fechar sem escolher">
-              <Icon name="close" size={18} color={colors.textMuted} />
-            </TouchableOpacity>
-          </View>
-
-          {presets.length === 0 ? (
-            <Text style={styles.vazioTexto}>Nenhum preset salvo ainda.</Text>
-          ) : (
-            <View style={styles.lista}>
-              {presets.map((preset, indice) => (
-                <View key={preset.id} style={styles.linha}>
-                  <TouchableOpacity
-                    style={styles.linhaBotaoAplicar}
-                    onPress={() => aplicar(preset)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Aplicar preset ${preset.nome}`}
-                  >
-                    <Text style={styles.linhaNome} numberOfLines={1}>
-                      {indice + 1} - {preset.nome}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => excluirComConfirmacao(preset)}
-                    hitSlop={8}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Excluir ${preset.nome}`}
-                  >
-                    <Icon name="trash-outline" size={18} color={colors.textMuted} />
-                  </TouchableOpacity>
-                </View>
-              ))}
+      <Modal visible={aberto} transparent animationType="fade" onRequestClose={fechar}>
+        <Pressable style={styles.overlay} onPress={fechar} accessibilityLabel="Fechar" />
+        {/* `box-none`: a área vazia ao redor do diálogo deixa o toque passar pro overlay
+            (fecha clicando fora); o diálogo em si continua clicável normalmente. */}
+        <View style={styles.centro} pointerEvents="box-none">
+          <View style={styles.dialogo}>
+            <View style={styles.cabecalho}>
+              <Text style={styles.titulo}>Meus presets</Text>
+              <TouchableOpacity onPress={fechar} hitSlop={8} accessibilityRole="button" accessibilityLabel="Fechar sem escolher">
+                <Icon name="close" size={20} color={colors.textMuted} />
+              </TouchableOpacity>
             </View>
-          )}
+
+            {presets.length === 0 ? (
+              <Text style={styles.vazioTexto}>Nenhum preset salvo ainda.</Text>
+            ) : (
+              <View style={styles.lista}>
+                {presets.map((preset) => (
+                  <View key={preset.id} style={styles.balao}>
+                    <View style={styles.balaoIcone}>
+                      <Icon name="bookmark-outline" size={20} color={colors.primary} />
+                    </View>
+                    <TouchableOpacity
+                      style={styles.balaoBotaoAplicar}
+                      onPress={() => aplicar(preset)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Aplicar preset ${preset.nome}`}
+                    >
+                      <Text style={styles.balaoNome} numberOfLines={1}>
+                        {preset.nome}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => excluirComConfirmacao(preset)}
+                      hitSlop={8}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Excluir ${preset.nome}`}
+                    >
+                      <Icon name="trash-outline" size={20} color={colors.textMuted} />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
         </View>
       </Modal>
     </>
@@ -123,20 +132,25 @@ const criarEstilos = (colors: Cores) =>
       color: colors.primary,
       fontFamily: fonts.semibold,
     },
-    popover: {
-      position: 'absolute',
-      width: LARGURA_POPOVER,
-      gap: spacing.sm,
+    overlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+    },
+    centro: {
+      ...StyleSheet.absoluteFillObject,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: spacing.lg,
+    },
+    dialogo: {
+      width: '100%',
+      maxWidth: LARGURA_DIALOGO,
+      gap: spacing.md,
       backgroundColor: colors.surface,
-      borderRadius: radius.lg,
+      borderRadius: radius.xl,
       borderWidth: 1,
       borderColor: colors.border,
-      padding: spacing.md,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.15,
-      shadowRadius: 12,
-      elevation: 8,
+      padding: spacing.lg,
     },
     cabecalho: {
       flexDirection: 'row',
@@ -148,26 +162,39 @@ const criarEstilos = (colors: Cores) =>
       color: colors.text,
     },
     vazioTexto: {
-      ...typography.caption,
+      ...typography.bodySmall,
       color: colors.textMuted,
     },
     lista: {
-      gap: spacing.xs,
+      gap: spacing.sm,
     },
-    linha: {
+    // "Balão" de cada preset — mesmo espírito do item de projeto salvo do Multitrack:
+    // card arredondado, ícone à esquerda, nome em destaque, lixeira à direita.
+    balao: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: spacing.sm,
+      gap: spacing.md,
       backgroundColor: colors.surfaceMuted,
-      borderRadius: radius.md,
-      paddingHorizontal: spacing.sm,
-      paddingVertical: spacing.xs,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
     },
-    linhaBotaoAplicar: {
+    balaoIcone: {
+      width: 36,
+      height: 36,
+      borderRadius: radius.md,
+      backgroundColor: colors.primarySoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    balaoBotaoAplicar: {
       flex: 1,
     },
-    linhaNome: {
-      ...typography.bodySmall,
+    balaoNome: {
+      ...typography.body,
       color: colors.text,
+      fontFamily: fonts.semibold,
     },
   });
