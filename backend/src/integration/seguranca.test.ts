@@ -112,6 +112,10 @@ afterAll(async () => {
     if (!pular && A.orgId && B.orgId) {
         const orgs = [A.orgId, B.orgId];
         await withBypass(async (client) => {
+            await client.query('DELETE FROM pasta_musicas WHERE org_id = ANY($1)', [orgs]);
+            await client.query('DELETE FROM pastas WHERE org_id = ANY($1)', [orgs]);
+            await client.query('DELETE FROM videos WHERE org_id = ANY($1)', [orgs]);
+            await client.query('DELETE FROM musicas WHERE org_id = ANY($1)', [orgs]);
             await client.query('DELETE FROM aviso_leituras WHERE org_id = ANY($1)', [orgs]);
             await client.query('DELETE FROM avisos WHERE org_id = ANY($1)', [orgs]);
             await client.query('DELETE FROM ministerio_membros WHERE org_id = ANY($1)', [orgs]);
@@ -152,6 +156,9 @@ const ACOES_RESTRITAS: { m: 'post' | 'get' | 'delete' | 'put'; path: string }[] 
     { m: 'post', path: '/avisos' },
     { m: 'delete', path: '/avisos/999999' },
     { m: 'put', path: '/avisos/999999' },
+    { m: 'post', path: '/musicas' },
+    { m: 'post', path: '/pastas' },
+    { m: 'delete', path: '/pastas/999999' },
 ];
 
 describe('Autorização por capacidade (Passo 5)', () => {
@@ -411,5 +418,60 @@ describe('Avisos (módulo 9)', () => {
         if (pular) return;
         const res = await http().post('/avisos').set('Authorization', auth(tokens.adminA)).send({ corpo: 'x' });
         expect(res.status).toBe(400);
+    });
+});
+
+// Módulo 10 — repertório+: campos novos da música, artistas e pastas.
+describe('Repertório+ (módulo 10)', () => {
+    it('música guarda artista/cifra/áudio e aparece na agregação de artistas', async () => {
+        if (pular) return;
+        const criar = await http()
+            .post('/musicas')
+            .set('Authorization', auth(tokens.adminA))
+            .send({ nome: 'Grande é o Senhor', tomPadrao: 'G', bpm: 72, artista: 'Adhemar de Campos', cifraUrl: 'https://cifra/x', audioUrl: 'https://audio/x' });
+        expect(criar.status).toBe(201);
+        expect(criar.body.artista).toBe('Adhemar de Campos');
+        expect(criar.body.cifra_url).toBe('https://cifra/x');
+
+        const artistas = await http().get('/musicas/artistas').set('Authorization', auth(tokens.adminA));
+        const encontrado = artistas.body.find((a: { artista: string }) => a.artista === 'Adhemar de Campos');
+        expect(encontrado).toBeTruthy();
+        expect(encontrado.total_musicas).toBeGreaterThanOrEqual(1);
+    });
+
+    it('pasta: criar, adicionar e remover música (gestor)', async () => {
+        if (pular) return;
+        const pasta = await http().post('/pastas').set('Authorization', auth(tokens.adminA)).send({ nome: 'Domingo' });
+        expect(pasta.status).toBe(201);
+        const musica = await http().post('/musicas').set('Authorization', auth(tokens.adminA)).send({ nome: 'Santo Espírito' });
+
+        const add = await http()
+            .post(`/pastas/${pasta.body.id}/musicas`)
+            .set('Authorization', auth(tokens.adminA))
+            .send({ musicaId: musica.body.id });
+        expect(add.status).toBe(200);
+        expect(add.body.some((m: { id: number }) => m.id === musica.body.id)).toBe(true);
+
+        const rem = await http()
+            .delete(`/pastas/${pasta.body.id}/musicas/${musica.body.id}`)
+            .set('Authorization', auth(tokens.adminA));
+        expect(rem.status).toBe(200);
+        const depois = await http().get(`/pastas/${pasta.body.id}/musicas`).set('Authorization', auth(tokens.adminA));
+        expect(depois.body.some((m: { id: number }) => m.id === musica.body.id)).toBe(false);
+    });
+
+    it('pasta da org A não vaza pra org B (isolamento)', async () => {
+        if (pular) return;
+        const pasta = await http().post('/pastas').set('Authorization', auth(tokens.adminA)).send({ nome: 'Interna A' });
+        const listaB = await http().get('/pastas').set('Authorization', auth(tokens.adminB));
+        expect(listaB.body.some((p: { id: number }) => p.id === pasta.body.id)).toBe(false);
+    });
+
+    it('membro comum lê o catálogo (GET /musicas e /pastas = 200)', async () => {
+        if (pular) return;
+        const musicas = await http().get('/musicas').set('Authorization', auth(tokens.vocalA));
+        const pastas = await http().get('/pastas').set('Authorization', auth(tokens.vocalA));
+        expect(musicas.status).toBe(200);
+        expect(pastas.status).toBe(200);
     });
 });

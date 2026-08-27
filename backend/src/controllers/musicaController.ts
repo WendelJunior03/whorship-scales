@@ -12,8 +12,24 @@ function validarBpm(bpm: unknown): { ok: true; valor: number | null } | { ok: fa
     return { ok: true, valor: Math.round(n) };
 }
 
+/** Texto opcional → trim ou null (usado em artista/cifra_url/audio_url). */
+function textoOuNull(v: unknown): string | null {
+    return typeof v === 'string' && v.trim() ? v.trim() : null;
+}
+
+function montarInput(body: Record<string, unknown>, bpm: number | null): model.MusicaInput {
+    return {
+        nome: String(body.nome).trim(),
+        tomPadrao: textoOuNull(body.tomPadrao),
+        bpm,
+        artista: textoOuNull(body.artista),
+        cifraUrl: textoOuNull(body.cifraUrl),
+        audioUrl: textoOuNull(body.audioUrl),
+    };
+}
+
 export async function criarMusicaController(req: Request, res: Response) {
-    const { nome, tomPadrao, bpm } = req.body;
+    const { nome, bpm } = req.body;
     if (!nome || !String(nome).trim()) {
         return res.status(400).json({ message: 'Nome da música é obrigatório!' });
     }
@@ -21,12 +37,17 @@ export async function criarMusicaController(req: Request, res: Response) {
     if (!b.ok) {
         return res.status(400).json({ message: 'BPM inválido (entre 20 e 400).' });
     }
-    const musica = await model.criarMusica(String(nome).trim(), tomPadrao ?? null, b.valor);
+    const musica = await model.criarMusica(montarInput(req.body, b.valor));
     return res.status(201).json(musica);
 }
 
 export async function listarMusicasController(_req: Request, res: Response) {
     return res.status(200).json(await model.listarMusicas());
+}
+
+/** GET /musicas/artistas — agregação por artista (antes de /:id). */
+export async function listarArtistasController(_req: Request, res: Response) {
+    return res.status(200).json(await model.listarArtistas());
 }
 
 export async function getMusicaController(req: Request, res: Response) {
@@ -39,7 +60,7 @@ export async function getMusicaController(req: Request, res: Response) {
 
 export async function atualizarMusicaController(req: Request, res: Response) {
     const id = Number(req.params.id);
-    const { nome, tomPadrao, bpm } = req.body;
+    const { nome, bpm } = req.body;
     if (!nome || !String(nome).trim()) {
         return res.status(400).json({ message: 'Nome da música é obrigatório!' });
     }
@@ -47,7 +68,7 @@ export async function atualizarMusicaController(req: Request, res: Response) {
     if (!b.ok) {
         return res.status(400).json({ message: 'BPM inválido (entre 20 e 400).' });
     }
-    const musica = await model.atualizarMusica(id, String(nome).trim(), tomPadrao ?? null, b.valor);
+    const musica = await model.atualizarMusica(id, montarInput(req.body, b.valor));
     if (!musica) {
         return res.status(404).json({ message: 'Música não encontrada!' });
     }

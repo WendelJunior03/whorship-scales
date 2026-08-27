@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
     criarMusicaController,
     listarMusicasController,
+    listarArtistasController,
     getMusicaController,
     atualizarMusicaController,
     apagarMusicaController,
@@ -12,6 +13,7 @@ import { autoriza } from '../middlewares/roleMiddleware';
 const router = Router();
 
 router.get('/', authMiddleware, listarMusicasController);
+router.get('/artistas', authMiddleware, listarArtistasController);
 router.get('/:id', authMiddleware, getMusicaController);
 router.post('/', authMiddleware, autoriza('musica.gerenciar'), criarMusicaController);
 router.put('/:id', authMiddleware, autoriza('musica.gerenciar'), atualizarMusicaController);
