@@ -53,7 +53,7 @@ export function PadContinuoScreen() {
   } = usePadContinuo();
   const { liberado: camadasExtrasLiberadas, isPro } = useRecurso('pads.camadas_extras');
   const { aparencia, atualizar, restaurarPadrao } = usePadAparencia();
-  const { presets, salvarPreset, excluirPreset, ultimoPresetId, definirUltimoPreset } = usePadPresets();
+  const { presets, salvarPreset, renomearPreset, excluirPreset, ultimoPresetId, definirUltimoPreset } = usePadPresets();
   const [painelAberto, setPainelAberto] = useState(false);
   const painelPresetsRef = useRef<PainelPresetsHandle>(null);
 
@@ -237,7 +237,13 @@ export function PadContinuoScreen() {
 
         <View style={styles.acoesLinha}>
           <PopoverSalvarPreset onSalvar={salvarPresetAtual} onSalvo={() => painelPresetsRef.current?.abrir({ sucesso: true })} />
-          <PainelPresets ref={painelPresetsRef} presets={presets} onAplicar={aplicarPreset} onExcluir={excluirPreset} />
+          <PainelPresets
+            ref={painelPresetsRef}
+            presets={presets}
+            onAplicar={aplicarPreset}
+            onRenomear={renomearPreset}
+            onExcluir={excluirPreset}
+          />
         </View>
       </ScrollView>
 
