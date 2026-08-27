@@ -243,7 +243,7 @@ export function PadContinuoScreen() {
         </Card>
 
         <View style={styles.acoesLinha}>
-          <PopoverSalvarPreset onSalvar={salvarPresetAtual} onSalvo={() => painelPresetsRef.current?.abrir()} />
+          <PopoverSalvarPreset onSalvar={salvarPresetAtual} onSalvo={() => painelPresetsRef.current?.abrir({ sucesso: true })} />
           <PainelPresets ref={painelPresetsRef} presets={presets} onAplicar={aplicarPreset} onExcluir={excluirPreset} />
         </View>
       </ScrollView>
