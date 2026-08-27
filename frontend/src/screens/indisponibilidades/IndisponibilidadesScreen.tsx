@@ -425,6 +425,12 @@ export function IndisponibilidadesScreen() {
                 <Text style={styles.emptyTexto}>Nenhuma indisponibilidade em {dataLonga(diaSel)}.</Text>
               </View>
             )}
+
+            {/* No mobile o painel de membros entra AQUI dentro (rola junto com o calendário) —
+                fora, como no desktop, ele brigava por altura com essa coluna (ambos dentro de
+                um `corpo` de altura fixa) e espremia o calendário, fazendo o FAB flutuar em
+                cima dele em vez de no rodapé da tela. */}
+            {!isDesktop && painelMembros}
             <View style={{ height: 96 }} />
           </ScrollView>
 
@@ -436,7 +442,7 @@ export function IndisponibilidadesScreen() {
           )}
         </View>
 
-        {painelMembros}
+        {isDesktop && painelMembros}
       </View>
 
       {/* Modal: Nova / Editar indisponibilidade */}
