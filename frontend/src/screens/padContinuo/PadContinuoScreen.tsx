@@ -29,20 +29,6 @@ const ALTURA_FADER = 140;
 // Intensidade mínima da cor de destaque (brilho=0 nunca some de vez).
 const ALPHA_DESTAQUE_MIN = 0.4;
 
-// Nível de módulo (não por instância) — de vez em quando essa tela remonta em rajada logo
-// após o carregamento da página (ainda não achamos a causa raiz exata), e cada remontagem
-// tentava abrir "Meus presets" de novo, empilhando vários popovers ao mesmo tempo. Isso
-// suprime aberturas automáticas muito próximas uma da outra (mesma rajada), sem impedir
-// que volte a aparecer numa visita de verdade depois (bem mais espaçada no tempo).
-let ultimoAutoAbrirEm = 0;
-const JANELA_SUPRESSAO_MS = 1500;
-function podeAutoAbrirPresets(): boolean {
-  const agora = Date.now();
-  if (agora - ultimoAutoAbrirEm < JANELA_SUPRESSAO_MS) return false;
-  ultimoAutoAbrirEm = agora;
-  return true;
-}
-
 export function PadContinuoScreen() {
   const { colors } = useTheme();
   const styles = useThemedStyles(criarEstilos);
@@ -105,29 +91,26 @@ export function PadContinuoScreen() {
   const aplicarPresetRef = useRef(aplicarPreset);
   aplicarPresetRef.current = aplicarPreset;
 
-  // Mixer sempre carrega normalmente por trás — se já tem "último preset usado", aplica
-  // ele sozinho (uma vez só) antes/independente do popover abaixo.
-  const aplicadoRef = useRef(false);
+  // Ao abrir a tela (uma vez só): se já tem "último preset usado" (o usuário já está "em"
+  // um preset), aplica ele sozinho, sem mostrar nada. Sem último usado mas COM presets
+  // salvos, mostra "Meus presets" sozinho pra escolher. Sem nenhum preset salvo, não faz
+  // nada — mixer fica no padrão.
+  const decididoRef = useRef(false);
   useEffect(() => {
-    if (aplicadoRef.current || !ultimoPresetId) return;
-    const preset = presets.find((p) => p.id === ultimoPresetId);
-    if (preset) {
-      aplicadoRef.current = true;
-      aplicarPresetRef.current(preset);
+    if (decididoRef.current) return;
+    if (ultimoPresetId) {
+      const preset = presets.find((p) => p.id === ultimoPresetId);
+      if (preset) {
+        decididoRef.current = true;
+        aplicarPresetRef.current(preset);
+      }
+      return;
     }
-  }, [presets, ultimoPresetId]);
-
-  // Ao abrir a tela (uma vez só): havendo QUALQUER preset salvo, mostra "Meus presets"
-  // sozinho — não bloqueia (o mixer já carregou atrás, com o último usado se tiver), é só
-  // pra dar a chance de escolher outro. Sem nenhum preset salvo, não mostra nada.
-  const mostradoRef = useRef(false);
-  useEffect(() => {
-    if (mostradoRef.current || presets.length === 0) return;
-    mostradoRef.current = true;
-    if (podeAutoAbrirPresets()) {
+    if (presets.length > 0) {
+      decididoRef.current = true;
       painelPresetsRef.current?.abrir();
     }
-  }, [presets]);
+  }, [presets, ultimoPresetId]);
 
   // Cor de destaque (fader, knob, banco de pads, SOLO) — personalizável; `brilho`
   // modula a intensidade sem nunca deixar totalmente apagada.
