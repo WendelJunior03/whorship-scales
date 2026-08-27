@@ -1,5 +1,5 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
-import { Modal, Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, Platform, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
 import { Icon } from '@/components/Icon';
 import { PadPreset } from '@/hooks/usePadPresets';
@@ -20,16 +20,124 @@ export interface PainelPresetsHandle {
 interface PainelPresetsProps {
   presets: PadPreset[];
   onAplicar: (preset: PadPreset) => void;
+  onRenomear: (id: string, nome: string) => void;
   onExcluir: (id: string) => void;
+}
+
+interface LinhaPresetProps {
+  preset: PadPreset;
+  onAplicar: () => void;
+  onRenomear: (nome: string) => void;
+  onExcluir: () => void;
+}
+
+/** Uma linha da lista — nome clicável aplica; ⋮ abre "Editar nome" / "Excluir". */
+function LinhaPreset({ preset, onAplicar, onRenomear, onExcluir }: LinhaPresetProps) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(criarEstilos);
+  const [menuAberto, setMenuAberto] = useState(false);
+  const [editando, setEditando] = useState(false);
+  const [nomeEdicao, setNomeEdicao] = useState(preset.nome);
+
+  function confirmarEdicao() {
+    const nome = nomeEdicao.trim();
+    if (nome) onRenomear(nome);
+    setEditando(false);
+  }
+
+  if (editando) {
+    return (
+      <View style={styles.balao}>
+        <View style={styles.balaoIcone}>
+          <Icon name="options-outline" size={20} color={colors.primary} />
+        </View>
+        <TextInput
+          value={nomeEdicao}
+          onChangeText={setNomeEdicao}
+          autoFocus
+          onSubmitEditing={confirmarEdicao}
+          style={styles.balaoInput}
+          placeholderTextColor={colors.textMuted}
+        />
+        <TouchableOpacity onPress={confirmarEdicao} hitSlop={8} accessibilityRole="button" accessibilityLabel="Confirmar novo nome">
+          <Icon name="checkmark" size={20} color={colors.success} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => {
+            setNomeEdicao(preset.nome);
+            setEditando(false);
+          }}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Cancelar edição do nome"
+        >
+          <Icon name="close" size={20} color={colors.textMuted} />
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.balaoWrap}>
+      <View style={styles.balao}>
+        <View style={styles.balaoIcone}>
+          <Icon name="options-outline" size={20} color={colors.primary} />
+        </View>
+        <TouchableOpacity
+          style={styles.balaoBotaoAplicar}
+          onPress={onAplicar}
+          accessibilityRole="button"
+          accessibilityLabel={`Aplicar preset ${preset.nome}`}
+        >
+          <Text style={styles.balaoNome} numberOfLines={1}>
+            {preset.nome}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => setMenuAberto((v) => !v)}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={`Opções de ${preset.nome}`}
+        >
+          <Icon name="ellipsis-vertical" size={20} color={colors.textMuted} />
+        </TouchableOpacity>
+      </View>
+
+      {menuAberto && (
+        <View style={styles.menu}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              setMenuAberto(false);
+              setEditando(true);
+            }}
+          >
+            <Icon name="create-outline" size={16} color={colors.text} />
+            <Text style={styles.menuItemTexto}>Editar nome</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              setMenuAberto(false);
+              onExcluir();
+            }}
+          >
+            <Icon name="trash-outline" size={16} color={colors.error} />
+            <Text style={[styles.menuItemTexto, { color: colors.error }]}>Excluir</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
+  );
 }
 
 /**
  * Link "Meus presets" (rodapé do mixer) — abre um painel centralizado na tela com a lista
- * de presets salvos, cada um num "balão" (nome clicável aplica, lixeira exclui). Também
- * pode ser aberto programaticamente (ref) pra aparecer sozinho ao entrar na tela.
+ * de presets salvos, cada um num "balão" (nome clicável aplica, ⋮ abre editar/excluir).
+ * Também pode ser aberto programaticamente (ref).
  */
 export const PainelPresets = forwardRef<PainelPresetsHandle, PainelPresetsProps>(function PainelPresets(
-  { presets, onAplicar, onExcluir },
+  { presets, onAplicar, onRenomear, onExcluir },
   ref,
 ) {
   const { colors } = useTheme();
@@ -109,29 +217,13 @@ export const PainelPresets = forwardRef<PainelPresetsHandle, PainelPresetsProps>
               ) : (
                 <View style={styles.lista}>
                   {presets.map((preset) => (
-                    <View key={preset.id} style={styles.balao}>
-                      <View style={styles.balaoIcone}>
-                        <Icon name="options-outline" size={20} color={colors.primary} />
-                      </View>
-                      <TouchableOpacity
-                        style={styles.balaoBotaoAplicar}
-                        onPress={() => aplicar(preset)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Aplicar preset ${preset.nome}`}
-                      >
-                        <Text style={styles.balaoNome} numberOfLines={1}>
-                          {preset.nome}
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => pedirExclusao(preset)}
-                        hitSlop={8}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Excluir ${preset.nome}`}
-                      >
-                        <Icon name="trash-outline" size={20} color={colors.textMuted} />
-                      </TouchableOpacity>
-                    </View>
+                    <LinhaPreset
+                      key={preset.id}
+                      preset={preset}
+                      onAplicar={() => aplicar(preset)}
+                      onRenomear={(nome) => onRenomear(preset.id, nome)}
+                      onExcluir={() => pedirExclusao(preset)}
+                    />
                   ))}
                 </View>
               )}
@@ -204,7 +296,10 @@ const criarEstilos = (colors: Cores) =>
       gap: spacing.sm,
     },
     // "Balão" de cada preset — mesmo espírito do item de projeto salvo do Multitrack:
-    // card arredondado, ícone à esquerda, nome em destaque, lixeira à direita.
+    // card arredondado, ícone à esquerda, nome em destaque, ⋮ à direita.
+    balaoWrap: {
+      position: 'relative',
+    },
     balao: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -231,6 +326,45 @@ const criarEstilos = (colors: Cores) =>
       ...typography.body,
       color: colors.text,
       fontFamily: fonts.semibold,
+    },
+    balaoInput: {
+      ...typography.body,
+      color: colors.text,
+      flex: 1,
+      paddingVertical: 2,
+    },
+    // Menu "⋮" — dropdown simples, sem Modal (nada de portal novo), ancorado no próprio
+    // balão via position relative/absolute.
+    menu: {
+      position: 'absolute',
+      top: '100%',
+      right: 0,
+      marginTop: spacing.xs,
+      width: 160,
+      gap: spacing.xs,
+      backgroundColor: colors.surface,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.xs,
+      zIndex: 1,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 6,
+    },
+    menuItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      borderRadius: radius.sm,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.sm,
+    },
+    menuItemTexto: {
+      ...typography.bodySmall,
+      color: colors.text,
     },
     toast: {
       position: 'absolute',
