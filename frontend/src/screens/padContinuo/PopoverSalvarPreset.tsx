@@ -52,22 +52,26 @@ export function PopoverSalvarPreset({ onSalvar, onSalvo }: PopoverSalvarPresetPr
         <Text style={styles.acaoTexto}>Salvar preset</Text>
       </TouchableOpacity>
 
-      <Modal visible={aberto} transparent animationType="none" onRequestClose={fechar}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={fechar} accessibilityLabel="Fechar" />
-        <View style={[styles.popover, { bottom: pos.bottom, left: pos.left }]}>
-          <Text style={styles.titulo}>Salvar preset</Text>
-          <TextInput
-            value={nome}
-            onChangeText={setNome}
-            placeholder="Nome do preset"
-            placeholderTextColor={colors.textMuted}
-            onSubmitEditing={salvar}
-            style={styles.input}
-            autoFocus
-          />
-          <Button title="Salvar" onPress={salvar} disabled={!nome.trim()} />
-        </View>
-      </Modal>
+      {/* Só monta o Modal enquanto está de fato aberto — evita acumular portais órfãos no
+          body caso este componente remonte mais de uma vez (ver PainelPresets). */}
+      {aberto && (
+        <Modal visible transparent animationType="none" onRequestClose={fechar}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={fechar} accessibilityLabel="Fechar" />
+          <View style={[styles.popover, { bottom: pos.bottom, left: pos.left }]}>
+            <Text style={styles.titulo}>Salvar preset</Text>
+            <TextInput
+              value={nome}
+              onChangeText={setNome}
+              placeholder="Nome do preset"
+              placeholderTextColor={colors.textMuted}
+              onSubmitEditing={salvar}
+              style={styles.input}
+              autoFocus
+            />
+            <Button title="Salvar" onPress={salvar} disabled={!nome.trim()} />
+          </View>
+        </Modal>
+      )}
     </>
   );
 }
