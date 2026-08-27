@@ -407,8 +407,8 @@ pasta_musicas  (pasta_id, musica_id, PRIMARY KEY (...))
 > tabela `artistas` só se houver foto/metadados por artista — decidir na implementação).
 
 **Tarefas:**
-- [ ] **T-11.28** — Migration: colunas `artista`/`cifra_url`/`audio_url` em `musicas` + `pastas`/`pasta_musicas`.
-- [ ] **T-11.29** — UI: abas Músicas/Pastas/Artistas; tela da música com cifra/áudio/YouTube.
+- [x] **T-11.28** — Migration: colunas `artista`/`cifra_url`/`audio_url` em `musicas` + `pastas`/`pasta_musicas` (RLS por org).
+- [x] **T-11.29** — UI: abas Músicas/Pastas/Artistas; tela da música com artista, cifra (link), áudio (link) + vídeos YouTube. Cifra/áudio por URL na v1.
 
 ---
 

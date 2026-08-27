@@ -15,6 +15,7 @@ import { AfinadorScreen } from '@/screens/afinador/AfinadorScreen';
 import { MetronomoScreen } from '@/screens/metronomo/MetronomoScreen';
 import { BibliotecaScreen } from '@/screens/biblioteca/BibliotecaScreen';
 import { DetalheMusicaScreen } from '@/screens/biblioteca/DetalheMusicaScreen';
+import { PastaScreen } from '@/screens/biblioteca/PastaScreen';
 import { PadContinuoScreen } from '@/screens/padContinuo/PadContinuoScreen';
 import { MinisterioScreen } from '@/screens/ministerio/MinisterioScreen';
 import { PanoramaEscalasScreen } from '@/screens/escalas/PanoramaEscalasScreen';
@@ -35,6 +36,7 @@ export type MainStackParamList = {
   Metronomo: { bpm?: number } | undefined;
   Biblioteca: undefined;
   DetalheMusica: { musicaId: number; nome?: string };
+  Pasta: { pastaId: number; nome?: string };
   PadContinuo: undefined;
   Ministerio: undefined;
   PanoramaEscalas: undefined;
@@ -60,6 +62,7 @@ function StackNavigator() {
       <Stack.Screen name="Metronomo" component={MetronomoScreen} />
       <Stack.Screen name="Biblioteca" component={BibliotecaScreen} />
       <Stack.Screen name="DetalheMusica" component={DetalheMusicaScreen} />
+      <Stack.Screen name="Pasta" component={PastaScreen} />
       <Stack.Screen name="PadContinuo" component={PadContinuoScreen} />
       <Stack.Screen name="Ministerio" component={MinisterioScreen} />
       <Stack.Screen name="PanoramaEscalas" component={PanoramaEscalasScreen} />

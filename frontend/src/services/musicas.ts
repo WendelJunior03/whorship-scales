@@ -1,14 +1,22 @@
 import { api } from './api';
-import { Musica } from '@/types';
+import { Musica, Artista } from '@/types';
 
 export interface MusicaInput {
   nome: string;
   tomPadrao?: string | null;
   bpm?: number | null;
+  artista?: string | null;
+  cifraUrl?: string | null;
+  audioUrl?: string | null;
 }
 
 export async function listarMusicas(): Promise<Musica[]> {
   const { data } = await api.get<Musica[]>('/musicas');
+  return data;
+}
+
+export async function listarArtistas(): Promise<Artista[]> {
+  const { data } = await api.get<Artista[]>('/musicas/artistas');
   return data;
 }
 

@@ -34,6 +34,7 @@ export const linking: LinkingOptions<LinkingParamList> = {
       Indisponibilidades: 'indisponibilidades',
       Aniversariantes: 'aniversariantes',
       Comunicados: 'comunicados/:abrirId?',
+      Pasta: 'pastas/:pastaId',
     },
   },
 };

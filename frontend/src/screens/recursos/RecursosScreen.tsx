@@ -39,7 +39,7 @@ const INSTRUMENTOS: ItemRecurso[] = [
   { icon: 'grid-outline', label: 'Octapad', sublabel: 'Pads de som', route: 'Octapad' },
   { icon: 'timer-outline', label: 'Metrônomo', sublabel: 'BPM e tap tempo', route: 'Metronomo' },
   { icon: 'pulse-outline', label: 'Pads Contínuos', sublabel: 'Banco de pads', route: 'PadContinuo' },
-  { icon: 'videocam-outline', label: 'Biblioteca', sublabel: 'Vídeos das músicas', route: 'Biblioteca' },
+  { icon: 'musical-notes-outline', label: 'Biblioteca', sublabel: 'Músicas, pastas e vídeos', route: 'Biblioteca' },
 ];
 
 const PESSOAL: ItemRecurso[] = [

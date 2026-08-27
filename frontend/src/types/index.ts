@@ -26,7 +26,26 @@ export interface Musica {
   nome: string;
   tom_padrao: string | null;
   bpm: number | null;
+  /** Módulo 10 — repertório+. */
+  artista?: string | null;
+  cifra_url?: string | null;
+  audio_url?: string | null;
   created_at?: string;
+}
+
+/** Pasta (coleção) de músicas — módulo 10. */
+export interface Pasta {
+  id: number;
+  ministerio_id: number | null;
+  nome: string;
+  total_musicas?: number;
+  created_at?: string;
+}
+
+/** Artista = agregação por `musicas.artista` — módulo 10. */
+export interface Artista {
+  artista: string;
+  total_musicas: number;
 }
 
 export interface Video {
