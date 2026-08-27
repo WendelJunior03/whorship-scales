@@ -89,7 +89,7 @@ export const PainelPresets = forwardRef<PainelPresetsHandle, PainelPresetsProps>
                 {presets.map((preset) => (
                   <View key={preset.id} style={styles.balao}>
                     <View style={styles.balaoIcone}>
-                      <Icon name="bookmark-outline" size={20} color={colors.primary} />
+                      <Icon name="options-outline" size={20} color={colors.primary} />
                     </View>
                     <TouchableOpacity
                       style={styles.balaoBotaoAplicar}
