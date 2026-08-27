@@ -29,6 +29,20 @@ const ALTURA_FADER = 140;
 // Intensidade mínima da cor de destaque (brilho=0 nunca some de vez).
 const ALPHA_DESTAQUE_MIN = 0.4;
 
+// Nível de módulo (não por instância) — de vez em quando essa tela remonta em rajada logo
+// após o carregamento da página (ainda não achamos a causa raiz exata), e cada remontagem
+// tentava abrir "Meus presets" de novo, empilhando vários popovers ao mesmo tempo. Isso
+// suprime aberturas automáticas muito próximas uma da outra (mesma rajada), sem impedir
+// que volte a aparecer numa visita de verdade depois (bem mais espaçada no tempo).
+let ultimoAutoAbrirEm = 0;
+const JANELA_SUPRESSAO_MS = 1500;
+function podeAutoAbrirPresets(): boolean {
+  const agora = Date.now();
+  if (agora - ultimoAutoAbrirEm < JANELA_SUPRESSAO_MS) return false;
+  ultimoAutoAbrirEm = agora;
+  return true;
+}
+
 export function PadContinuoScreen() {
   const { colors } = useTheme();
   const styles = useThemedStyles(criarEstilos);
@@ -110,7 +124,9 @@ export function PadContinuoScreen() {
   useEffect(() => {
     if (mostradoRef.current || presets.length === 0) return;
     mostradoRef.current = true;
-    painelPresetsRef.current?.abrir();
+    if (podeAutoAbrirPresets()) {
+      painelPresetsRef.current?.abrir();
+    }
   }, [presets]);
 
   // Cor de destaque (fader, knob, banco de pads, SOLO) — personalizável; `brilho`
