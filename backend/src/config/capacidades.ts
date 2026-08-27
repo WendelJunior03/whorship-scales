@@ -209,6 +209,12 @@ const capacidades: Record<string, RegraCapacidade> = {
         papelMinisterio: [],
         escopo: ['organizacao']
     },
+    // Vagas e assinaturas (spec 11 — módulo 12): comprar/distribuir vagas é do dono da org.
+    'assinatura.gerenciar':{
+        papelOrg: ['administrador'],
+        papelMinisterio: [],
+        escopo: ['organizacao']
+    },
 }
 
 export function podeAcessar(usuario: {papelOrg: PapelOrg, papelMinisterio: PapelMinisterio | null}, capacidade: string): boolean {
