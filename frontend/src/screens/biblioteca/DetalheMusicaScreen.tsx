@@ -2,6 +2,8 @@ import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
+  Linking,
   Modal,
   ScrollView,
   StyleSheet,
@@ -22,7 +24,7 @@ import { MainStackParamList } from '@/navigation/MainNavigator';
 import * as musicasService from '@/services/musicas';
 import * as videosService from '@/services/videos';
 import { ApiError } from '@/services/api';
-import { isAdmin } from '@/utils/papel';
+import { isAdmin, podeGerir } from '@/utils/papel';
 import { extrairVideoIdYoutube } from '@/utils/youtube';
 import { CategoriaVideo, Musica, Video } from '@/types';
 import { fonts, LARGURA_CONTEUDO, radius, spacing, typography } from '@/theme';
@@ -44,6 +46,7 @@ export function DetalheMusicaScreen() {
   const { user } = useAuth();
   const { musicaId } = route.params;
   const admin = user ? isAdmin(user) : false;
+  const gestor = user ? podeGerir(user) : false;
 
   const [musica, setMusica] = useState<Musica | null>(null);
   const [videos, setVideos] = useState<Video[]>([]);
@@ -54,6 +57,54 @@ export function DetalheMusicaScreen() {
   const [titulo, setTitulo] = useState('');
   const [categoria, setCategoria] = useState<CategoriaVideo>('oficial');
   const [salvando, setSalvando] = useState(false);
+
+  // Edição da música (gestor)
+  const [modalEdit, setModalEdit] = useState(false);
+  const [eNome, setENome] = useState('');
+  const [eArtista, setEArtista] = useState('');
+  const [eTom, setETom] = useState('');
+  const [eBpm, setEBpm] = useState('');
+  const [eCifra, setECifra] = useState('');
+  const [eAudio, setEAudio] = useState('');
+
+  function abrirEdicao() {
+    if (!musica) return;
+    setENome(musica.nome);
+    setEArtista(musica.artista ?? '');
+    setETom(musica.tom_padrao ?? '');
+    setEBpm(musica.bpm ? String(musica.bpm) : '');
+    setECifra(musica.cifra_url ?? '');
+    setEAudio(musica.audio_url ?? '');
+    setModalEdit(true);
+  }
+
+  async function salvarEdicao() {
+    if (!eNome.trim()) {
+      Alert.alert('Nome obrigatório', 'Informe o nome da música.');
+      return;
+    }
+    setSalvando(true);
+    try {
+      await musicasService.atualizarMusica(musicaId, {
+        nome: eNome.trim(),
+        artista: eArtista.trim() || null,
+        tomPadrao: eTom.trim() || null,
+        bpm: eBpm.trim() ? Number(eBpm) : null,
+        cifraUrl: eCifra.trim() || null,
+        audioUrl: eAudio.trim() || null,
+      });
+      setModalEdit(false);
+      await carregar();
+    } catch (e) {
+      Alert.alert('Erro', e instanceof ApiError ? e.message : 'Não foi possível salvar.');
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  function abrirLink(url: string) {
+    Linking.openURL(url).catch(() => Alert.alert('Erro', 'Não foi possível abrir o link.'));
+  }
 
   const previewId = useMemo(() => extrairVideoIdYoutube(link), [link]);
 
@@ -137,6 +188,10 @@ export function DetalheMusicaScreen() {
       ) : (
         <ScrollView contentContainerStyle={styles.conteudo} showsVerticalScrollIndicator={false}>
           <View style={styles.cabecalho}>
+            {musica?.capa_url ? (
+              <Image source={{ uri: musica.capa_url }} style={styles.capa} resizeMode="cover" />
+            ) : null}
+            {musica?.artista ? <Text style={styles.artista}>{musica.artista}</Text> : null}
             <Text style={styles.meta}>
               {[musica?.tom_padrao ? `Tom ${musica.tom_padrao}` : null, musica?.bpm ? `${musica.bpm} BPM` : null]
                 .filter(Boolean)
@@ -149,11 +204,24 @@ export function DetalheMusicaScreen() {
                 onPress={() => navigation.navigate('Metronomo', { bpm: musica.bpm ?? undefined })}
               />
             ) : null}
+            <View style={styles.linksRow}>
+              {musica?.cifra_url ? (
+                <Button title="Cifra" variant="outline" onPress={() => abrirLink(musica.cifra_url as string)} style={styles.linkBtn} />
+              ) : null}
+              {musica?.audio_url ? (
+                <Button title="Áudio" variant="outline" onPress={() => abrirLink(musica.audio_url as string)} style={styles.linkBtn} />
+              ) : null}
+            </View>
           </View>
 
-          {admin && (
-            <Button title="+ Adicionar vídeo" onPress={() => setModal(true)} style={styles.add} />
-          )}
+          <View style={styles.acoes}>
+            {gestor && (
+              <Button title="Editar música" variant="outline" onPress={abrirEdicao} style={styles.acaoBtn} />
+            )}
+            {admin && (
+              <Button title="+ Adicionar vídeo" onPress={() => setModal(true)} style={styles.acaoBtn} />
+            )}
+          </View>
 
           {videos.length === 0 ? (
             <Text style={styles.vazio}>Nenhum vídeo ainda.</Text>
@@ -223,6 +291,25 @@ export function DetalheMusicaScreen() {
           </ScrollView>
         </View>
       </Modal>
+
+      {/* Modal: editar música */}
+      <Modal visible={modalEdit} animationType="slide" transparent onRequestClose={() => setModalEdit(false)}>
+        <View style={styles.overlay}>
+          <ScrollView contentContainerStyle={styles.modalScroll}>
+            <View style={styles.modal}>
+              <Text style={styles.modalTitulo}>Editar música</Text>
+              <Input icon="musical-note-outline" placeholder="Nome da música" value={eNome} onChangeText={setENome} />
+              <Input icon="person-outline" placeholder="Artista (opcional)" value={eArtista} onChangeText={setEArtista} containerStyle={styles.modalInput} />
+              <Input icon="key-outline" placeholder="Tom (ex.: G) — opcional" value={eTom} onChangeText={setETom} containerStyle={styles.modalInput} />
+              <Input icon="speedometer-outline" placeholder="BPM (opcional)" value={eBpm} onChangeText={setEBpm} keyboardType="number-pad" containerStyle={styles.modalInput} />
+              <Input icon="text-outline" placeholder="Link da cifra (opcional)" value={eCifra} onChangeText={setECifra} autoCapitalize="none" containerStyle={styles.modalInput} />
+              <Input icon="musical-notes-outline" placeholder="Link do áudio (opcional)" value={eAudio} onChangeText={setEAudio} autoCapitalize="none" containerStyle={styles.modalInput} />
+              <Button title="Salvar" onPress={salvarEdicao} loading={salvando} style={styles.modalBtn} />
+              <Button title="Cancelar" variant="outline" onPress={() => setModalEdit(false)} disabled={salvando} style={styles.modalBtn} />
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -232,8 +319,13 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
   centro: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   conteudo: { width: '100%', maxWidth: LARGURA_CONTEUDO, alignSelf: 'center', padding: spacing.lg, gap: spacing.md },
   cabecalho: { gap: spacing.sm },
+  capa: { width: '100%', height: 200, borderRadius: radius.xl, backgroundColor: colors.surfaceMuted },
+  artista: { ...typography.body, color: colors.text, fontFamily: fonts.semibold },
   meta: { ...typography.body, color: colors.textSecondary },
-  add: { marginTop: spacing.xs },
+  linksRow: { flexDirection: 'row', gap: spacing.sm },
+  linkBtn: { flex: 1 },
+  acoes: { flexDirection: 'row', gap: spacing.sm },
+  acaoBtn: { flex: 1, marginTop: spacing.xs },
   vazio: { ...typography.bodySmall, color: colors.textMuted, textAlign: 'center', marginTop: spacing.xl },
   grupo: { gap: spacing.sm },
   grupoTitulo: { ...typography.bodySmall, color: colors.textSecondary, fontFamily: fonts.semibold, marginTop: spacing.sm },
