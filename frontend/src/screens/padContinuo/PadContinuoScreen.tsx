@@ -11,7 +11,6 @@ import { KnobGiratorio } from '@/components/KnobGiratorio';
 import { Card } from '@/components/Card';
 import { SeloPro } from '@/components/SeloPro';
 import { useRecurso } from '@/hooks/useRecurso';
-import { useBreakpoint } from '@/hooks/useBreakpoint';
 import { usePadContinuo } from '@/hooks/usePadContinuo';
 import { usePadAparencia } from '@/hooks/usePadAparencia';
 import { usePadPresets, PadPreset } from '@/hooks/usePadPresets';
@@ -53,10 +52,8 @@ export function PadContinuoScreen() {
   } = usePadContinuo();
   const { liberado: camadasExtrasLiberadas, isPro } = useRecurso('pads.camadas_extras');
   const { aparencia, atualizar, restaurarPadrao } = usePadAparencia();
-  const { presets, salvarPreset, renomearPreset, excluirPreset, ultimoPresetId, definirUltimoPreset } = usePadPresets();
-  const { isDesktop } = useBreakpoint();
+  const { presets, salvarPreset, excluirPreset, ultimoPresetId, definirUltimoPreset } = usePadPresets();
   const [painelAberto, setPainelAberto] = useState(false);
-  const [presetsAberto, setPresetsAberto] = useState(false);
 
   const camadasVisiveis = camadas.filter((c) => !c.somenteNoPro || camadasExtrasLiberadas);
 
@@ -144,59 +141,40 @@ export function PadContinuoScreen() {
         showBack
         rightActions={[
           { icon: 'palette-outline', label: 'Personalizar aparência dos pads', onPress: () => setPainelAberto(true) },
-          // No desktop o painel de presets já fica fixo ao lado das colunas — o ícone só
-          // faz sentido no mobile, onde ele abre como folha deslizante.
-          ...(!isDesktop
-            ? [{ icon: 'bookmark-outline' as const, label: 'Presets', onPress: () => setPresetsAberto(true) }]
-            : []),
         ]}
       />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={[isDesktop && styles.colunasLinha]}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.colunasScroll}>
-            <View style={styles.colunas}>
-              {camadasVisiveis.map((camada) => (
-                <ColunaCamada
-                  key={camada.id}
-                  rotulo={camada.rotulo}
-                  estado={estados[camada.id]}
-                  carregando={!!carregando[camada.id]}
-                  corDestaque={corDestaque}
-                  corInativa={corInativa}
-                  onAlternarLigada={() => alternarLigada(camada.id)}
-                  onAjustarVolume={(v) => ajustarVolume(camada.id, v)}
-                  onAjustarCutoff={(v) => ajustarCutoff(camada.id, v)}
-                  onAlternarMudo={() => alternarMudo(camada.id)}
-                  onAlternarSolo={() => alternarSolo(camada.id)}
-                />
-              ))}
-
-              {!camadasExtrasLiberadas && (
-                <Card style={styles.colunaBloqueada}>
-                  <Icon name="grid-outline" size={22} color={colors.textSecondary} />
-                  <Text style={styles.colunaBloqueadaTexto}>+7 camadas</Text>
-                  <SeloPro />
-                </Card>
-              )}
-            </View>
-          </ScrollView>
-
-          {isDesktop && (
-            // `flex: 1` aqui absorve o espaço vazio que sobra depois das colunas e
-            // centraliza o painel (largura fixa) dentro dele — sem isso o painel ficava
-            // grudado logo depois das colunas em vez de centralizado no vazio.
-            <View style={styles.presetsArea}>
-              <PainelPresets
-                variante="coluna"
-                presets={presets}
-                onAplicar={aplicarPreset}
-                onSalvar={salvarPresetAtual}
-                onRenomear={renomearPreset}
-                onExcluir={excluirPreset}
-              />
-            </View>
-          )}
+        <View style={styles.presetsLinha}>
+          <PainelPresets presets={presets} onAplicar={aplicarPreset} onSalvar={salvarPresetAtual} onExcluir={excluirPreset} />
         </View>
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.colunasScroll}>
+          <View style={styles.colunas}>
+            {camadasVisiveis.map((camada) => (
+              <ColunaCamada
+                key={camada.id}
+                rotulo={camada.rotulo}
+                estado={estados[camada.id]}
+                carregando={!!carregando[camada.id]}
+                corDestaque={corDestaque}
+                corInativa={corInativa}
+                onAlternarLigada={() => alternarLigada(camada.id)}
+                onAjustarVolume={(v) => ajustarVolume(camada.id, v)}
+                onAjustarCutoff={(v) => ajustarCutoff(camada.id, v)}
+                onAlternarMudo={() => alternarMudo(camada.id)}
+                onAlternarSolo={() => alternarSolo(camada.id)}
+              />
+            ))}
+
+            {!camadasExtrasLiberadas && (
+              <Card style={styles.colunaBloqueada}>
+                <Icon name="grid-outline" size={22} color={colors.textSecondary} />
+                <Text style={styles.colunaBloqueadaTexto}>+7 camadas</Text>
+                <SeloPro />
+              </Card>
+            )}
+          </View>
+        </ScrollView>
 
         <Text style={styles.secaoTitulo}>Banco de pads</Text>
         <Card style={styles.notasCard}>
@@ -259,19 +237,6 @@ export function PadContinuoScreen() {
         atualizar={atualizar}
         restaurarPadrao={restaurarPadrao}
       />
-
-      {!isDesktop && (
-        <PainelPresets
-          variante="modal"
-          visible={presetsAberto}
-          onClose={() => setPresetsAberto(false)}
-          presets={presets}
-          onAplicar={aplicarPreset}
-          onSalvar={salvarPresetAtual}
-          onRenomear={renomearPreset}
-          onExcluir={excluirPreset}
-        />
-      )}
     </SafeAreaView>
   );
 }
@@ -377,19 +342,12 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     padding: spacing.lg,
     gap: spacing.md,
   },
-  // Desktop: colunas (largura natural, só rola se não couber) + área de presets que
-  // absorve o resto da largura e centraliza o painel nela.
-  colunasLinha: {
+  presetsLinha: {
     flexDirection: 'row',
-    gap: spacing.md,
-    alignItems: 'flex-start',
+    justifyContent: 'flex-end',
   },
   colunasScroll: {
     flexGrow: 0,
-  },
-  presetsArea: {
-    flex: 1,
-    alignItems: 'center',
   },
   colunas: {
     flexDirection: 'row',

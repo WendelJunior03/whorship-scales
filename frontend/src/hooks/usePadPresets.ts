@@ -73,13 +73,6 @@ export function usePadPresets() {
     [persistir],
   );
 
-  const renomearPreset = useCallback(
-    (id: string, nome: string) => {
-      persistir((atual) => atual.map((p) => (p.id === id ? { ...p, nome } : p)));
-    },
-    [persistir],
-  );
-
   const excluirPreset = useCallback(
     (id: string) => {
       persistir((atual) => atual.filter((p) => p.id !== id));
@@ -92,5 +85,5 @@ export function usePadPresets() {
     [persistir],
   );
 
-  return { presets, salvarPreset, renomearPreset, excluirPreset, ultimoPresetId, definirUltimoPreset };
+  return { presets, salvarPreset, excluirPreset, ultimoPresetId, definirUltimoPreset };
 }
