@@ -91,26 +91,27 @@ export function PadContinuoScreen() {
   const aplicarPresetRef = useRef(aplicarPreset);
   aplicarPresetRef.current = aplicarPreset;
 
-  // Ao abrir a tela (uma vez só): se já tem "último preset usado", restaura ele sozinho,
-  // sem mostrar nada. Se não tem mas EXISTEM presets salvos, mostra o popover "Meus
-  // presets" sozinho pra escolher (fechar sem escolher não marca nada — ele volta a
-  // aparecer da próxima vez). Sem nenhum preset salvo, não faz nada.
-  const decididoRef = useRef(false);
+  // Mixer sempre carrega normalmente por trás — se já tem "último preset usado", aplica
+  // ele sozinho (uma vez só) antes/independente do popover abaixo.
+  const aplicadoRef = useRef(false);
   useEffect(() => {
-    if (decididoRef.current) return;
-    if (ultimoPresetId) {
-      const preset = presets.find((p) => p.id === ultimoPresetId);
-      if (preset) {
-        decididoRef.current = true;
-        aplicarPresetRef.current(preset);
-      }
-      return;
-    }
-    if (presets.length > 0) {
-      decididoRef.current = true;
-      painelPresetsRef.current?.abrir();
+    if (aplicadoRef.current || !ultimoPresetId) return;
+    const preset = presets.find((p) => p.id === ultimoPresetId);
+    if (preset) {
+      aplicadoRef.current = true;
+      aplicarPresetRef.current(preset);
     }
   }, [presets, ultimoPresetId]);
+
+  // Ao abrir a tela (uma vez só): havendo QUALQUER preset salvo, mostra "Meus presets"
+  // sozinho — não bloqueia (o mixer já carregou atrás, com o último usado se tiver), é só
+  // pra dar a chance de escolher outro. Sem nenhum preset salvo, não mostra nada.
+  const mostradoRef = useRef(false);
+  useEffect(() => {
+    if (mostradoRef.current || presets.length === 0) return;
+    mostradoRef.current = true;
+    painelPresetsRef.current?.abrir();
+  }, [presets]);
 
   // Cor de destaque (fader, knob, banco de pads, SOLO) — personalizável; `brilho`
   // modula a intensidade sem nunca deixar totalmente apagada.
@@ -242,7 +243,7 @@ export function PadContinuoScreen() {
         </Card>
 
         <View style={styles.acoesLinha}>
-          <PopoverSalvarPreset onSalvar={salvarPresetAtual} />
+          <PopoverSalvarPreset onSalvar={salvarPresetAtual} onSalvo={() => painelPresetsRef.current?.abrir()} />
           <PainelPresets ref={painelPresetsRef} presets={presets} onAplicar={aplicarPreset} onExcluir={excluirPreset} />
         </View>
       </ScrollView>
