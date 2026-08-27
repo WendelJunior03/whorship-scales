@@ -46,6 +46,9 @@ module.exports = [
         HTMLElement: 'readonly',
         Event: 'readonly',
         DragEvent: 'readonly',
+        indexedDB: 'readonly',
+        IDBDatabase: 'readonly',
+        IDBRequest: 'readonly',
       },
     },
     plugins: {

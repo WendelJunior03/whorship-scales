@@ -73,8 +73,8 @@ export class MultitrackEngine {
     return Math.min(this.duracao, Math.max(0, t));
   }
 
-  /** Decodifica um arquivo e adiciona como faixa. Retorna a duração dela. */
-  async adicionarArquivo(id: string, arquivo: File): Promise<number> {
+  /** Decodifica um arquivo/blob e adiciona como faixa. Retorna a duração dela. */
+  async adicionarArquivo(id: string, arquivo: Blob): Promise<number> {
     const dados = await arquivo.arrayBuffer();
     const buffer = await this.ctx.decodeAudioData(dados);
     const gain = this.ctx.createGain();

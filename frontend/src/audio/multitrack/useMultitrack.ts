@@ -2,6 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { MultitrackEngine } from './audioEngine';
 import { identificarInstrumento } from './nomeInstrumento';
 import { Faixa } from './tipos';
+import * as projetoStore from './projetoStore';
+import type { ProjetoMeta } from './projetoStore';
+
+/** id único e estável dentro/entre sessões (evita colisão ao restaurar projeto). */
+function novoId(): string {
+  return `f-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
+}
 
 /**
  * Hook que liga o `MultitrackEngine` (web-only) ao React: gerencia a lista de
@@ -11,7 +18,7 @@ import { Faixa } from './tipos';
 export function useMultitrack() {
   const engineRef = useRef<MultitrackEngine | null>(null);
   const rafRef = useRef<number | null>(null);
-  const contadorRef = useRef(0);
+  const blobsRef = useRef<Map<string, Blob>>(new Map());
 
   const [faixas, setFaixas] = useState<Faixa[]>([]);
   const [tocando, setTocando] = useState(false);
@@ -19,6 +26,8 @@ export function useMultitrack() {
   const [duracao, setDuracao] = useState(0);
   const [carregando, setCarregando] = useState(false);
   const [peaks, setPeaks] = useState<number[]>([]);
+  const [projetoId, setProjetoId] = useState<string | null>(null);
+  const [projetoNome, setProjetoNome] = useState('');
 
   function engine(): MultitrackEngine {
     if (!engineRef.current) engineRef.current = new MultitrackEngine();
@@ -50,9 +59,10 @@ export function useMultitrack() {
   const adicionarArquivos = useCallback(async (arquivos: File[]) => {
     setCarregando(true);
     try {
-      for (const arquivo of arquivos) {
-        const id = `f${contadorRef.current++}`;
-        const meta = identificarInstrumento(arquivo.name, contadorRef.current - 1);
+      for (let i = 0; i < arquivos.length; i++) {
+        const arquivo = arquivos[i];
+        const id = novoId();
+        const meta = identificarInstrumento(arquivo.name, faixas.length + i);
         // placeholder enquanto decodifica
         setFaixas((atual) => [
           ...atual,
@@ -60,6 +70,7 @@ export function useMultitrack() {
         ]);
         try {
           await engine().adicionarArquivo(id, arquivo);
+          blobsRef.current.set(id, arquivo);
           setFaixas((atual) => atual.map((f) => (f.id === id ? { ...f, buffer: {} as AudioBuffer } : f)));
         } catch {
           // arquivo inválido/formato não suportado → remove o placeholder
@@ -138,10 +149,81 @@ export function useMultitrack() {
 
   const removerFaixa = useCallback((id: string) => {
     engine().removerFaixa(id);
+    blobsRef.current.delete(id);
     setFaixas((atual) => atual.filter((f) => f.id !== id));
     setDuracao(engine().duracao);
     setPeaks(engine().getPeaks(140));
   }, []);
+
+  /** Salva o projeto atual no navegador (IndexedDB). Retorna os metadados. */
+  const salvarProjeto = useCallback(
+    async (nome: string): Promise<ProjetoMeta> => {
+      const id = projetoId ?? `p-${Date.now().toString(36)}`;
+      const blobs = faixas
+        .map((f) => ({ id: f.id, blob: blobsRef.current.get(f.id) }))
+        .filter((b): b is { id: string; blob: Blob } => !!b.blob);
+      const tamanho = blobs.reduce((s, b) => s + b.blob.size, 0);
+      const meta: ProjetoMeta = {
+        id,
+        nome: nome.trim() || 'Projeto sem nome',
+        criadoEm: Date.now(),
+        tamanho,
+        faixas: faixas.map((f) => ({
+          id: f.id,
+          nome: f.nome,
+          icone: f.icone,
+          cor: f.cor,
+          volume: f.volume,
+          mudo: f.mudo,
+          solo: f.solo,
+        })),
+      };
+      await projetoStore.salvarProjeto(meta, blobs);
+      setProjetoId(id);
+      setProjetoNome(meta.nome);
+      return meta;
+    },
+    [faixas, projetoId],
+  );
+
+  /** Reabre um projeto salvo: restaura os áudios e a mesa (nome/cor/volume…). */
+  const restaurarProjeto = useCallback(
+    async (meta: ProjetoMeta) => {
+      setCarregando(true);
+      try {
+        // limpa o estado atual
+        engineRef.current?.destruir();
+        engineRef.current = null;
+        blobsRef.current.clear();
+        pararLoop();
+        setTocando(false);
+        setPosicao(0);
+        setFaixas([]);
+
+        const blobs = await projetoStore.carregarBlobs(meta.id);
+        const mapa = new Map(blobs.map((b) => [b.id, b.blob]));
+        const restauradas: Faixa[] = [];
+        for (const fm of meta.faixas) {
+          const blob = mapa.get(fm.id);
+          if (!blob) continue;
+          await engine().adicionarArquivo(fm.id, blob);
+          blobsRef.current.set(fm.id, blob);
+          engine().setVolume(fm.id, fm.volume);
+          engine().setMudo(fm.id, fm.mudo);
+          engine().setSolo(fm.id, fm.solo);
+          restauradas.push({ ...fm, buffer: {} as AudioBuffer });
+        }
+        setFaixas(restauradas);
+        setDuracao(engine().duracao);
+        setPeaks(engine().getPeaks(140));
+        setProjetoId(meta.id);
+        setProjetoNome(meta.nome);
+      } finally {
+        setCarregando(false);
+      }
+    },
+    [pararLoop],
+  );
 
   useEffect(() => {
     return () => {
@@ -168,5 +250,9 @@ export function useMultitrack() {
     renomearFaixa,
     definirCor,
     removerFaixa,
+    projetoId,
+    projetoNome,
+    salvarProjeto,
+    restaurarProjeto,
   };
 }

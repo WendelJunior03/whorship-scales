@@ -19,6 +19,9 @@ import { Waveform } from './Waveform';
 import { SliderFaixa } from './SliderFaixa';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { useMultitrack } from '@/audio/multitrack/useMultitrack';
+import * as projetoStore from '@/audio/multitrack/projetoStore';
+import type { ProjetoMeta } from '@/audio/multitrack/projetoStore';
+import { confirmAction, notifyAction } from '@/utils/confirm';
 import { spacing, radius, typography, fonts } from '@/theme';
 import { Cores } from '@/theme/palettes';
 
@@ -32,6 +35,11 @@ function formatarTempo(seg: number): string {
   const m = Math.floor(seg / 60);
   const s = Math.floor(seg % 60);
   return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function formatarTamanho(bytes: number): string {
+  if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
 function escolherArquivos(): Promise<File[]> {
@@ -54,12 +62,49 @@ export function MultitrackScreen() {
   const [bpm, setBpm] = useState('');
   const [tomIndex, setTomIndex] = useState(0);
   const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [projetos, setProjetos] = useState<ProjetoMeta[]>([]);
+  const [modalSalvar, setModalSalvar] = useState(false);
+  const [nomeProjeto, setNomeProjeto] = useState('');
   const dropRef = useRef<View>(null);
-
-  const editando = editandoId ? mt.faixas.find((f) => f.id === editandoId) ?? null : null;
 
   const suportado = Platform.OS === 'web';
   const duasColunas = width >= 720;
+  const editando = editandoId ? mt.faixas.find((f) => f.id === editandoId) ?? null : null;
+  const semFaixas = mt.faixas.length === 0;
+
+  // Carrega a lista de projetos salvos (na tela inicial / após limpar).
+  useEffect(() => {
+    if (!suportado || !semFaixas) return;
+    projetoStore.listarProjetos().then(setProjetos).catch(() => setProjetos([]));
+  }, [suportado, semFaixas]);
+
+  async function abrirProjeto(meta: ProjetoMeta) {
+    try {
+      await mt.restaurarProjeto(meta);
+    } catch {
+      notifyAction('Erro', 'Não foi possível reabrir o projeto.');
+    }
+  }
+
+  function apagarProjeto(meta: ProjetoMeta) {
+    confirmAction(
+      { title: 'Apagar projeto', message: `Apagar "${meta.nome}" deste dispositivo?`, confirmLabel: 'Apagar', destructive: true },
+      async () => {
+        await projetoStore.apagarProjeto(meta.id);
+        setProjetos(await projetoStore.listarProjetos());
+      },
+    );
+  }
+
+  async function salvar() {
+    try {
+      await mt.salvarProjeto(nomeProjeto);
+      setModalSalvar(false);
+      notifyAction('Salvo', 'Projeto salvo neste navegador. Reabra por aqui quando voltar.');
+    } catch {
+      notifyAction('Erro', 'Não foi possível salvar (espaço do navegador cheio?).');
+    }
+  }
 
   useEffect(() => {
     if (!suportado) return;
@@ -101,8 +146,8 @@ export function MultitrackScreen() {
             (computador) para usar.
           </Text>
         </View>
-      ) : mt.faixas.length === 0 ? (
-        <View style={styles.centro}>
+      ) : semFaixas ? (
+        <ScrollView contentContainerStyle={styles.centro}>
           <Pressable ref={dropRef} style={styles.dropzone} onPress={abrirSeletor}>
             <Icon name="upload-outline" size={40} color={colors.primary} />
             <Text style={styles.dropTitulo}>Arraste suas faixas aqui</Text>
@@ -113,7 +158,29 @@ export function MultitrackScreen() {
             <Text style={styles.dropFormatos}>WAV, MP3, M4A, OGG</Text>
           </Pressable>
           {mt.carregando && <Text style={styles.carregando}>Carregando faixas…</Text>}
-        </View>
+
+          {projetos.length > 0 && (
+            <View style={styles.projetos}>
+              <Text style={styles.projetosTitulo}>Projetos salvos neste navegador</Text>
+              {projetos.map((p) => (
+                <Card key={p.id} style={styles.projeto}>
+                  <TouchableOpacity style={styles.projetoInfo} onPress={() => abrirProjeto(p)}>
+                    <Icon name="folder-outline" size={20} color={colors.primary} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.projetoNome} numberOfLines={1}>{p.nome}</Text>
+                      <Text style={styles.projetoMeta}>
+                        {p.faixas.length} faixa{p.faixas.length === 1 ? '' : 's'} · {formatarTamanho(p.tamanho)}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => apagarProjeto(p)} hitSlop={8} style={styles.remover}>
+                    <Icon name="trash-outline" size={18} color={colors.textMuted} />
+                  </TouchableOpacity>
+                </Card>
+              ))}
+            </View>
+          )}
+        </ScrollView>
       ) : (
         <ScrollView contentContainerStyle={styles.conteudo} showsVerticalScrollIndicator={false}>
           {/* Player: play grande + waveform */}
@@ -208,14 +275,54 @@ export function MultitrackScreen() {
             </View>
             <Text style={styles.tomNota}>Transposição de áudio sem alterar o BPM: em breve.</Text>
 
-            <TouchableOpacity style={styles.adicionar} onPress={abrirSeletor}>
-              <Icon name="add-circle-outline" size={20} color={colors.primary} />
-              <Text style={styles.adicionarTexto}>Adicionar faixas</Text>
-            </TouchableOpacity>
+            <View style={styles.rodapeAcoes}>
+              <TouchableOpacity style={styles.adicionar} onPress={abrirSeletor}>
+                <Icon name="add-circle-outline" size={20} color={colors.primary} />
+                <Text style={styles.adicionarTexto}>Adicionar faixas</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.adicionar}
+                onPress={() => {
+                  setNomeProjeto(mt.projetoNome);
+                  setModalSalvar(true);
+                }}
+              >
+                <Icon name="checkmark-done-outline" size={20} color={colors.primary} />
+                <Text style={styles.adicionarTexto}>
+                  {mt.projetoId ? 'Salvar alterações' : 'Salvar projeto'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
           <View style={{ height: spacing.xl }} />
         </ScrollView>
       )}
+
+      {/* Salvar projeto */}
+      <Modal visible={modalSalvar} animationType="slide" transparent onRequestClose={() => setModalSalvar(false)}>
+        <View style={styles.overlay}>
+          <View style={styles.modal}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setModalSalvar(false)} hitSlop={8}>
+                <Icon name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+              <Text style={styles.modalTitulo}>Salvar projeto</Text>
+              <View style={{ width: 24 }} />
+            </View>
+            <Text style={styles.corLabel}>Fica salvo só neste navegador/computador (não sincroniza entre aparelhos).</Text>
+            <TextInput
+              value={nomeProjeto}
+              onChangeText={setNomeProjeto}
+              placeholder="Nome do projeto"
+              placeholderTextColor={colors.textMuted}
+              style={styles.nomeInput}
+            />
+            <TouchableOpacity style={styles.dropBtn} onPress={salvar}>
+              <Text style={styles.dropBtnTexto}>Salvar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Editor de faixa: nome + cor */}
       <Modal visible={!!editando} animationType="slide" transparent onRequestClose={() => setEditandoId(null)}>
@@ -267,7 +374,7 @@ const criarEstilos = (colors: Cores) =>
     avisoTitulo: { ...typography.h3, color: colors.text },
     avisoTexto: { ...typography.bodySmall, color: colors.textSecondary, textAlign: 'center' },
 
-    centro: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg, gap: spacing.md },
+    centro: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg, gap: spacing.md },
     dropzone: {
       width: '100%', maxWidth: 520, alignItems: 'center', gap: spacing.sm,
       paddingVertical: spacing.xl, paddingHorizontal: spacing.lg,
@@ -324,8 +431,17 @@ const criarEstilos = (colors: Cores) =>
     bpmInput: { ...typography.body, color: colors.text, minWidth: 44, padding: 0 },
     tomNota: { ...typography.caption, color: colors.textMuted },
 
-    adicionar: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
+    rodapeAcoes: { flexDirection: 'row', gap: spacing.lg, marginTop: spacing.xs, flexWrap: 'wrap' },
+    adicionar: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
     adicionarTexto: { ...typography.body, color: colors.primary, fontFamily: fonts.semibold },
+
+    // Projetos salvos
+    projetos: { width: '100%', maxWidth: 520, gap: spacing.sm, marginTop: spacing.lg },
+    projetosTitulo: { ...typography.bodySmall, color: colors.textSecondary, fontFamily: fonts.semibold },
+    projeto: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md },
+    projetoInfo: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    projetoNome: { ...typography.body, color: colors.text, fontFamily: fonts.semibold },
+    projetoMeta: { ...typography.caption, color: colors.textMuted },
 
     // Editor de faixa
     overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
