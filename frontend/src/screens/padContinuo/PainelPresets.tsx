@@ -1,8 +1,8 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 import { Modal, Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
 import { Icon } from '@/components/Icon';
 import { PadPreset } from '@/hooks/usePadPresets';
-import { confirmAction } from '@/utils/confirm';
 import { fonts, radius, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
@@ -35,12 +35,20 @@ export const PainelPresets = forwardRef<PainelPresetsHandle, PainelPresetsProps>
   const styles = useThemedStyles(criarEstilos);
   const [aberto, setAberto] = useState(false);
   const [mostrarToast, setMostrarToast] = useState(false);
+  // Id do preset com a lixeira "armada" — confirmação de exclusão fica dentro do próprio
+  // balão (vira ✓/✕ no lugar da lixeira), em vez de abrir outro Modal por cima deste
+  // (dois <Modal> do RN empilhados travavam a tela — foco/overlay do segundo brigava com
+  // o primeiro, ficando preso mesmo depois de fechar).
+  const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
 
   const abrir = (opcoes?: { sucesso?: boolean }) => {
     setAberto(true);
     if (opcoes?.sucesso) setMostrarToast(true);
   };
-  const fechar = () => setAberto(false);
+  const fechar = () => {
+    setAberto(false);
+    setConfirmandoId(null);
+  };
 
   useImperativeHandle(ref, () => ({ abrir }), []);
 
@@ -68,11 +76,9 @@ export const PainelPresets = forwardRef<PainelPresetsHandle, PainelPresetsProps>
     fechar();
   }
 
-  function excluirComConfirmacao(preset: PadPreset) {
-    confirmAction(
-      { title: 'Excluir preset', message: `Excluir "${preset.nome}"? Essa ação não pode ser desfeita.` },
-      () => onExcluir(preset.id),
-    );
+  function confirmarExclusao(id: string) {
+    setConfirmandoId(null);
+    onExcluir(id);
   }
 
   return (
@@ -99,41 +105,70 @@ export const PainelPresets = forwardRef<PainelPresetsHandle, PainelPresetsProps>
               <Text style={styles.vazioTexto}>Nenhum preset salvo ainda.</Text>
             ) : (
               <View style={styles.lista}>
-                {presets.map((preset) => (
-                  <View key={preset.id} style={styles.balao}>
-                    <View style={styles.balaoIcone}>
-                      <Icon name="options-outline" size={20} color={colors.primary} />
+                {presets.map((preset) => {
+                  const confirmando = confirmandoId === preset.id;
+                  return (
+                    <View key={preset.id} style={styles.balao}>
+                      <View style={styles.balaoIcone}>
+                        <Icon name="options-outline" size={20} color={colors.primary} />
+                      </View>
+                      <TouchableOpacity
+                        style={styles.balaoBotaoAplicar}
+                        onPress={() => aplicar(preset)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Aplicar preset ${preset.nome}`}
+                      >
+                        <Text style={styles.balaoNome} numberOfLines={1}>
+                          {preset.nome}
+                        </Text>
+                      </TouchableOpacity>
+                      {confirmando ? (
+                        <View style={styles.confirmarLinha}>
+                          <TouchableOpacity
+                            onPress={() => confirmarExclusao(preset.id)}
+                            hitSlop={8}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Confirmar exclusão de ${preset.nome}`}
+                          >
+                            <Icon name="checkmark" size={20} color={colors.error} />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => setConfirmandoId(null)}
+                            hitSlop={8}
+                            accessibilityRole="button"
+                            accessibilityLabel="Cancelar exclusão"
+                          >
+                            <Icon name="close" size={20} color={colors.textMuted} />
+                          </TouchableOpacity>
+                        </View>
+                      ) : (
+                        <TouchableOpacity
+                          onPress={() => setConfirmandoId(preset.id)}
+                          hitSlop={8}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Excluir ${preset.nome}`}
+                        >
+                          <Icon name="trash-outline" size={20} color={colors.textMuted} />
+                        </TouchableOpacity>
+                      )}
                     </View>
-                    <TouchableOpacity
-                      style={styles.balaoBotaoAplicar}
-                      onPress={() => aplicar(preset)}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Aplicar preset ${preset.nome}`}
-                    >
-                      <Text style={styles.balaoNome} numberOfLines={1}>
-                        {preset.nome}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => excluirComConfirmacao(preset)}
-                      hitSlop={8}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Excluir ${preset.nome}`}
-                    >
-                      <Icon name="trash-outline" size={20} color={colors.textMuted} />
-                    </TouchableOpacity>
-                  </View>
-                ))}
+                  );
+                })}
               </View>
             )}
           </View>
         </View>
 
         {mostrarToast && (
-          <View style={styles.toast} pointerEvents="none">
+          <Animated.View
+            style={styles.toast}
+            pointerEvents="none"
+            entering={FadeInDown.duration(220)}
+            exiting={FadeOutDown.duration(220)}
+          >
             <Icon name="checkmark-circle" size={18} color={colors.textInverse} />
             <Text style={styles.toastTexto}>Preset salvo com sucesso</Text>
-          </View>
+          </Animated.View>
         )}
       </Modal>
     </>
@@ -211,6 +246,11 @@ const criarEstilos = (colors: Cores) =>
     },
     balaoBotaoAplicar: {
       flex: 1,
+    },
+    confirmarLinha: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
     },
     balaoNome: {
       ...typography.body,
