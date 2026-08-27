@@ -6,67 +6,120 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Icon } from '@/components/Icon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '@/components/Header';
-import { BarraDeslizante } from '@/components/BarraDeslizante';
+import { FaderVertical } from '@/components/FaderVertical';
+import { KnobGiratorio } from '@/components/KnobGiratorio';
 import { Card } from '@/components/Card';
 import { SeloPro } from '@/components/SeloPro';
 import { useRecurso } from '@/hooks/useRecurso';
+import { useBreakpoint } from '@/hooks/useBreakpoint';
 import { usePadContinuo } from '@/hooks/usePadContinuo';
 import { usePadAparencia } from '@/hooks/usePadAparencia';
-import { CamadaId, NOTAS, Note } from '@/audio/padContinuo';
-import { NOTA_LABEL } from './notasLabel';
+import { usePadPresets, PadPreset } from '@/hooks/usePadPresets';
 import { PainelPersonalizarPads } from './PainelPersonalizarPads';
-import { corEhClara, hexParaRgba, misturarHex } from '@/utils/cor';
+import { PainelPresets } from './PainelPresets';
+import { CamadaId, EstadoCamada, NOTAS } from '@/audio/padContinuo';
+import { hexParaRgba } from '@/utils/cor';
 import { fonts, radius, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 
-// Coluna centralizada com largura máxima (não estica no desktop/PWA).
-const MAX_LARGURA = 640;
-// Faixa de opacidade aplicada à cor do pad ativo conforme o brilho (nunca some de vez).
-const ALPHA_FUNDO_MIN = 0.35;
-const ALPHA_BORDA_MIN = 0.5;
-// Opacidade da cor personalizada do pad inativo — mais sutil que a do pad ativo.
-const ALPHA_INATIVO = 0.35;
 const KEEP_AWAKE_TAG = 'pad-continuo';
-const CAMADA_PRINCIPAL: CamadaId = 'base1';
+const LARGURA_COLUNA = 108;
+const ALTURA_FADER = 140;
+// Intensidade mínima da cor de destaque (brilho=0 nunca some de vez).
+const ALPHA_DESTAQUE_MIN = 0.4;
 
 export function PadContinuoScreen() {
   const { colors } = useTheme();
   const styles = useThemedStyles(criarEstilos);
   const {
     camadas,
+    notaGlobal,
+    selecionarNotaGlobal,
     estados,
     carregando,
-    selecionarNota,
+    alternarLigada,
     ajustarVolume,
     ajustarCutoff,
     alternarMudo,
     alternarSolo,
     volumeMaster,
     ajustarVolumeMaster,
+    cutoffMaster,
+    ajustarCutoffMaster,
+    loFilterMaster,
+    ajustarLoFilterMaster,
     pararTudo,
   } = usePadContinuo();
-  const { aparencia, atualizar, restaurarPadrao } = usePadAparencia();
   const { liberado: camadasExtrasLiberadas, isPro } = useRecurso('pads.camadas_extras');
+  const { aparencia, atualizar, restaurarPadrao } = usePadAparencia();
+  const { presets, salvarPreset, renomearPreset, excluirPreset, ultimoPresetId, definirUltimoPreset } = usePadPresets();
+  const { isDesktop } = useBreakpoint();
   const [painelAberto, setPainelAberto] = useState(false);
+  const [presetsAberto, setPresetsAberto] = useState(false);
 
-  const camadaPrincipal = estados[CAMADA_PRINCIPAL];
-  const camadasExtras = camadas.filter((c) => c.somenteNoPro);
+  const camadasVisiveis = camadas.filter((c) => !c.somenteNoPro || camadasExtrasLiberadas);
 
-  // `pararTudo` é estável (useCallback sem deps no hook), mas mantemos o padrão de ref
-  // por segurança — se um dia passar a depender de estado, a limpeza continua só
-  // rodando ao sair da tela, não a cada interação.
+  // Salva o mix atual (camada ligada/volume/cutoff de cada + master) com o nome dado.
+  function salvarPresetAtual(nome: string) {
+    const camadasSnapshot: PadPreset['camadas'] = {};
+    for (const camada of camadas) {
+      const e = estados[camada.id];
+      camadasSnapshot[camada.id] = { ligada: e.ligada, volume: e.volume, cutoff: e.cutoff };
+    }
+    salvarPreset(nome, camadasSnapshot, { volume: volumeMaster, cutoff: cutoffMaster, loFilter: loFilterMaster });
+  }
+
+  // Restaura camada por camada (só liga/desliga se o estado atual for diferente do salvo,
+  // já que `alternarLigada` é um toggle) + master. Também marca esse preset como o
+  // último aplicado, pra tela restaurar sozinha da próxima vez que abrir.
+  function aplicarPreset(preset: PadPreset) {
+    (Object.keys(preset.camadas) as CamadaId[]).forEach((id) => {
+      const alvo = preset.camadas[id];
+      if (!alvo) return;
+      if (estados[id].ligada !== alvo.ligada) alternarLigada(id);
+      ajustarVolume(id, alvo.volume);
+      ajustarCutoff(id, alvo.cutoff);
+    });
+    ajustarVolumeMaster(preset.master.volume);
+    ajustarCutoffMaster(preset.master.cutoff);
+    ajustarLoFilterMaster(preset.master.loFilter);
+    definirUltimoPreset(preset.id);
+  }
+
+  // Sempre com a versão mais recente de `aplicarPreset` — evita entrar como dependência
+  // do efeito de restauração abaixo (senão ele rodaria de novo a cada toggle de camada).
+  const aplicarPresetRef = useRef(aplicarPreset);
+  aplicarPresetRef.current = aplicarPreset;
+
+  // Ao abrir a tela, restaura sozinho o último preset aplicado (uma vez só) — assim não
+  // precisa escolher o mix de novo toda vez que volta pra essa tela.
+  const restauradoRef = useRef(false);
+  useEffect(() => {
+    if (restauradoRef.current || !ultimoPresetId) return;
+    const preset = presets.find((p) => p.id === ultimoPresetId);
+    if (preset) {
+      restauradoRef.current = true;
+      aplicarPresetRef.current(preset);
+    }
+  }, [presets, ultimoPresetId]);
+
+  // Cor de destaque (fader, knob, banco de pads, SOLO) — personalizável; `brilho`
+  // modula a intensidade sem nunca deixar totalmente apagada.
+  const corDestaqueBase = aparencia.corAtivo ?? colors.primary;
+  const corDestaque = hexParaRgba(corDestaqueBase, ALPHA_DESTAQUE_MIN + aparencia.brilho * (1 - ALPHA_DESTAQUE_MIN));
+  const corInativa = aparencia.corInativo ?? undefined;
+
   const pararTudoRef = useRef(pararTudo);
   useEffect(() => {
     pararTudoRef.current = pararTudo;
   }, [pararTudo]);
 
-  // Mantém a tela ligada enquanto QUALQUER camada tiver nota tocando (evita o celular
-  // travar sozinho no meio do culto). No web usa a Wake Lock API do navegador — sem
-  // suporte, é um no-op.
-  const algumaCamadaAtiva = Object.values(estados).some((estado) => estado.notaAtiva !== null);
+  // Mantém a tela ligada enquanto QUALQUER camada estiver ligada (evita o celular travar
+  // sozinho no meio do culto). No web usa a Wake Lock API do navegador — sem suporte, é um no-op.
+  const algumaCamadaLigada = Object.values(estados).some((estado) => estado.ligada);
   useEffect(() => {
-    if (algumaCamadaAtiva) {
+    if (algumaCamadaLigada) {
       activateKeepAwakeAsync(KEEP_AWAKE_TAG).catch(() => undefined);
     } else {
       deactivateKeepAwake(KEEP_AWAKE_TAG).catch(() => undefined);
@@ -74,7 +127,7 @@ export function PadContinuoScreen() {
     return () => {
       deactivateKeepAwake(KEEP_AWAKE_TAG).catch(() => undefined);
     };
-  }, [algumaCamadaAtiva]);
+  }, [algumaCamadaLigada]);
 
   // Ao sair da tela (voltar, trocar de aba, etc.) desliga qualquer camada que tenha ficado tocando.
   useFocusEffect(
@@ -83,137 +136,120 @@ export function PadContinuoScreen() {
     }, []),
   );
 
-  const corAtiva = aparencia.corAtivo ?? colors.primary;
-  const alphaFundoAtivo = ALPHA_FUNDO_MIN + aparencia.brilho * (1 - ALPHA_FUNDO_MIN);
-  // Degradê bem sutil (claro → escuro) pra não achatar a cor, só dar uma leve profundidade.
-  // `misturarHex(cor, x, fracao)` = `fracao` de peso pra `cor` — por isso o valor alto (perto
-  // de 1): queremos MANTER a cor principal, só clareando/escurecendo levemente as pontas.
-  const gradienteAtivo: [string, string] = [
-    hexParaRgba(misturarHex(corAtiva, '#FFFFFF', 0.92), alphaFundoAtivo),
-    hexParaRgba(misturarHex(corAtiva, '#000000', 0.88), alphaFundoAtivo),
-  ];
-  const bordaAtiva = hexParaRgba(corAtiva, ALPHA_BORDA_MIN + aparencia.brilho * (1 - ALPHA_BORDA_MIN));
-  // Cor personalizada do pad inativo entra translúcida (por cima do fundo da tela), não sólida.
-  const corInativa = aparencia.corInativo ? hexParaRgba(aparencia.corInativo, ALPHA_INATIVO) : colors.surfaceElevated;
-  // Com fundo idle personalizado, o texto/led do tema pode ficar ilegível (ex.: branco no tema
-  // escuro) — recalcula o contraste com base na cor já misturada (translúcida) com a tela atrás.
-  const corTextoIdle = aparencia.corInativo
-    ? corEhClara(misturarHex(aparencia.corInativo, colors.background, ALPHA_INATIVO))
-      ? '#1E2340'
-      : '#FFFFFF'
-    : null;
-  const corLedIdle = corTextoIdle ? hexParaRgba(corTextoIdle, 0.55) : null;
-
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <Header
         title="Pads Contínuos"
         subtitle="Banco de Pads"
         showBack
-        rightIcon="settings-outline"
-        rightIconLabel="Personalizar aparência dos pads"
-        onRightPress={() => setPainelAberto(true)}
+        rightActions={[
+          { icon: 'palette-outline', label: 'Personalizar aparência dos pads', onPress: () => setPainelAberto(true) },
+          // No desktop o painel de presets já fica fixo ao lado das colunas — o ícone só
+          // faz sentido no mobile, onde ele abre como folha deslizante.
+          ...(!isDesktop
+            ? [{ icon: 'bookmark-outline' as const, label: 'Presets', onPress: () => setPresetsAberto(true) }]
+            : []),
+        ]}
       />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.container}>
-          <Card style={styles.aviso}>
-            <Icon name="information-circle-outline" size={18} color={colors.textSecondary} />
-            <Text style={styles.avisoTexto}>Toque nos pads para iniciar/parar as notas contínuas.</Text>
-          </Card>
+        <View style={[isDesktop && styles.colunasLinha]}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.colunasScroll}>
+            <View style={styles.colunas}>
+              {camadasVisiveis.map((camada) => (
+                <ColunaCamada
+                  key={camada.id}
+                  rotulo={camada.rotulo}
+                  estado={estados[camada.id]}
+                  carregando={!!carregando[camada.id]}
+                  corDestaque={corDestaque}
+                  corInativa={corInativa}
+                  onAlternarLigada={() => alternarLigada(camada.id)}
+                  onAjustarVolume={(v) => ajustarVolume(camada.id, v)}
+                  onAjustarCutoff={(v) => ajustarCutoff(camada.id, v)}
+                  onAlternarMudo={() => alternarMudo(camada.id)}
+                  onAlternarSolo={() => alternarSolo(camada.id)}
+                />
+              ))}
 
-          <View style={styles.grid}>
-            {NOTAS.map((nota: Note) => {
-              const on = camadaPrincipal.notaAtiva === nota;
+              {!camadasExtrasLiberadas && (
+                <Card style={styles.colunaBloqueada}>
+                  <Icon name="grid-outline" size={22} color={colors.textSecondary} />
+                  <Text style={styles.colunaBloqueadaTexto}>+7 camadas</Text>
+                  <SeloPro />
+                </Card>
+              )}
+            </View>
+          </ScrollView>
+
+          {isDesktop && (
+            // `flex: 1` aqui absorve o espaço vazio que sobra depois das colunas e
+            // centraliza o painel (largura fixa) dentro dele — sem isso o painel ficava
+            // grudado logo depois das colunas em vez de centralizado no vazio.
+            <View style={styles.presetsArea}>
+              <PainelPresets
+                variante="coluna"
+                presets={presets}
+                onAplicar={aplicarPreset}
+                onSalvar={salvarPresetAtual}
+                onRenomear={renomearPreset}
+                onExcluir={excluirPreset}
+              />
+            </View>
+          )}
+        </View>
+
+        <Text style={styles.secaoTitulo}>Banco de pads</Text>
+        <Card style={styles.notasCard}>
+          <View style={styles.notasGrid}>
+            {NOTAS.map((nota) => {
+              const ativa = notaGlobal === nota;
               return (
                 <TouchableOpacity
                   key={nota}
-                  activeOpacity={0.9}
-                  onPress={() => selecionarNota(CAMADA_PRINCIPAL, nota)}
-                  style={[styles.pad, { backgroundColor: corInativa }, on && { borderColor: bordaAtiva }]}
+                  style={[
+                    styles.notaBotao,
+                    corInativa ? { backgroundColor: hexParaRgba(corInativa, 0.18), borderColor: corInativa } : null,
+                    ativa && { backgroundColor: corDestaque, borderColor: corDestaque },
+                  ]}
+                  onPress={() => selecionarNotaGlobal(nota)}
                 >
-                  {on && (
-                    <>
-                      <LinearGradient
-                        colors={gradienteAtivo}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={StyleSheet.absoluteFillObject}
-                      />
-                      {/* Sheen diagonal — textura de brilho, não mexe na cor de base. */}
-                      <LinearGradient
-                        colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.16)', 'rgba(255,255,255,0)']}
-                        locations={[0.25, 0.5, 0.75]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={StyleSheet.absoluteFillObject}
-                      />
-                    </>
-                  )}
-                  <View
-                    style={[styles.led, on && styles.ledOn, !on && corLedIdle ? { backgroundColor: corLedIdle } : null]}
+                  {/* Textura leve — sheen diagonal + sombra sutil na base, pra tirar o aspecto liso. */}
+                  <LinearGradient
+                    colors={['rgba(255,255,255,0.28)', 'rgba(255,255,255,0)', 'rgba(0,0,0,0.06)']}
+                    locations={[0, 0.55, 1]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFillObject}
+                    pointerEvents="none"
                   />
-                  <Text style={[styles.padNota, on && styles.padNotaAtiva, !on && corTextoIdle ? { color: corTextoIdle } : null]}>
-                    {nota}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.padLabel,
-                      on && styles.padLabelAtiva,
-                      !on && corTextoIdle ? { color: corTextoIdle, opacity: 0.75 } : null,
-                    ]}
-                  >
-                    {NOTA_LABEL[nota]}
-                  </Text>
+                  <Text style={[styles.notaBotaoTexto, ativa && styles.notaBotaoTextoAtivo]}>{nota}</Text>
                 </TouchableOpacity>
               );
             })}
           </View>
+        </Card>
 
-          {/* Camadas extras (PRO) — spec 06, D-06.6/D-06.7. FREE vê um card de convite. */}
-          <View style={styles.secaoHeader}>
-            <Text style={styles.secao}>Camadas</Text>
-            {isPro && <SeloPro />}
-          </View>
-
-          {camadasExtrasLiberadas ? (
-            camadasExtras.map((camada) => (
-              <FaixaCamada
-                key={camada.id}
-                rotulo={camada.rotulo}
-                estado={estados[camada.id]}
-                carregando={!!carregando[camada.id]}
-                corDestaque={corAtiva}
-                onSelecionarNota={(nota) => selecionarNota(camada.id, nota)}
-                onAjustarVolume={(v) => ajustarVolume(camada.id, v)}
-                onAjustarCutoff={(v) => ajustarCutoff(camada.id, v)}
-                onAlternarMudo={() => alternarMudo(camada.id)}
-                onAlternarSolo={() => alternarSolo(camada.id)}
-              />
-            ))
-          ) : (
-            <Card style={styles.avisoPro}>
-              <Icon name="grid-outline" size={20} color={colors.textSecondary} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.avisoProTitulo}>5 camadas extras no PRO</Text>
-                <Text style={styles.avisoProTexto}>
-                  Base 2, Base 3, Atmosfera, Reverse e Guitarra — todas tocando junto com a de cima.
-                </Text>
-              </View>
-              <SeloPro />
-            </Card>
-          )}
-
-          <Text style={styles.secao}>Master</Text>
-          <View style={styles.volumeLinha}>
-            <BarraDeslizante
-              valor={volumeMaster}
-              onChange={ajustarVolumeMaster}
-              corPreenchida={corAtiva}
-              corBolinha={corAtiva}
-            />
-            <Text style={styles.volumeTexto}>{Math.round(volumeMaster * 100)}%</Text>
-          </View>
+        <View style={styles.masterHeader}>
+          <Text style={styles.secaoTitulo}>Master</Text>
+          {isPro && <SeloPro />}
         </View>
+        <Card style={styles.masterCard}>
+          <View style={styles.masterKnob}>
+            <KnobGiratorio valor={loFilterMaster} onChange={ajustarLoFilterMaster} cor={corDestaque} corInativa={corInativa} />
+            <Text style={styles.masterValor}>{Math.round(loFilterMaster * 100)}</Text>
+            <Text style={styles.masterLabel}>FILTER</Text>
+          </View>
+          <View style={styles.masterKnob}>
+            <KnobGiratorio valor={cutoffMaster} onChange={ajustarCutoffMaster} cor={corDestaque} corInativa={corInativa} />
+            <Text style={styles.masterValor}>{Math.round(cutoffMaster * 100)}</Text>
+            <Text style={styles.masterLabel}>CUTOFF</Text>
+          </View>
+          <View style={styles.masterKnob}>
+            <KnobGiratorio valor={volumeMaster} onChange={ajustarVolumeMaster} cor={corDestaque} corInativa={corInativa} />
+            <Text style={styles.masterValor}>{Math.round(volumeMaster * 100)}</Text>
+            <Text style={styles.masterLabel}>VOLUME</Text>
+          </View>
+        </Card>
       </ScrollView>
 
       <PainelPersonalizarPads
@@ -223,16 +259,30 @@ export function PadContinuoScreen() {
         atualizar={atualizar}
         restaurarPadrao={restaurarPadrao}
       />
+
+      {!isDesktop && (
+        <PainelPresets
+          variante="modal"
+          visible={presetsAberto}
+          onClose={() => setPresetsAberto(false)}
+          presets={presets}
+          onAplicar={aplicarPreset}
+          onSalvar={salvarPresetAtual}
+          onRenomear={renomearPreset}
+          onExcluir={excluirPreset}
+        />
+      )}
     </SafeAreaView>
   );
 }
 
-interface FaixaCamadaProps {
+interface ColunaCamadaProps {
   rotulo: string;
-  estado: { notaAtiva: Note | null; volume: number; cutoff: number; mudo: boolean; solo: boolean };
+  estado: EstadoCamada;
   carregando: boolean;
   corDestaque: string;
-  onSelecionarNota: (nota: Note) => void;
+  corInativa?: string;
+  onAlternarLigada: () => void;
   onAjustarVolume: (v: number) => void;
   onAjustarCutoff: (v: number) => void;
   onAlternarMudo: () => void;
@@ -240,87 +290,80 @@ interface FaixaCamadaProps {
 }
 
 /**
- * Uma camada extra (PRO): mute/solo, cutoff e volume próprios, e uma faixa horizontal
- * compacta de notas (mesma interação do grid principal — tocar liga, tocar de novo na
- * mesma nota desliga — só visualmente mais enxuta pra caber 5 delas na tela).
+ * Uma coluna de camada — fader vertical (volume), botões ON/MUTE/SOLO (grandes, todos
+ * clicáveis de verdade) e knob de CUTOFF. A nota é global (banco de pads, abaixo das
+ * colunas) — aqui só decide se a camada está ligada (tocando a nota atual) ou não.
  */
-function FaixaCamada({
+function ColunaCamada({
   rotulo,
   estado,
   carregando,
   corDestaque,
-  onSelecionarNota,
+  corInativa,
+  onAlternarLigada,
   onAjustarVolume,
   onAjustarCutoff,
   onAlternarMudo,
   onAlternarSolo,
-}: FaixaCamadaProps) {
+}: ColunaCamadaProps) {
   const { colors } = useTheme();
   const styles = useThemedStyles(criarEstilos);
+  const estiloInativo = corInativa ? { backgroundColor: hexParaRgba(corInativa, 0.18), borderColor: corInativa } : null;
 
   return (
-    <Card style={styles.faixa}>
-      <View style={styles.faixaTopo}>
-        <Text style={styles.faixaRotulo}>{rotulo}</Text>
-        {carregando && <Icon name="cloud-download-outline" size={16} color={colors.textMuted} />}
-        <View style={styles.faixaBotoes}>
-          <TouchableOpacity
-            onPress={onAlternarMudo}
-            style={[styles.faixaBotao, estado.mudo && styles.faixaBotaoMudoAtivo]}
-            accessibilityRole="button"
-            accessibilityLabel="Mudo"
-          >
-            <Text style={[styles.faixaBotaoTexto, estado.mudo && styles.faixaBotaoTextoAtivo]}>M</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={onAlternarSolo}
-            style={[styles.faixaBotao, estado.solo && { backgroundColor: corDestaque }]}
-            accessibilityRole="button"
-            accessibilityLabel="Solo"
-          >
-            <Text style={[styles.faixaBotaoTexto, estado.solo && styles.faixaBotaoTextoAtivo]}>S</Text>
-          </TouchableOpacity>
-        </View>
+    <Card style={styles.coluna}>
+      <Text style={styles.colunaRotulo} numberOfLines={1}>
+        {rotulo}
+      </Text>
+      <Text style={styles.valorTexto}>{Math.round(estado.volume * 100)}</Text>
+
+      <View style={styles.faderBloco}>
+        <FaderVertical
+          valor={estado.volume}
+          onChange={onAjustarVolume}
+          corPreenchida={corDestaque}
+          corBolinha={corDestaque}
+          corTrilha={corInativa}
+        />
       </View>
 
-      <View style={styles.faixaSliders}>
-        <View style={styles.faixaSliderBloco}>
-          <Text style={styles.faixaSliderLabel}>Cutoff</Text>
-          <BarraDeslizante
-            valor={estado.cutoff}
-            onChange={onAjustarCutoff}
-            corPreenchida={corDestaque}
-            corBolinha={corDestaque}
-          />
-        </View>
-        <View style={styles.faixaSliderBloco}>
-          <Text style={styles.faixaSliderLabel}>Volume</Text>
-          <BarraDeslizante
-            valor={estado.volume}
-            onChange={onAjustarVolume}
-            corPreenchida={corDestaque}
-            corBolinha={corDestaque}
-          />
-        </View>
+      <View style={styles.botoesBloco}>
+        <TouchableOpacity
+          style={[
+            styles.botaoToggle,
+            estiloInativo,
+            estado.ligada && { backgroundColor: colors.success, borderColor: colors.success },
+          ]}
+          onPress={onAlternarLigada}
+        >
+          {carregando ? (
+            <Icon name="cloud-download-outline" size={14} color={estado.ligada ? colors.textInverse : colors.textSecondary} />
+          ) : (
+            <Text style={[styles.botaoToggleTexto, estado.ligada && styles.botaoToggleTextoAtivo]}>
+              {estado.ligada ? 'ON' : 'OFF'}
+            </Text>
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.botaoToggle,
+            estiloInativo,
+            estado.mudo && { backgroundColor: colors.error, borderColor: colors.error },
+          ]}
+          onPress={onAlternarMudo}
+        >
+          <Text style={[styles.botaoToggleTexto, estado.mudo && styles.botaoToggleTextoAtivo]}>MUTE</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.botaoToggle, estiloInativo, estado.solo && { backgroundColor: colors.warning, borderColor: colors.warning }]}
+          onPress={onAlternarSolo}
+        >
+          <Text style={[styles.botaoToggleTexto, estado.solo && styles.botaoToggleTextoAtivo]}>SOLO</Text>
+        </TouchableOpacity>
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.faixaNotasScroll}>
-        {NOTAS.map((nota) => {
-          const ativa = estado.notaAtiva === nota;
-          return (
-            <TouchableOpacity
-              key={nota}
-              onPress={() => onSelecionarNota(nota)}
-              style={[
-                styles.faixaNota,
-                ativa && { backgroundColor: corDestaque, borderColor: corDestaque },
-              ]}
-            >
-              <Text style={[styles.faixaNotaTexto, ativa && styles.faixaNotaTextoAtiva]}>{nota}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+      <KnobGiratorio valor={estado.cutoff} onChange={onAjustarCutoff} cor={corDestaque} corInativa={corInativa} />
+      <Text style={styles.ledTexto}>CUTOFF</Text>
     </Card>
   );
 }
@@ -332,175 +375,146 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
   },
   content: {
     padding: spacing.lg,
+    gap: spacing.md,
   },
-  container: {
-    width: '100%',
-    maxWidth: MAX_LARGURA,
-    alignSelf: 'center',
-    gap: spacing.lg,
-  },
-  aviso: {
+  // Desktop: colunas (largura natural, só rola se não couber) + área de presets que
+  // absorve o resto da largura e centraliza o painel nela.
+  colunasLinha: {
     flexDirection: 'row',
+    gap: spacing.md,
+    alignItems: 'flex-start',
+  },
+  colunasScroll: {
+    flexGrow: 0,
+  },
+  presetsArea: {
+    flex: 1,
     alignItems: 'center',
+  },
+  colunas: {
+    flexDirection: 'row',
     gap: spacing.sm,
+    paddingBottom: spacing.xs,
+  },
+  coluna: {
+    width: LARGURA_COLUNA,
+    alignItems: 'center',
+    gap: spacing.xs,
     borderRadius: radius.lg,
   },
-  avisoTexto: {
+  colunaRotulo: {
     ...typography.caption,
-    color: colors.textSecondary,
-    flex: 1,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  // Idle: escuro liso, sem glow.
-  pad: {
-    width: '22%',
-    aspectRatio: 1,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    overflow: 'hidden',
-  },
-  led: {
-    position: 'absolute',
-    top: 7,
-    left: 7,
-    width: 7,
-    height: 7,
-    borderRadius: 2,
-    backgroundColor: colors.textMuted,
-  },
-  ledOn: {
-    backgroundColor: colors.textInverse,
-  },
-  padNota: {
-    ...typography.h3,
     color: colors.text,
-    fontFamily: fonts.bold,
+    fontFamily: fonts.semibold,
   },
-  padNotaAtiva: {
-    color: colors.textInverse,
+  faderBloco: {
+    height: ALTURA_FADER,
+    paddingVertical: spacing.xs,
+    alignItems: 'center',
   },
-  padLabel: {
+  valorTexto: {
     ...typography.caption,
     color: colors.textMuted,
   },
-  padLabelAtiva: {
-    color: 'rgba(255,255,255,0.85)',
+  botoesBloco: {
+    width: '100%',
+    gap: 6,
   },
-  secaoHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  secao: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    fontFamily: fonts.semibold,
-  },
-  avisoPro: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    borderRadius: radius.lg,
-  },
-  avisoProTitulo: {
-    ...typography.body,
-    color: colors.text,
-    fontFamily: fonts.semibold,
-  },
-  avisoProTexto: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  volumeLinha: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  volumeTexto: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    width: 44,
-    textAlign: 'right',
-  },
-  // Faixa de camada extra
-  faixa: {
-    borderRadius: radius.lg,
-    gap: spacing.sm,
-  },
-  faixaTopo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  faixaRotulo: {
-    ...typography.body,
-    color: colors.text,
-    fontFamily: fonts.semibold,
-    flex: 1,
-  },
-  faixaBotoes: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-  },
-  faixaBotao: {
-    width: 28,
-    height: 28,
-    borderRadius: radius.sm,
+  botaoToggle: {
+    width: '100%',
+    height: 30,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
     backgroundColor: colors.surfaceMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  faixaBotaoMudoAtivo: {
-    backgroundColor: colors.error,
-  },
-  faixaBotaoTexto: {
+  botaoToggleTexto: {
     ...typography.caption,
     color: colors.textSecondary,
     fontFamily: fonts.bold,
+    fontSize: 11,
   },
-  faixaBotaoTextoAtivo: {
+  botaoToggleTextoAtivo: {
     color: colors.textInverse,
   },
-  faixaSliders: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  faixaSliderBloco: {
-    flex: 1,
-    gap: 4,
-  },
-  faixaSliderLabel: {
+  ledTexto: {
     ...typography.caption,
     color: colors.textMuted,
+    fontSize: 10,
   },
-  faixaNotasScroll: {
+  secaoTitulo: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    fontFamily: fonts.semibold,
+  },
+  notasCard: {
+    borderRadius: radius.lg,
+  },
+  notasGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    justifyContent: 'center',
   },
-  faixaNota: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.sm,
+  notaBotao: {
+    width: '14%',
+    minWidth: 44,
+    aspectRatio: 1,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
+    backgroundColor: colors.surfaceMuted,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing.xs,
+    overflow: 'hidden',
   },
-  faixaNotaTexto: {
-    ...typography.caption,
+  notaBotaoTexto: {
+    ...typography.body,
+    color: colors.text,
+    fontFamily: fonts.bold,
+  },
+  notaBotaoTextoAtivo: {
+    color: colors.textInverse,
+  },
+  masterHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  masterCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    borderRadius: radius.lg,
+  },
+  masterKnob: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  masterValor: {
+    ...typography.bodySmall,
     color: colors.text,
     fontFamily: fonts.semibold,
   },
-  faixaNotaTextoAtiva: {
-    color: colors.textInverse,
+  masterLabel: {
+    ...typography.caption,
+    color: colors.textMuted,
+    fontSize: 10,
+  },
+  colunaBloqueada: {
+    width: LARGURA_COLUNA,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    borderRadius: radius.lg,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  colunaBloqueadaTexto: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
 });

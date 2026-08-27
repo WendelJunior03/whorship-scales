@@ -1,21 +1,30 @@
 import { getAudioContext } from '../audioContext';
 
 /**
- * Nós persistentes de UMA camada. Cadeia: fonte → filtro (cutoff) → envelopeNota (fade
- * de entrada/saída ao ligar/desligar a nota) → ganhoEfetivo (volume final, já
- * considerando mute/solo — recalculado externamente por `index.ts`) → bus master.
+ * Uma "voz" tocando nessa camada — uma nota específica, do início ao fim (inclusive o
+ * fade de saída). Cadeia: fonte → filtro (cutoff da voz) → envelope (fade de entrada/
+ * saída) → `ganhoEfetivo` da camada (persistente, compartilhado entre vozes).
  *
- * `envelopeNota` e `ganhoEfetivo` são dois `GainNode`s separados (não um só) de propósito:
- * o primeiro só muda quando o usuário liga/desliga uma nota (rampa de alguns segundos); o
- * segundo muda toda vez que volume/mute/solo de QUALQUER camada muda. Misturar os dois
- * concerns num nó só faria uma coisa cancelar a rampa da outra.
+ * Por que "voz" e não um nó fixo por camada: ao trocar de nota (D-06.6 revisado — nota
+ * agora é global, mas cada camada ainda é monofônica dentro de si), a nota antiga precisa
+ * desaparecer com fade de saída ENQUANTO a nova already sobe com fade de entrada — as
+ * duas tocando ao mesmo tempo por um instante (crossfade de verdade). Se as duas notas
+ * dividissem o mesmo `GainNode`, uma rampa cancelaria a outra. Cada voz tem seu próprio
+ * filtro+envelope; a antiga se desliga sozinha (com o próprio fade) sem afetar a nova.
  */
-export interface NodosCamada {
+interface Voz {
   filtro: BiquadFilterNode;
-  envelopeNota: GainNode;
-  ganhoEfetivo: GainNode;
+  envelope: GainNode;
   fontesAtivas: AudioBufferSourceNode[];
   agendadorId: ReturnType<typeof setInterval> | null;
+}
+
+/** Nós persistentes de UMA camada — sobrevivem entre notas (a voz é que é efêmera). */
+export interface NodosCamada {
+  ganhoEfetivo: GainNode;
+  /** Cutoff normalizado (0-1), lembrado pra aplicar em toda voz nova que nascer. */
+  cutoffAtual: number;
+  vozAtual: Voz | null;
 }
 
 const FADE_ENTRADA_SEGUNDOS = 5;
@@ -23,8 +32,7 @@ const FADE_SAIDA_SEGUNDOS = 1.2;
 
 // Loop com crossfade: em vez do `.loop = true` nativo (que só reinicia, sem disfarçar
 // descompasso de forma de onda na emenda), cada repetição é uma instância própria, que
-// começa um pouco ANTES da anterior terminar — mesma técnica já usada no Pad Contínuo de
-// 1 camada, agora com um agendador independente por camada.
+// começa um pouco ANTES da anterior terminar.
 const DURACAO_CROSSFADE_SEGUNDOS = 1;
 const JANELA_AGENDAMENTO_SEGUNDOS = 2;
 const INTERVALO_VERIFICACAO_MS = 500;
@@ -40,24 +48,27 @@ export function cutoffNormalizadoParaHz(normalizado: number): number {
 }
 
 export function criarNodosCamada(destino: AudioNode): NodosCamada {
+  const ganhoEfetivo = getAudioContext().createGain();
+  ganhoEfetivo.connect(destino);
+  return { ganhoEfetivo, cutoffAtual: 1, vozAtual: null };
+}
+
+function criarVoz(nodos: NodosCamada): Voz {
   const ctx = getAudioContext();
   const filtro = ctx.createBiquadFilter();
   filtro.type = 'lowpass';
-  filtro.frequency.value = CUTOFF_HZ_MAX; // aberto por padrão
+  filtro.frequency.value = cutoffNormalizadoParaHz(nodos.cutoffAtual);
 
-  const envelopeNota = ctx.createGain();
-  envelopeNota.gain.value = 0; // sem nota ativa ainda
+  const envelope = ctx.createGain();
+  envelope.gain.value = 0;
 
-  const ganhoEfetivo = ctx.createGain();
+  filtro.connect(envelope);
+  envelope.connect(nodos.ganhoEfetivo);
 
-  filtro.connect(envelopeNota);
-  envelopeNota.connect(ganhoEfetivo);
-  ganhoEfetivo.connect(destino);
-
-  return { filtro, envelopeNota, ganhoEfetivo, fontesAtivas: [], agendadorId: null };
+  return { filtro, envelope, fontesAtivas: [], agendadorId: null };
 }
 
-function agendarInstancia(nodos: NodosCamada, buffer: AudioBuffer, tempoDeInicio: number) {
+function agendarInstancia(voz: Voz, buffer: AudioBuffer, tempoDeInicio: number) {
   const ctx = getAudioContext();
   const duracaoBuffer = buffer.duration;
 
@@ -65,7 +76,7 @@ function agendarInstancia(nodos: NodosCamada, buffer: AudioBuffer, tempoDeInicio
   fonte.buffer = buffer;
 
   // Envelope da PRÓPRIA instância (sobe, segura, desce) — a sobreposição entre
-  // instâncias vizinhas é o que faz o crossfade.
+  // instâncias vizinhas é o que faz o crossfade da emenda do loop.
   const envelopeInstancia = ctx.createGain();
   envelopeInstancia.gain.setValueAtTime(0, tempoDeInicio);
   envelopeInstancia.gain.linearRampToValueAtTime(1, tempoDeInicio + DURACAO_CROSSFADE_SEGUNDOS);
@@ -73,21 +84,17 @@ function agendarInstancia(nodos: NodosCamada, buffer: AudioBuffer, tempoDeInicio
   envelopeInstancia.gain.linearRampToValueAtTime(0, tempoDeInicio + duracaoBuffer);
 
   fonte.connect(envelopeInstancia);
-  envelopeInstancia.connect(nodos.filtro);
+  envelopeInstancia.connect(voz.filtro);
   fonte.start(tempoDeInicio);
   fonte.stop(tempoDeInicio + duracaoBuffer);
 
-  nodos.fontesAtivas.push(fonte);
+  voz.fontesAtivas.push(fonte);
   fonte.onended = () => {
-    nodos.fontesAtivas = nodos.fontesAtivas.filter((f) => f !== fonte);
+    voz.fontesAtivas = voz.fontesAtivas.filter((f) => f !== fonte);
   };
 }
 
-function iniciarLoopComCrossfade(
-  nodos: NodosCamada,
-  buffer: AudioBuffer,
-  tempoInicio: number,
-): ReturnType<typeof setInterval> {
+function iniciarLoopComCrossfade(voz: Voz, buffer: AudioBuffer, tempoInicio: number): ReturnType<typeof setInterval> {
   const periodo = buffer.duration - DURACAO_CROSSFADE_SEGUNDOS;
   let proximaRepeticao = 0;
 
@@ -95,7 +102,7 @@ function iniciarLoopComCrossfade(
     const ctx = getAudioContext();
     const limite = ctx.currentTime + JANELA_AGENDAMENTO_SEGUNDOS;
     while (tempoInicio + proximaRepeticao * periodo <= limite) {
-      agendarInstancia(nodos, buffer, tempoInicio + proximaRepeticao * periodo);
+      agendarInstancia(voz, buffer, tempoInicio + proximaRepeticao * periodo);
       proximaRepeticao++;
     }
   }
@@ -104,46 +111,71 @@ function iniciarLoopComCrossfade(
   return setInterval(agendarProximas, INTERVALO_VERIFICACAO_MS);
 }
 
-/** Começa a tocar `buffer` em loop nessa camada, com fade de entrada. Para qualquer nota já tocando ali antes. */
+/** Desliga uma voz com fade de saída — some sozinha, sem afetar nenhuma outra voz. */
+function desligarVoz(voz: Voz) {
+  const ctx = getAudioContext();
+
+  if (voz.agendadorId !== null) {
+    clearInterval(voz.agendadorId);
+    voz.agendadorId = null;
+  }
+
+  voz.envelope.gain.cancelScheduledValues(ctx.currentTime);
+  voz.envelope.gain.setValueAtTime(voz.envelope.gain.value, ctx.currentTime);
+  voz.envelope.gain.linearRampToValueAtTime(0, ctx.currentTime + FADE_SAIDA_SEGUNDOS);
+
+  const tempoParada = ctx.currentTime + FADE_SAIDA_SEGUNDOS;
+  voz.fontesAtivas.forEach((f) => f.stop(tempoParada));
+  voz.fontesAtivas = [];
+
+  // Desconecta só depois que o fade termina de verdade — desconectar na hora cortaria
+  // a rampa que acabou de ser agendada.
+  setTimeout(
+    () => {
+      try {
+        voz.envelope.disconnect();
+        voz.filtro.disconnect();
+      } catch {
+        // já desconectado — sem problema
+      }
+    },
+    FADE_SAIDA_SEGUNDOS * 1000 + 100,
+  );
+}
+
+/**
+ * Começa a tocar `buffer` em loop nessa camada, com fade de entrada. Se já tinha uma
+ * nota tocando ali, ela ganha sua PRÓPRIA voz de saída (fade some sozinho) — as duas
+ * ficam audíveis ao mesmo tempo durante a transição (crossfade de verdade entre notas).
+ */
 export function tocarNaCamada(nodos: NodosCamada, buffer: AudioBuffer) {
   const ctx = getAudioContext();
 
-  if (nodos.agendadorId !== null) {
-    clearInterval(nodos.agendadorId);
+  if (nodos.vozAtual) {
+    desligarVoz(nodos.vozAtual);
   }
-  nodos.fontesAtivas.forEach((f) => f.stop());
-  nodos.fontesAtivas = [];
 
-  nodos.envelopeNota.gain.cancelScheduledValues(ctx.currentTime);
-  nodos.envelopeNota.gain.setValueAtTime(0, ctx.currentTime);
-  nodos.envelopeNota.gain.linearRampToValueAtTime(1, ctx.currentTime + FADE_ENTRADA_SEGUNDOS);
+  const voz = criarVoz(nodos);
+  voz.envelope.gain.setValueAtTime(0, ctx.currentTime);
+  voz.envelope.gain.linearRampToValueAtTime(1, ctx.currentTime + FADE_ENTRADA_SEGUNDOS);
+  voz.agendadorId = iniciarLoopComCrossfade(voz, buffer, ctx.currentTime);
 
-  const tempoInicio = ctx.currentTime;
-  nodos.agendadorId = iniciarLoopComCrossfade(nodos, buffer, tempoInicio);
+  nodos.vozAtual = voz;
 }
 
-/** Para a nota ativa dessa camada, com fade de saída. */
+/** Para a voz ativa dessa camada, com fade de saída. */
 export function pararCamada(nodos: NodosCamada) {
-  if (nodos.fontesAtivas.length === 0 && nodos.agendadorId === null) return;
-
-  if (nodos.agendadorId !== null) {
-    clearInterval(nodos.agendadorId);
-    nodos.agendadorId = null;
-  }
-
-  const ctx = getAudioContext();
-  nodos.envelopeNota.gain.cancelScheduledValues(ctx.currentTime);
-  nodos.envelopeNota.gain.setValueAtTime(nodos.envelopeNota.gain.value, ctx.currentTime);
-  nodos.envelopeNota.gain.linearRampToValueAtTime(0, ctx.currentTime + FADE_SAIDA_SEGUNDOS);
-
-  const tempoParada = ctx.currentTime + FADE_SAIDA_SEGUNDOS;
-  nodos.fontesAtivas.forEach((f) => f.stop(tempoParada));
-  nodos.fontesAtivas = [];
+  if (!nodos.vozAtual) return;
+  desligarVoz(nodos.vozAtual);
+  nodos.vozAtual = null;
 }
 
-/** Cutoff (0-1) da camada — aplicado direto, sem rampa (movimento de knob é contínuo). */
+/** Cutoff (0-1) da camada — aplicado direto na voz atual (se tiver uma tocando). */
 export function definirCutoff(nodos: NodosCamada, normalizado: number) {
-  nodos.filtro.frequency.value = cutoffNormalizadoParaHz(normalizado);
+  nodos.cutoffAtual = normalizado;
+  if (nodos.vozAtual) {
+    nodos.vozAtual.filtro.frequency.value = cutoffNormalizadoParaHz(normalizado);
+  }
 }
 
 /** Ganho efetivo (volume já considerando mute/solo) — pequena rampa evita "zipper noise". */

@@ -46,6 +46,16 @@ export default function App() {
         input:-webkit-autofill:active {
           transition: background-color 9999s ease-in-out 0s !important;
         }
+
+        /* O retângulo preto padrão do navegador ao focar um <input>/<textarea> — o
+           componente Input.tsx já resolve isso por instância (outlineStyle: 'none' +
+           borda colorida no container); os TextInput "crus" espalhados pelo app (busca,
+           comentários, campos de modal etc.) não têm essa borda de foco própria, então
+           aplica global aqui em vez de repetir em cada tela. */
+        input:focus,
+        textarea:focus {
+          outline: none;
+        }
       `;
       document.head.appendChild(style);
       return () => {

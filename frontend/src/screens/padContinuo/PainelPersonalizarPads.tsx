@@ -44,7 +44,7 @@ function Amostra({
   );
 }
 
-/** Painel de personalização visual dos Pads Contínuos (cores idle/ativo + brilho). */
+/** Painel de personalização visual dos Pads Contínuos (cor de destaque/base + brilho). */
 export function PainelPersonalizarPads({ visible, onClose, aparencia, atualizar, restaurarPadrao }: PainelPersonalizarPadsProps) {
   const { colors } = useTheme();
   const styles = useThemedStyles(criarEstilos);
@@ -65,7 +65,7 @@ export function PainelPersonalizarPads({ visible, onClose, aparencia, atualizar,
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.secao}>Cor do pad inativo</Text>
+          <Text style={styles.secao}>Cor de base (trilhas, botões inativos)</Text>
           <View style={styles.amostras}>
             {PALETA_INATIVO.map((opcao) => (
               <Amostra
@@ -78,7 +78,7 @@ export function PainelPersonalizarPads({ visible, onClose, aparencia, atualizar,
             ))}
           </View>
 
-          <Text style={styles.secao}>Cor do pad ativo</Text>
+          <Text style={styles.secao}>Cor de destaque (fader, knob, banco de pads)</Text>
           <View style={styles.amostras}>
             {PALETA_ATIVO.map((opcao) => (
               <Amostra
@@ -91,7 +91,7 @@ export function PainelPersonalizarPads({ visible, onClose, aparencia, atualizar,
             ))}
           </View>
 
-          <Text style={styles.secao}>Brilho do pad</Text>
+          <Text style={styles.secao}>Brilho do destaque</Text>
           <View style={styles.brilhoLinha}>
             <BarraDeslizante
               valor={aparencia.brilho}

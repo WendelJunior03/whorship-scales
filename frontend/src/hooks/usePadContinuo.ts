@@ -8,6 +8,8 @@ import {
   pararTodasAsCamadas,
   definirCutoffDaCamada,
   definirVolumeMaster as definirVolumeMasterNaEngine,
+  definirCutoffMaster as definirCutoffMasterNaEngine,
+  definirLoFilterMaster as definirLoFilterMasterNaEngine,
   recalcularGanhos,
   tocar as tocarNaEngine,
 } from '@/audio/padContinuo';
@@ -18,21 +20,25 @@ const IDS_CAMADAS = CAMADAS.map((c) => c.id);
 function estadoInicial(): Record<CamadaId, EstadoCamada> {
   const estado = {} as Record<CamadaId, EstadoCamada>;
   for (const camada of CAMADAS) {
-    estado[camada.id] = { notaAtiva: null, volume: camada.volumePadrao, cutoff: 1, mudo: false, solo: false };
+    estado[camada.id] = { ligada: false, volume: camada.volumePadrao, cutoff: 1, mudo: false, solo: false };
   }
   return estado;
 }
 
 /**
- * Controller do Pad Contínuo multicamadas (spec 06, D-06.6). Mapa central de estado por
- * camada — os componentes visuais só leem isso, nunca chamam a engine
- * (`@/audio/padContinuo`) direto. Cada camada é monofônica dentro de si mesma (uma nota
- * por vez), mas camadas diferentes tocam notas diferentes simultaneamente.
+ * Controller do Pad Contínuo multicamadas. A NOTA é global — uma só, compartilhada por
+ * todas as camadas ligadas (decisão do dono do projeto) — cada camada só decide se está
+ * ligada (tocando a nota global) ou não, além de volume/cutoff/mute/solo próprios. Mapa
+ * central de estado — os componentes visuais só leem isso, nunca chamam a engine
+ * (`@/audio/padContinuo`) direto.
  */
 export function usePadContinuo() {
+  const [notaGlobal, setNotaGlobal] = useState<Note | null>(null);
   const [estados, setEstados] = useState<Record<CamadaId, EstadoCamada>>(estadoInicial);
   const [carregando, setCarregando] = useState<Partial<Record<CamadaId, boolean>>>({});
   const [volumeMaster, setVolumeMaster] = useState(0.7);
+  const [cutoffMaster, setCutoffMaster] = useState(1);
+  const [loFilterMaster, setLoFilterMaster] = useState(0);
 
   // Sempre com o estado mais recente — usado só pra montar o payload de
   // `recalcularGanhos` (que precisa do conjunto inteiro por causa do solo global) sem
@@ -42,29 +48,68 @@ export function usePadContinuo() {
     estadosRef.current = estados;
   }, [estados]);
 
-  const selecionarNota = useCallback(async (camada: CamadaId, nota: Note) => {
-    const atual = estadosRef.current[camada];
-
-    if (atual.notaAtiva === nota) {
-      // mesma nota que já tocava nessa camada — só desliga ela.
-      pararCamadaNaEngine(camada);
-      setEstados((s) => ({ ...s, [camada]: { ...s[camada], notaAtiva: null } }));
-      return;
-    }
-
+  /** Toca a nota global em UMA camada — usado tanto ao ligar uma camada quanto ao trocar a nota global. */
+  const tocarCamada = useCallback(async (camada: CamadaId, nota: Note) => {
     setCarregando((c) => ({ ...c, [camada]: true }));
     try {
       await tocarNaEngine(camada, nota);
-      setEstados((s) => ({ ...s, [camada]: { ...s[camada], notaAtiva: nota } }));
+      setEstados((s) => ({ ...s, [camada]: { ...s[camada], ligada: true } }));
     } catch {
-      notifyAction(
-        'Áudio não encontrado',
-        `A gravação de "${nota}" ainda não está disponível nessa camada.`,
-      );
+      notifyAction('Áudio não encontrado', `A gravação de "${nota}" ainda não está disponível em ${camada}.`);
+      setEstados((s) => ({ ...s, [camada]: { ...s[camada], ligada: false } }));
     } finally {
       setCarregando((c) => ({ ...c, [camada]: false }));
     }
   }, []);
+
+  /**
+   * Troca a nota global — todas as camadas LIGADAS (armadas) no momento passam a tocar
+   * essa nota (com crossfade: a nota antiga some com fade de saída, a nova entra com
+   * fade de entrada — ver `camadaEngine.ts`). Clicar na MESMA nota que já está tocando
+   * só PARA O SOM — quem decide quais camadas participam é o "ligada" de cada uma (o
+   * banco de pads não mexe nisso), então elas continuam armadas pra quando uma nota for
+   * escolhida de novo.
+   */
+  const selecionarNotaGlobal = useCallback(
+    (nota: Note) => {
+      const ligadas = IDS_CAMADAS.filter((id) => estadosRef.current[id].ligada);
+
+      if (nota === notaGlobal) {
+        ligadas.forEach((camada) => pararCamadaNaEngine(camada));
+        setNotaGlobal(null);
+        return;
+      }
+
+      setNotaGlobal(nota);
+      ligadas.forEach((camada) => tocarCamada(camada, nota));
+    },
+    [notaGlobal, tocarCamada],
+  );
+
+  /**
+   * Arma/desarma uma camada — decide só QUAIS camadas participam, independente do
+   * banco de pads estar tocando algo agora ou não. Se já tiver uma nota global tocando,
+   * arma/desarma toca ou para o som na hora também; sem nota escolhida ainda, só marca
+   * a intenção (fica pronta pra tocar assim que uma nota for escolhida).
+   */
+  const alternarLigada = useCallback(
+    (camada: CamadaId) => {
+      const ligadaAgora = estadosRef.current[camada].ligada;
+
+      if (ligadaAgora) {
+        pararCamadaNaEngine(camada); // no-op se não tiver nada tocando ali
+        setEstados((s) => ({ ...s, [camada]: { ...s[camada], ligada: false } }));
+        return;
+      }
+
+      if (!notaGlobal) {
+        setEstados((s) => ({ ...s, [camada]: { ...s[camada], ligada: true } }));
+        return;
+      }
+      tocarCamada(camada, notaGlobal);
+    },
+    [notaGlobal, tocarCamada],
+  );
 
   const ajustarVolume = useCallback((camada: CamadaId, valor: number) => {
     setEstados((s) => {
@@ -100,23 +145,40 @@ export function usePadContinuo() {
     setVolumeMaster(valor);
   }, []);
 
+  const ajustarCutoffMaster = useCallback((valor: number) => {
+    definirCutoffMasterNaEngine(valor);
+    setCutoffMaster(valor);
+  }, []);
+
+  const ajustarLoFilterMaster = useCallback((valor: number) => {
+    definirLoFilterMasterNaEngine(valor);
+    setLoFilterMaster(valor);
+  }, []);
+
   // Desliga qualquer camada tocando — usado ao sair da tela, pra não deixar nota presa.
   const pararTudo = useCallback(() => {
     pararTodasAsCamadas(IDS_CAMADAS);
     setEstados(estadoInicial);
+    setNotaGlobal(null);
   }, []);
 
   return {
     camadas: CAMADAS,
+    notaGlobal,
+    selecionarNotaGlobal,
     estados,
     carregando,
-    selecionarNota,
+    alternarLigada,
     ajustarVolume,
     ajustarCutoff,
     alternarMudo,
     alternarSolo,
     volumeMaster,
     ajustarVolumeMaster,
+    cutoffMaster,
+    ajustarCutoffMaster,
+    loFilterMaster,
+    ajustarLoFilterMaster,
     pararTudo,
   };
 }

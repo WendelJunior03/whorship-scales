@@ -9,14 +9,14 @@ const CORES_ACENTO: { cor: string; label: string }[] = [
   { cor: '#06B6D4', label: 'Ciano' },
 ];
 
-/** Opções de cor pro pad quando ele está PARADO. `cor: null` = usa o tom padrão do tema. */
+/** Opções de cor pra trilha/base (fader, knob, banco de pads) quando inativa. `cor: null` = tom padrão do tema. */
 export const PALETA_INATIVO: { cor: string | null; label: string }[] = [
   { cor: null, label: 'Padrão' },
   { cor: '#FFFFFF', label: 'Branco' },
   ...CORES_ACENTO,
 ];
 
-/** Opções de cor pro pad quando ele está TOCANDO. `cor: null` = usa o azul da marca (colors.primary). */
+/** Opções de cor de destaque (fader, knob, banco de pads, SOLO) quando ativa/tocando. `cor: null` = azul da marca. */
 export const PALETA_ATIVO: { cor: string | null; label: string }[] = [
   { cor: null, label: 'Azul' },
   ...CORES_ACENTO,

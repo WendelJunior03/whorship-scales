@@ -8,7 +8,7 @@ export interface AparenciaPads {
   corInativo: string | null;
   /** `null` = usa o azul da marca (colors.primary). */
   corAtivo: string | null;
-  /** 0 a 1 — intensidade da cor do pad ativo. */
+  /** 0 a 1 — intensidade da cor ativa (fader, knob, botões de destaque). */
   brilho: number;
 }
 
