@@ -6,22 +6,25 @@ import { spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 
+export interface HeaderAction {
+  icon: IconName;
+  label: string;
+  onPress: () => void;
+}
+
 interface HeaderProps {
   title: string;
   subtitle?: string;
   showBack?: boolean;
-  rightIcon?: IconName;
-  rightIconLabel?: string;
-  onRightPress?: () => void;
+  /** Botões à direita do título — na ordem em que devem aparecer. */
+  rightActions?: HeaderAction[];
 }
 
 export function Header({
   title,
   subtitle,
   showBack,
-  rightIcon,
-  rightIconLabel,
-  onRightPress,
+  rightActions = [],
 }: HeaderProps) {
   const navigation = useNavigation();
   const { colors } = useTheme();
@@ -54,16 +57,17 @@ export function Header({
       </View>
 
       <View style={[styles.side, styles.sideRight]}>
-        {rightIcon && (
+        {rightActions.map((acao) => (
           <TouchableOpacity
-            onPress={onRightPress}
+            key={acao.label}
+            onPress={acao.onPress}
             hitSlop={10}
             accessibilityRole="button"
-            accessibilityLabel={rightIconLabel ?? 'Mais opções'}
+            accessibilityLabel={acao.label}
           >
-            <Icon name={rightIcon} size={24} color={colors.text} />
+            <Icon name={acao.icon} size={24} color={colors.text} />
           </TouchableOpacity>
-        )}
+        ))}
       </View>
     </View>
   );
@@ -77,10 +81,13 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     paddingVertical: spacing.md,
   },
   side: {
-    width: 32,
+    minWidth: 32,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
   },
   sideRight: {
-    alignItems: 'flex-end',
+    justifyContent: 'flex-end',
   },
   center: {
     flex: 1,
