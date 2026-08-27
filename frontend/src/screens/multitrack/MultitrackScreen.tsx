@@ -98,10 +98,14 @@ export function MultitrackScreen() {
   }
 
   async function salvar() {
+    setModalSalvar(false);
     try {
-      await mt.salvarProjeto(nomeProjeto);
-      setModalSalvar(false);
-      notifyAction('Salvo', 'Projeto salvo neste navegador. Reabra por aqui quando voltar.');
+      const { meta, tamanhoOriginal } = await mt.salvarProjeto(nomeProjeto);
+      const economia =
+        tamanhoOriginal > meta.tamanho
+          ? ` (${formatarTamanho(tamanhoOriginal)} → ${formatarTamanho(meta.tamanho)})`
+          : '';
+      notifyAction('Salvo', `Projeto salvo neste navegador${economia}. Reabra por aqui quando voltar.`);
     } catch {
       notifyAction('Erro', 'Não foi possível salvar (espaço do navegador cheio?).');
     }
@@ -147,9 +151,9 @@ export function MultitrackScreen() {
             (computador) para usar.
           </Text>
         </View>
-      ) : mt.carregando ? (
+      ) : mt.carregando || mt.salvando ? (
         <View style={styles.centroFull}>
-          <LogoCarregando texto="Carregando faixas…" />
+          <LogoCarregando texto={mt.salvando ? 'Comprimindo e salvando…' : 'Carregando faixas…'} />
         </View>
       ) : semFaixas ? (
         <ScrollView contentContainerStyle={styles.centro}>

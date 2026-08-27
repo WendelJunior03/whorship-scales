@@ -4,6 +4,7 @@ import { identificarInstrumento } from './nomeInstrumento';
 import { Faixa } from './tipos';
 import * as projetoStore from './projetoStore';
 import type { ProjetoMeta } from './projetoStore';
+import { comprimirMp3 } from './compressao';
 
 /** id único e estável dentro/entre sessões (evita colisão ao restaurar projeto). */
 function novoId(): string {
@@ -28,6 +29,7 @@ export function useMultitrack() {
   const [peaks, setPeaks] = useState<number[]>([]);
   const [projetoId, setProjetoId] = useState<string | null>(null);
   const [projetoNome, setProjetoNome] = useState('');
+  const [salvando, setSalvando] = useState(false);
 
   function engine(): MultitrackEngine {
     if (!engineRef.current) engineRef.current = new MultitrackEngine();
@@ -155,33 +157,57 @@ export function useMultitrack() {
     setPeaks(engine().getPeaks(140));
   }, []);
 
-  /** Salva o projeto atual no navegador (IndexedDB). Retorna os metadados. */
+  /**
+   * Salva o projeto no navegador (IndexedDB), COMPRIMINDO cada faixa pra MP3
+   * (~10x menos espaço). Se a compressão falhar, cai no arquivo original.
+   * Retorna os metadados + o tamanho original (pra mostrar a economia).
+   */
   const salvarProjeto = useCallback(
-    async (nome: string): Promise<ProjetoMeta> => {
-      const id = projetoId ?? `p-${Date.now().toString(36)}`;
-      const blobs = faixas
-        .map((f) => ({ id: f.id, blob: blobsRef.current.get(f.id) }))
-        .filter((b): b is { id: string; blob: Blob } => !!b.blob);
-      const tamanho = blobs.reduce((s, b) => s + b.blob.size, 0);
-      const meta: ProjetoMeta = {
-        id,
-        nome: nome.trim() || 'Projeto sem nome',
-        criadoEm: Date.now(),
-        tamanho,
-        faixas: faixas.map((f) => ({
-          id: f.id,
-          nome: f.nome,
-          icone: f.icone,
-          cor: f.cor,
-          volume: f.volume,
-          mudo: f.mudo,
-          solo: f.solo,
-        })),
-      };
-      await projetoStore.salvarProjeto(meta, blobs);
-      setProjetoId(id);
-      setProjetoNome(meta.nome);
-      return meta;
+    async (nome: string): Promise<{ meta: ProjetoMeta; tamanhoOriginal: number }> => {
+      setSalvando(true);
+      try {
+        const id = projetoId ?? `p-${Date.now().toString(36)}`;
+        let tamanhoOriginal = 0;
+        const blobs: { id: string; blob: Blob }[] = [];
+        for (const f of faixas) {
+          const original = blobsRef.current.get(f.id);
+          if (original) tamanhoOriginal += original.size;
+          const buffer = engine().getBuffer(f.id);
+          let blob: Blob | undefined;
+          if (buffer) {
+            try {
+              blob = await comprimirMp3(buffer);
+            } catch {
+              blob = original; // fallback: guarda o original se comprimir falhar
+            }
+          } else {
+            blob = original;
+          }
+          if (blob) blobs.push({ id: f.id, blob });
+        }
+        const tamanho = blobs.reduce((s, b) => s + b.blob.size, 0);
+        const meta: ProjetoMeta = {
+          id,
+          nome: nome.trim() || 'Projeto sem nome',
+          criadoEm: Date.now(),
+          tamanho,
+          faixas: faixas.map((f) => ({
+            id: f.id,
+            nome: f.nome,
+            icone: f.icone,
+            cor: f.cor,
+            volume: f.volume,
+            mudo: f.mudo,
+            solo: f.solo,
+          })),
+        };
+        await projetoStore.salvarProjeto(meta, blobs);
+        setProjetoId(id);
+        setProjetoNome(meta.nome);
+        return { meta, tamanhoOriginal };
+      } finally {
+        setSalvando(false);
+      }
     },
     [faixas, projetoId],
   );
@@ -252,6 +278,7 @@ export function useMultitrack() {
     removerFaixa,
     projetoId,
     projetoNome,
+    salvando,
     salvarProjeto,
     restaurarProjeto,
   };
