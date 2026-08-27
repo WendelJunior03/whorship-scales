@@ -1,59 +1,56 @@
-import React, { useEffect, useState } from 'react';
-import { Modal, Platform, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { forwardRef, useEffect, useImperativeHandle } from 'react';
+import { Modal, Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Icon } from '@/components/Icon';
-import { Button } from '@/components/Button';
 import { PadPreset } from '@/hooks/usePadPresets';
 import { confirmAction } from '@/utils/confirm';
-import { radius, spacing, typography } from '@/theme';
+import { fonts, radius, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
-import { ANCORA_DIREITA, ANCORA_TOPO } from './anchoragem';
+import { usePopoverAncorado } from './usePopoverAncorado';
 
 const LARGURA_POPOVER = 260;
 
+export interface PainelPresetsHandle {
+  /** Abre o popover programaticamente (usado pra mostrar sozinho ao entrar na tela). */
+  abrir: () => void;
+}
+
 interface PainelPresetsProps {
-  visible: boolean;
-  onClose: () => void;
   presets: PadPreset[];
   onAplicar: (preset: PadPreset) => void;
-  onSalvar: (nome: string) => void;
   onExcluir: (id: string) => void;
 }
 
 /**
- * Popover de Presets do Pad Contínuo — salvar/aplicar/excluir mixagens. Aberto a partir
- * do menu de opções (ícone de 3 barrinhas no header), ancorado no mesmo canto superior
- * direito dele.
+ * Link "Meus presets" (rodapé do mixer) — abre um popover com a lista de presets salvos
+ * (nome clicável aplica, lixeira exclui). Também pode ser aberto programaticamente (ref)
+ * pra aparecer sozinho quando a tela abre sem um "último preset usado" definido.
  */
-export function PainelPresets({ visible, onClose, presets, onAplicar, onSalvar, onExcluir }: PainelPresetsProps) {
+export const PainelPresets = forwardRef<PainelPresetsHandle, PainelPresetsProps>(function PainelPresets(
+  { presets, onAplicar, onExcluir },
+  ref,
+) {
   const { colors } = useTheme();
   const styles = useThemedStyles(criarEstilos);
-  const [nomeNovo, setNomeNovo] = useState('');
+  const { gatilhoRef, aberto, pos, abrir, fechar } = usePopoverAncorado(LARGURA_POPOVER);
+
+  useImperativeHandle(ref, () => ({ abrir }), [abrir]);
 
   // Esc fecha o popover (web) — o `onRequestClose` do Modal já cobre o botão físico/gesto
   // de voltar do Android, mas não o teclado no navegador.
   useEffect(() => {
-    if (Platform.OS !== 'web' || !visible) return;
-    // Tipo mínimo local — o tsconfig não inclui a lib "dom" (mesmo padrão de
-    // useAfinador.ts), então não dá pra usar o `KeyboardEvent` global do navegador.
+    if (Platform.OS !== 'web' || !aberto) return;
+    // Tipo mínimo local — o tsconfig não inclui a lib "dom" (mesmo padrão de useAfinador.ts).
     const aoTeclar = (e: { key: string }) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') fechar();
     };
     document.addEventListener('keydown', aoTeclar);
     return () => document.removeEventListener('keydown', aoTeclar);
-  }, [visible, onClose]);
-
-  function salvar() {
-    const nome = nomeNovo.trim();
-    if (!nome) return;
-    onSalvar(nome);
-    setNomeNovo('');
-    onClose();
-  }
+  }, [aberto]);
 
   function aplicar(preset: PadPreset) {
     onAplicar(preset);
-    onClose();
+    fechar();
   }
 
   function excluirComConfirmacao(preset: PadPreset) {
@@ -64,64 +61,70 @@ export function PainelPresets({ visible, onClose, presets, onAplicar, onSalvar, 
   }
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
-      <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Fechar presets" />
-      <View style={styles.popover}>
-        <Text style={styles.titulo}>Presets</Text>
+    <>
+      <TouchableOpacity ref={gatilhoRef} style={styles.acao} onPress={abrir} accessibilityRole="button" accessibilityLabel="Meus presets">
+        <Icon name="list-outline" size={16} color={colors.primary} />
+        <Text style={styles.acaoTexto}>Meus presets</Text>
+      </TouchableOpacity>
 
-        <View style={styles.salvarInputWrap}>
-          <TextInput
-            value={nomeNovo}
-            onChangeText={setNomeNovo}
-            placeholder="Nome do preset"
-            placeholderTextColor={colors.textMuted}
-            onSubmitEditing={salvar}
-            style={styles.salvarInput}
-          />
-        </View>
-        <Button title="Salvar" onPress={salvar} disabled={!nomeNovo.trim()} />
-
-        <View style={styles.divisor} />
-
-        {presets.length === 0 ? (
-          <Text style={styles.vazioTexto}>Nenhum preset salvo ainda.</Text>
-        ) : (
-          <View style={styles.lista}>
-            {presets.map((preset, indice) => (
-              <View key={preset.id} style={styles.linha}>
-                <TouchableOpacity
-                  style={styles.linhaBotaoAplicar}
-                  onPress={() => aplicar(preset)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Aplicar preset ${preset.nome}`}
-                >
-                  <Text style={styles.linhaNome} numberOfLines={1}>
-                    {indice + 1} - {preset.nome}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => excluirComConfirmacao(preset)}
-                  hitSlop={8}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Excluir ${preset.nome}`}
-                >
-                  <Icon name="trash-outline" size={18} color={colors.textMuted} />
-                </TouchableOpacity>
-              </View>
-            ))}
+      <Modal visible={aberto} transparent animationType="none" onRequestClose={fechar}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={fechar} accessibilityLabel="Fechar" />
+        <View style={[styles.popover, { bottom: pos.bottom, left: pos.left }]}>
+          <View style={styles.cabecalho}>
+            <Text style={styles.titulo}>Meus presets</Text>
+            <TouchableOpacity onPress={fechar} hitSlop={8} accessibilityRole="button" accessibilityLabel="Fechar sem escolher">
+              <Icon name="close" size={18} color={colors.textMuted} />
+            </TouchableOpacity>
           </View>
-        )}
-      </View>
-    </Modal>
+
+          {presets.length === 0 ? (
+            <Text style={styles.vazioTexto}>Nenhum preset salvo ainda.</Text>
+          ) : (
+            <View style={styles.lista}>
+              {presets.map((preset, indice) => (
+                <View key={preset.id} style={styles.linha}>
+                  <TouchableOpacity
+                    style={styles.linhaBotaoAplicar}
+                    onPress={() => aplicar(preset)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Aplicar preset ${preset.nome}`}
+                  >
+                    <Text style={styles.linhaNome} numberOfLines={1}>
+                      {indice + 1} - {preset.nome}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => excluirComConfirmacao(preset)}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Excluir ${preset.nome}`}
+                  >
+                    <Icon name="trash-outline" size={18} color={colors.textMuted} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      </Modal>
+    </>
   );
-}
+});
 
 const criarEstilos = (colors: Cores) =>
   StyleSheet.create({
+    acao: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+    },
+    acaoTexto: {
+      ...typography.bodySmall,
+      color: colors.primary,
+      fontFamily: fonts.semibold,
+    },
     popover: {
       position: 'absolute',
-      top: ANCORA_TOPO,
-      right: ANCORA_DIREITA,
       width: LARGURA_POPOVER,
       gap: spacing.sm,
       backgroundColor: colors.surface,
@@ -129,32 +132,20 @@ const criarEstilos = (colors: Cores) =>
       borderWidth: 1,
       borderColor: colors.border,
       padding: spacing.md,
-      // Sombra pra destacar o popover flutuando por cima do resto da tela.
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.15,
       shadowRadius: 12,
       elevation: 8,
     },
+    cabecalho: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
     titulo: {
       ...typography.h3,
       color: colors.text,
-    },
-    salvarInputWrap: {
-      backgroundColor: colors.surfaceMuted,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: colors.border,
-      paddingHorizontal: spacing.md,
-    },
-    salvarInput: {
-      ...typography.bodySmall,
-      color: colors.text,
-      paddingVertical: spacing.sm,
-    },
-    divisor: {
-      height: 1,
-      backgroundColor: colors.border,
     },
     vazioTexto: {
       ...typography.caption,
