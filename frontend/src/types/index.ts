@@ -124,6 +124,25 @@ export interface Ministerio {
   created_at?: string;
 }
 
+// --- Vagas e assinaturas (spec 11, módulo 12) ---
+
+export interface Assinatura {
+  id: number;
+  plano: string | null;
+  vagas_total: number;
+  ciclo: 'mensal' | 'anual';
+  status: 'ativa' | 'cancelada' | 'pendente';
+  provider_ref: string | null;
+  responsavel_nome?: string | null;
+  created_at?: string;
+}
+
+export interface AssinaturasResposta {
+  assinaturas: Assinatura[];
+  resumo: { comprado: number; alocado: number; disponivel: number };
+  ministerios: Ministerio[];
+}
+
 export interface MinisterioMembro {
   /** id do membro. */
   id: number;

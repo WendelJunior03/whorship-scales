@@ -35,6 +35,7 @@ export const linking: LinkingOptions<LinkingParamList> = {
       Aniversariantes: 'aniversariantes',
       Comunicados: 'comunicados/:abrirId?',
       Pasta: 'pastas/:pastaId',
+      Assinaturas: 'assinaturas',
     },
   },
 };

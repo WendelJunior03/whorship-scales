@@ -2,6 +2,7 @@ import React from 'react';
 import {
   Building2,
   CalendarOff,
+  CreditCard,
   CloudSun,
   Folder,
   Gift,
@@ -165,6 +166,7 @@ const MAPA = {
   'search-outline': Search,
   'sunny-outline': Sun,
   'calendar-off': CalendarOff,
+  'card-outline': CreditCard,
   'folder-outline': Folder,
   'gift-outline': Gift,
   'partly-sunny-outline': CloudSun,
