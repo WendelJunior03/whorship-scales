@@ -126,11 +126,11 @@ o FREE continua com a experiência atual (1 camada, a "Base 1"); o PRO desbloque
 camada fixa (`base1`), PRO = todas.** Ver arquitetura completa e nova seção dedicada mais
 abaixo ("Pad Contínuo — Arquitetura de Camadas").
 
-> **Referência visual:** o layout de referência (plugin ETHERNAL) traz, por camada,
+> **Referência visual:** o layout de referência traz, por camada,
 > on/off + mute + cutoff + fader de volume — isso entra. O bloco **Master** (volume +
-> cutoff) também entra. **Fora do escopo, por decisão explícita:** o bloco "Knob Mode"
-> (dial de nota global com auto-play/prev/next/play/stop) e qualquer seletor de nota
-> **global único** (ex.: o grid "Button Mode" de 12 notas do plugin) — cada camada
+> cutoff) também entra. **Fora do escopo, por decisão explícita:** um dial de nota
+> global com auto-play/prev/next/play/stop e qualquer seletor de nota
+> **global único** (ex.: um grid de 12 notas) — cada camada
 > seleciona sua própria nota de forma independente (ver Grafo de áudio), então não existe
 > "a nota atual do pad" como conceito único. O widget exato de seleção de nota por camada
 > (chips, dropdown, stepper) fica em aberto pra implementação — fora do escopo desta spec
