@@ -73,6 +73,11 @@ export class MultitrackEngine {
     return Math.min(this.duracao, Math.max(0, t));
   }
 
+  /** AudioBuffer decodificado de uma faixa (usado pra comprimir ao salvar). */
+  getBuffer(id: string): AudioBuffer | null {
+    return this.faixas.find((f) => f.id === id)?.buffer ?? null;
+  }
+
   /** Decodifica um arquivo/blob e adiciona como faixa. Retorna a duração dela. */
   async adicionarArquivo(id: string, arquivo: Blob): Promise<number> {
     const dados = await arquivo.arrayBuffer();
