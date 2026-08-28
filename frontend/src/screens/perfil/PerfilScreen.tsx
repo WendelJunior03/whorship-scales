@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Modal, Platform, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Platform, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Icon, IconName } from '@/components/Icon';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -290,13 +290,17 @@ export function PerfilScreen() {
                   {googleVinculado ? `Conectado · ${googleVinculado}` : 'Login e Google Agenda'}
                 </Text>
               </View>
-              <Button
-                title={googleVinculado ? 'Desconectar' : 'Conectar'}
-                variant="outline"
+              <TouchableOpacity
+                style={styles.integPill}
                 onPress={googleVinculado ? desconectarGoogle : conectarGoogle}
-                loading={integBusy}
-                style={styles.integBtn}
-              />
+                disabled={integBusy}
+              >
+                {integBusy ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <Text style={styles.integPillTexto}>{googleVinculado ? 'Desconectar' : 'Conectar'}</Text>
+                )}
+              </TouchableOpacity>
             </View>
             {googleVinculado && (
               <Button
@@ -500,7 +504,18 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
   integRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   integNome: { ...typography.body, color: colors.text, fontFamily: fonts.semibold },
   integSub: { ...typography.caption, color: colors.textSecondary },
-  integBtn: { marginTop: spacing.xs },
+  integBtn: { marginTop: spacing.sm },
+  integPill: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    minWidth: 96,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  integPillTexto: { ...typography.bodySmall, color: colors.primary, fontFamily: fonts.semibold },
   planoCard: {
     width: '100%',
     borderRadius: radius.xl,
