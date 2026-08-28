@@ -15,8 +15,8 @@ import { usePadContinuo } from '@/hooks/usePadContinuo';
 import { usePadAparencia } from '@/hooks/usePadAparencia';
 import { usePadPresets, PadPreset } from '@/hooks/usePadPresets';
 import { PainelPersonalizarPads } from './PainelPersonalizarPads';
-import { PainelPresets } from './PainelPresets';
-import { MenuOpcoesPad } from './MenuOpcoesPad';
+import { PainelPresets, PainelPresetsHandle } from './PainelPresets';
+import { PopoverSalvarPreset } from './PopoverSalvarPreset';
 import { CamadaId, EstadoCamada, NOTAS } from '@/audio/padContinuo';
 import { hexParaRgba } from '@/utils/cor';
 import { fonts, radius, spacing, typography } from '@/theme';
@@ -53,10 +53,9 @@ export function PadContinuoScreen() {
   } = usePadContinuo();
   const { liberado: camadasExtrasLiberadas, isPro } = useRecurso('pads.camadas_extras');
   const { aparencia, atualizar, restaurarPadrao } = usePadAparencia();
-  const { presets, salvarPreset, excluirPreset, ultimoPresetId, definirUltimoPreset } = usePadPresets();
-  const [menuAberto, setMenuAberto] = useState(false);
+  const { presets, salvarPreset, renomearPreset, excluirPreset, ultimoPresetId, definirUltimoPreset } = usePadPresets();
   const [painelAberto, setPainelAberto] = useState(false);
-  const [presetsAberto, setPresetsAberto] = useState(false);
+  const painelPresetsRef = useRef<PainelPresetsHandle>(null);
 
   const camadasVisiveis = camadas.filter((c) => !c.somenteNoPro || camadasExtrasLiberadas);
 
@@ -92,14 +91,17 @@ export function PadContinuoScreen() {
   const aplicarPresetRef = useRef(aplicarPreset);
   aplicarPresetRef.current = aplicarPreset;
 
-  // Ao abrir a tela, restaura sozinho o último preset aplicado (uma vez só) — assim não
-  // precisa escolher o mix de novo toda vez que volta pra essa tela.
-  const restauradoRef = useRef(false);
+  // Ao abrir a tela (uma vez só): se já tem "último preset usado" (o usuário já está "em"
+  // um preset), aplica ele sozinho, sem abrir nada — só ajusta os sliders/cutoffs. Sem
+  // "abertura automática" de painel nenhum (tirado por ser fonte de bugs de Modal
+  // duplicando em certas condições) — "Meus presets" fica só no link do rodapé, acessível
+  // a qualquer momento, mas nunca aberto sozinho.
+  const aplicadoRef = useRef(false);
   useEffect(() => {
-    if (restauradoRef.current || !ultimoPresetId) return;
+    if (aplicadoRef.current || !ultimoPresetId) return;
     const preset = presets.find((p) => p.id === ultimoPresetId);
     if (preset) {
-      restauradoRef.current = true;
+      aplicadoRef.current = true;
       aplicarPresetRef.current(preset);
     }
   }, [presets, ultimoPresetId]);
@@ -142,7 +144,9 @@ export function PadContinuoScreen() {
         title="Pads Contínuos"
         subtitle="Banco de Pads"
         showBack
-        rightActions={[{ icon: 'menu-outline', label: 'Opções', onPress: () => setMenuAberto(true) }]}
+        rightActions={[
+          { icon: 'palette-outline', label: 'Personalizar aparência dos pads', onPress: () => setPainelAberto(true) },
+        ]}
       />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <ScrollView
@@ -230,14 +234,18 @@ export function PadContinuoScreen() {
             <Text style={styles.masterLabel}>VOLUME</Text>
           </View>
         </Card>
-      </ScrollView>
 
-      <MenuOpcoesPad
-        visible={menuAberto}
-        onClose={() => setMenuAberto(false)}
-        onPersonalizar={() => setPainelAberto(true)}
-        onPresets={() => setPresetsAberto(true)}
-      />
+        <View style={styles.acoesLinha}>
+          <PopoverSalvarPreset onSalvar={salvarPresetAtual} onSalvo={() => painelPresetsRef.current?.abrir({ sucesso: true })} />
+          <PainelPresets
+            ref={painelPresetsRef}
+            presets={presets}
+            onAplicar={aplicarPreset}
+            onRenomear={renomearPreset}
+            onExcluir={excluirPreset}
+          />
+        </View>
+      </ScrollView>
 
       <PainelPersonalizarPads
         visible={painelAberto}
@@ -245,15 +253,6 @@ export function PadContinuoScreen() {
         aparencia={aparencia}
         atualizar={atualizar}
         restaurarPadrao={restaurarPadrao}
-      />
-
-      <PainelPresets
-        visible={presetsAberto}
-        onClose={() => setPresetsAberto(false)}
-        presets={presets}
-        onAplicar={aplicarPreset}
-        onSalvar={salvarPresetAtual}
-        onExcluir={excluirPreset}
       />
     </SafeAreaView>
   );
@@ -480,6 +479,11 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     ...typography.caption,
     color: colors.textMuted,
     fontSize: 10,
+  },
+  acoesLinha: {
+    flexDirection: 'row',
+    gap: spacing.lg,
+    marginTop: spacing.xs,
   },
   colunaBloqueada: {
     width: LARGURA_COLUNA,

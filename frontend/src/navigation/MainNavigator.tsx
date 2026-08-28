@@ -85,16 +85,19 @@ export function MainNavigator() {
   // abas. No mobile, cada tela usa a bottom tab normal.
   const { isDesktop } = useBreakpoint();
 
-  if (isDesktop) {
-    return (
-      <View style={{ flex: 1, flexDirection: 'row' }}>
-        <PersistentSidebar />
-        <View style={{ flex: 1 }}>
-          <StackNavigator />
-        </View>
+  // `<StackNavigator/>` fica SEMPRE na mesma posição da árvore (só a Sidebar entra/sai
+  // como irmã) — antes isDesktop trocava entre dois retornos com o Stack em profundidades
+  // diferentes, e toda vez que `isDesktop` mudava (ex.: resize/scrollbar assentando logo
+  // depois da página carregar, perto do breakpoint) o React desmontava e remontava o Stack
+  // inteiro (e a tela atual dentro dele) do zero. Isso duplicava qualquer coisa que uma
+  // tela faça "sozinha" ao montar (ex.: o popover de presets do Pad Contínuo abrindo
+  // automaticamente) uma vez por remontagem.
+  return (
+    <View style={{ flex: 1, flexDirection: isDesktop ? 'row' : 'column' }}>
+      {isDesktop && <PersistentSidebar />}
+      <View style={{ flex: 1 }}>
+        <StackNavigator />
       </View>
-    );
-  }
-
-  return <StackNavigator />;
+    </View>
+  );
 }
