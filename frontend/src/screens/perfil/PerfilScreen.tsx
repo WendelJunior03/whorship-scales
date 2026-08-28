@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Alert, Modal, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Alert, Modal, Platform, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Icon, IconName } from '@/components/Icon';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,6 +10,9 @@ import { Input } from '@/components/Input';
 import { useAuth } from '@/contexts/AuthContext';
 import { MainTabScreenNavigationProp } from '@/navigation/types';
 import * as membrosService from '@/services/membros';
+import * as integracoesService from '@/services/integracoes';
+import { obterCodigoGoogle, googleClientId } from '@/utils/googleGsi';
+import { confirmAction, notifyAction } from '@/utils/confirm';
 import { ApiError } from '@/services/api';
 import { papelOrgLabel, papelOrgTone, papelOrgDe, papelMinisterioLabel, isAdmin } from '@/utils/papel';
 import { SeloPro } from '@/components/SeloPro';
@@ -82,11 +85,65 @@ export function PerfilScreen() {
     }
   }
 
+  const [googleOn, setGoogleOn] = useState(false);
+  const [googleVinculado, setGoogleVinculado] = useState<string | null>(null);
+  const [integBusy, setIntegBusy] = useState(false);
   const [senhaModalAberto, setSenhaModalAberto] = useState(false);
   const [senhaAtual, setSenhaAtual] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
   const [confirmarNovaSenha, setConfirmarNovaSenha] = useState('');
   const [alterandoSenha, setAlterandoSenha] = useState(false);
+
+  const carregarIntegracoes = React.useCallback(() => {
+    if (Platform.OS !== 'web' || !googleClientId()) return;
+    integracoesService.getStatus().then((s) => setGoogleOn(s.google)).catch(() => setGoogleOn(false));
+    integracoesService
+      .listarVinculos()
+      .then((vs) => setGoogleVinculado(vs.find((v) => v.provedor === 'google')?.email ?? null))
+      .catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    carregarIntegracoes();
+  }, [carregarIntegracoes]);
+
+  async function conectarGoogle() {
+    const clientId = googleClientId();
+    if (!clientId) return;
+    setIntegBusy(true);
+    try {
+      const code = await obterCodigoGoogle(clientId);
+      const { email } = await integracoesService.conectarGoogle(code);
+      setGoogleVinculado(email);
+      notifyAction('Google conectado', 'Agora dá pra sincronizar sua agenda.');
+    } catch (e) {
+      notifyAction('Erro', e instanceof ApiError ? e.message : 'Não foi possível conectar.');
+    } finally {
+      setIntegBusy(false);
+    }
+  }
+
+  function desconectarGoogle() {
+    confirmAction(
+      { title: 'Desconectar Google', message: 'Remover o vínculo com sua conta Google?', confirmLabel: 'Desconectar', destructive: true },
+      async () => {
+        await integracoesService.desconectarGoogle();
+        setGoogleVinculado(null);
+      },
+    );
+  }
+
+  async function sincronizarAgenda() {
+    setIntegBusy(true);
+    try {
+      const r = await integracoesService.sincronizarAgenda();
+      notifyAction('Agenda', r.message);
+    } catch (e) {
+      notifyAction('Erro', e instanceof ApiError ? e.message : 'Não foi possível sincronizar.');
+    } finally {
+      setIntegBusy(false);
+    }
+  }
 
   function abrirSenhaModal() {
     setSenhaAtual('');
@@ -222,6 +279,35 @@ export function PerfilScreen() {
             <RecursoProRow key={r.chave} chave={r.chave} icon={r.icon} label={r.label} />
           ))}
         </Card>
+
+        {googleOn && (
+          <Card style={styles.planoCard}>
+            <Text style={styles.planoTitulo}>Contas vinculadas</Text>
+            <View style={styles.integRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.integNome}>Google</Text>
+                <Text style={styles.integSub}>
+                  {googleVinculado ? `Conectado · ${googleVinculado}` : 'Login e Google Agenda'}
+                </Text>
+              </View>
+              <Button
+                title={googleVinculado ? 'Desconectar' : 'Conectar'}
+                variant="outline"
+                onPress={googleVinculado ? desconectarGoogle : conectarGoogle}
+                loading={integBusy}
+                style={styles.integBtn}
+              />
+            </View>
+            {googleVinculado && (
+              <Button
+                title="Sincronizar com o Google Agenda"
+                onPress={sincronizarAgenda}
+                loading={integBusy}
+                style={styles.integBtn}
+              />
+            )}
+          </Card>
+        )}
 
         <View style={styles.temaBloco}>
           <Text style={styles.temaTitulo}>Aparência</Text>
@@ -411,6 +497,10 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     color: colors.primary,
     fontFamily: fonts.semibold,
   },
+  integRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  integNome: { ...typography.body, color: colors.text, fontFamily: fonts.semibold },
+  integSub: { ...typography.caption, color: colors.textSecondary },
+  integBtn: { marginTop: spacing.xs },
   planoCard: {
     width: '100%',
     borderRadius: radius.xl,

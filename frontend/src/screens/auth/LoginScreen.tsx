@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
@@ -8,6 +8,8 @@ import { Logo } from '@/components/Logo';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthStackParamList } from '@/navigation/AuthNavigator';
 import { ApiError } from '@/services/api';
+import * as integracoesService from '@/services/integracoes';
+import { googleClientId } from '@/utils/googleGsi';
 import { spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useThemedStyles } from '@/contexts/ThemeContext';
@@ -18,12 +20,35 @@ type Props = {
 
 export function LoginScreen({ navigation }: Props) {
   const styles = useThemedStyles(criarEstilos);
-  const { signIn } = useAuth();
+  const { signIn, entrarComGoogle } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mostrarGoogle, setMostrarGoogle] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
+
+  // Só mostra "Entrar com Google" no web e se o servidor tiver a integração ligada.
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !googleClientId()) return;
+    integracoesService
+      .getStatus()
+      .then((s) => setMostrarGoogle(s.google))
+      .catch(() => setMostrarGoogle(false));
+  }, []);
+
+  async function handleGoogle() {
+    setError(null);
+    setGoogleBusy(true);
+    try {
+      await entrarComGoogle();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Não foi possível entrar com o Google.');
+    } finally {
+      setGoogleBusy(false);
+    }
+  }
 
   async function handleEntrar() {
     if (!email || !password) {
@@ -84,6 +109,16 @@ export function LoginScreen({ navigation }: Props) {
           loading={isSubmitting}
           style={styles.button}
         />
+
+        {mostrarGoogle && (
+          <Button
+            title="Entrar com Google"
+            variant="outline"
+            onPress={handleGoogle}
+            loading={googleBusy}
+            style={styles.button}
+          />
+        )}
 
         <Text style={styles.footer}>
           Ainda não tem uma conta?{' '}

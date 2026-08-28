@@ -455,8 +455,8 @@ cifrados em repouso; de API guardar só o **hash** (ver seção Segurança do CL
 Prioridade dentro da v1: Login Google/Apple → Google Agenda → WhatsApp → Holyrics/API.
 
 **Tarefas:**
-- [ ] **T-11.30** — Login social **Google e Apple** + vínculo no perfil (`contas_vinculadas`).
-- [ ] **T-11.31** — Integração **Google Agenda** (sincronizar escala do membro).
+- [x] **T-11.30** — Login social **Google** + vínculo no perfil (`contas_vinculadas`); Apple na próxima leva. Guia: `docs/integracao-google.md`.
+- [x] **T-11.31** — **Google Agenda**: sincroniza as escalas do membro (uma via, botão em Perfil).
 - [ ] **T-11.32** — **WhatsApp** (avisos/notificações) — vínculo no perfil + envio.
 - [ ] **T-11.33** — **Holyrics** e **Tokens de API** por ministério (`integracoes_ministerio`, `api_tokens`).
 
