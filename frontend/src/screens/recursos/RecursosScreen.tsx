@@ -89,8 +89,12 @@ export function RecursosScreen() {
       <View style={styles.cardIcon}>
         <Icon name={item.icon} size={20} color={colors.primary} />
       </View>
-      <Text style={styles.cardLabel}>{item.label}</Text>
-      <Text style={styles.cardSublabel}>{item.sublabel}</Text>
+      <Text style={styles.cardLabel} numberOfLines={2}>
+        {item.label}
+      </Text>
+      <Text style={styles.cardSublabel} numberOfLines={2}>
+        {item.sublabel}
+      </Text>
     </Card>
   );
 
@@ -183,9 +187,13 @@ const criarEstilos = (colors: Cores, shadows: Sombras) =>
       ...typography.body,
       color: colors.text,
       fontFamily: fonts.semibold,
+      lineHeight: 20,
+      minHeight: 40,
     },
     cardSublabel: {
       ...typography.caption,
       color: colors.textSecondary,
+      lineHeight: 16,
+      minHeight: 32,
     },
   });
