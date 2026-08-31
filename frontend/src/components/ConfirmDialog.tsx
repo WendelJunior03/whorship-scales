@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Button } from './Button';
 import { useThemedStyles } from '@/contexts/ThemeContext';
 import { Cores } from '@/theme/palettes';
@@ -41,8 +41,8 @@ export function ConfirmDialog({
       animationType="fade"
       onRequestClose={() => (onCancel ?? onConfirm)()}
     >
-      <View style={styles.overlay}>
-        <View style={styles.card}>
+      <Pressable style={styles.overlay} onPress={onCancel ?? onConfirm}>
+        <Pressable style={styles.card} onPress={() => {}}>
           <Text style={styles.titulo}>{titulo}</Text>
           <Text style={styles.mensagem}>{mensagem}</Text>
           <View style={styles.botoes}>
@@ -51,8 +51,8 @@ export function ConfirmDialog({
             )}
             <Button title={confirmLabel} onPress={onConfirm} style={styles.botao} />
           </View>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 }
@@ -76,6 +76,6 @@ const criarEstilos = (colors: Cores) =>
     },
     titulo: { ...typography.h3, color: colors.text },
     mensagem: { ...typography.body, color: colors.textSecondary },
-    botoes: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
-    botao: { flex: 1 },
+    botoes: { flexDirection: 'column', gap: spacing.sm, marginTop: spacing.sm },
+    botao: { width: '100%' },
   });

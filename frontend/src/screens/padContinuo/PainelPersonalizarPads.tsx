@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Icon } from '@/components/Icon';
 import { Button } from '@/components/Button';
 import { BarraDeslizante } from '@/components/BarraDeslizante';
@@ -51,8 +51,8 @@ export function PainelPersonalizarPads({ visible, onClose, aparencia, atualizar,
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={styles.sheet}>
+      <Pressable style={styles.overlay} onPress={onClose}>
+        <Pressable style={styles.sheet} onPress={() => {}}>
           <View style={styles.cabecalho}>
             <Text style={styles.titulo}>Aparência dos pads</Text>
             <TouchableOpacity
@@ -103,8 +103,8 @@ export function PainelPersonalizarPads({ visible, onClose, aparencia, atualizar,
           </View>
 
           <Button title="Restaurar padrão" variant="outline" onPress={restaurarPadrao} style={styles.restaurarButton} />
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 }

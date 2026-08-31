@@ -1,7 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Linking,
   Modal,
@@ -24,6 +23,7 @@ import { MainStackParamList } from '@/navigation/MainNavigator';
 import * as musicasService from '@/services/musicas';
 import * as videosService from '@/services/videos';
 import { ApiError } from '@/services/api';
+import { confirmAction, notifyAction } from '@/utils/confirm';
 import { isAdmin, podeGerir } from '@/utils/papel';
 import { extrairVideoIdYoutube } from '@/utils/youtube';
 import { CategoriaVideo, Musica, Video } from '@/types';
@@ -80,7 +80,7 @@ export function DetalheMusicaScreen() {
 
   async function salvarEdicao() {
     if (!eNome.trim()) {
-      Alert.alert('Nome obrigatório', 'Informe o nome da música.');
+      notifyAction('Nome obrigatório', 'Informe o nome da música.');
       return;
     }
     setSalvando(true);
@@ -96,14 +96,14 @@ export function DetalheMusicaScreen() {
       setModalEdit(false);
       await carregar();
     } catch (e) {
-      Alert.alert('Erro', e instanceof ApiError ? e.message : 'Não foi possível salvar.');
+      notifyAction('Erro', e instanceof ApiError ? e.message : 'Não foi possível salvar.');
     } finally {
       setSalvando(false);
     }
   }
 
   function abrirLink(url: string) {
-    Linking.openURL(url).catch(() => Alert.alert('Erro', 'Não foi possível abrir o link.'));
+    Linking.openURL(url).catch(() => notifyAction('Erro', 'Não foi possível abrir o link.'));
   }
 
   const previewId = useMemo(() => extrairVideoIdYoutube(link), [link]);
@@ -132,11 +132,11 @@ export function DetalheMusicaScreen() {
 
   async function salvarVideo() {
     if (!link.trim()) {
-      Alert.alert('Link obrigatório', 'Cole o link do YouTube.');
+      notifyAction('Link obrigatório', 'Cole o link do YouTube.');
       return;
     }
     if (!previewId) {
-      Alert.alert('Link inválido', 'Não reconheci esse link do YouTube.');
+      notifyAction('Link inválido', 'Não reconheci esse link do YouTube.');
       return;
     }
     setSalvando(true);
@@ -153,28 +153,24 @@ export function DetalheMusicaScreen() {
       setCategoria('oficial');
       await carregar();
     } catch (e) {
-      Alert.alert('Erro', e instanceof ApiError ? e.message : 'Não foi possível salvar.');
+      notifyAction('Erro', e instanceof ApiError ? e.message : 'Não foi possível salvar.');
     } finally {
       setSalvando(false);
     }
   }
 
   function removerVideo(v: Video) {
-    Alert.alert('Remover vídeo', 'Tem certeza que deseja remover este vídeo?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Remover',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await videosService.apagarVideo(v.id);
-            await carregar();
-          } catch (e) {
-            Alert.alert('Erro', e instanceof ApiError ? e.message : 'Não foi possível remover.');
-          }
-        },
+    confirmAction(
+      { title: 'Remover vídeo', message: 'Tem certeza que deseja remover este vídeo?', confirmLabel: 'Remover', destructive: true },
+      async () => {
+        try {
+          await videosService.apagarVideo(v.id);
+          await carregar();
+        } catch (e) {
+          notifyAction('Erro', e instanceof ApiError ? e.message : 'Não foi possível remover.');
+        }
       },
-    ]);
+    );
   }
 
   return (
