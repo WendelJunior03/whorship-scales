@@ -1,6 +1,5 @@
 import React, { useCallback, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   FlatList,
   Image,
@@ -11,6 +10,8 @@ import {
   View,
 } from 'react-native';
 import { Icon } from '@/components/Icon';
+import { EmptyState } from '@/components/EmptyState';
+import { Skeleton } from '@/components/Skeleton';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -178,7 +179,13 @@ export function BibliotecaScreen() {
               )}
             </View>
           }
-          ListEmptyComponent={<Text style={styles.vazio}>Nenhuma música por aqui ainda.</Text>}
+          ListEmptyComponent={
+            <EmptyState
+              icon="musical-notes"
+              title="Nenhuma música por aqui ainda"
+              description="Adicione a primeira música à biblioteca."
+            />
+          }
           renderItem={({ item }) => cardMusica(item)}
         />
       );
@@ -192,7 +199,13 @@ export function BibliotecaScreen() {
           ListHeaderComponent={
             gestor ? <Button title="+ Nova pasta" onPress={() => setModalPasta(true)} style={styles.novo} /> : null
           }
-          ListEmptyComponent={<Text style={styles.vazio}>Nenhuma pasta criada ainda.</Text>}
+          ListEmptyComponent={
+            <EmptyState
+              icon="folder-outline"
+              title="Nenhuma pasta criada ainda"
+              description="Crie pastas para organizar suas músicas."
+            />
+          }
           renderItem={({ item }) => (
             <Card style={styles.card} onPress={() => navigation.navigate('Pasta', { pastaId: item.id, nome: item.nome })}>
               <View style={styles.cardIcone}>
@@ -216,7 +229,13 @@ export function BibliotecaScreen() {
         data={artistas}
         keyExtractor={(a) => a.artista}
         contentContainerStyle={styles.lista}
-        ListEmptyComponent={<Text style={styles.vazio}>Nenhum artista ainda. Adicione o artista nas músicas.</Text>}
+        ListEmptyComponent={
+          <EmptyState
+            icon="person-outline"
+            title="Nenhum artista ainda"
+            description="Adicione o artista nas músicas para vê-los aqui."
+          />
+        }
         renderItem={({ item }) => (
           <Card
             style={styles.card}
@@ -260,8 +279,10 @@ export function BibliotecaScreen() {
       />
 
       {carregando ? (
-        <View style={styles.centro}>
-          <ActivityIndicator size="large" color={colors.primary} />
+        <View style={styles.lista}>
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} height={64} radius={radius.lg} />
+          ))}
         </View>
       ) : erro ? (
         <View style={styles.centro}>
@@ -321,7 +342,6 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     paddingVertical: spacing.xs, marginBottom: spacing.sm,
   },
   filtroTexto: { ...typography.caption, color: colors.primary, fontFamily: fonts.semibold },
-  vazio: { ...typography.bodySmall, color: colors.textMuted, textAlign: 'center', marginTop: spacing.xl },
   card: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, borderRadius: radius.xl },
   cardIcone: { width: 40, height: 40, borderRadius: radius.md, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
   cardCapa: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.surfaceMuted },

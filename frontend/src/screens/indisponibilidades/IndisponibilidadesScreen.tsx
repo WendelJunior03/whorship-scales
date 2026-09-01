@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Modal,
   Pressable,
   ScrollView,
@@ -16,6 +15,8 @@ import { Header } from '@/components/Header';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Icon, IconName } from '@/components/Icon';
+import { EmptyState } from '@/components/EmptyState';
+import { Skeleton } from '@/components/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
@@ -313,8 +314,10 @@ export function IndisponibilidadesScreen() {
     return (
       <SafeAreaView style={styles.screen} edges={['top']}>
         <Header title="Indisponibilidades" subtitle={ministerio?.nome} showBack />
-        <View style={styles.centro}>
-          <ActivityIndicator size="large" color={colors.primary} />
+        <View style={styles.scrollConteudo}>
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} height={64} radius={radius.lg} />
+          ))}
         </View>
       </SafeAreaView>
     );
@@ -418,12 +421,11 @@ export function IndisponibilidadesScreen() {
                 </TouchableOpacity>
               ))
             ) : (
-              <View style={styles.emptyState}>
-                <View style={styles.emptyCirculo}>
-                  <Icon name="calendar-outline" size={44} color={colors.textMuted} />
-                </View>
-                <Text style={styles.emptyTexto}>Nenhuma indisponibilidade em {dataLonga(diaSel)}.</Text>
-              </View>
+              <EmptyState
+                icon="calendar-off"
+                title="Nenhuma indisponibilidade"
+                description={`Nada registrado em ${dataLonga(diaSel)}.`}
+              />
             )}
 
             {/* No mobile o painel de membros entra AQUI dentro (rola junto com o calendário) —
@@ -575,7 +577,6 @@ export function IndisponibilidadesScreen() {
 const criarEstilos = (colors: Cores) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
-    centro: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     corpo: { flex: 1 },
     corpoDesktop: { flexDirection: 'row' },
     colEsquerda: { flex: 1 },
@@ -596,14 +597,6 @@ const criarEstilos = (colors: Cores) =>
     itemSub: { ...typography.caption, color: colors.textSecondary },
     itemDesc: { ...typography.bodySmall, color: colors.textSecondary, marginTop: 2 },
     itemLixo: { padding: spacing.xs },
-
-    // Empty state
-    emptyState: { alignItems: 'center', gap: spacing.md, paddingVertical: spacing.xl },
-    emptyCirculo: {
-      width: 120, height: 120, borderRadius: 60, backgroundColor: colors.surfaceMuted,
-      alignItems: 'center', justifyContent: 'center',
-    },
-    emptyTexto: { ...typography.bodySmall, color: colors.textMuted, textAlign: 'center', paddingHorizontal: spacing.lg },
 
     // FAB Adicionar
     fab: {
