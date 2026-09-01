@@ -1,6 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Image,
   Linking,
   Modal,
@@ -17,6 +16,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
+import { EmptyState } from '@/components/EmptyState';
+import { Skeleton } from '@/components/Skeleton';
 import { PlayerYoutube } from '@/components/PlayerYoutube';
 import { useAuth } from '@/contexts/AuthContext';
 import { MainStackParamList } from '@/navigation/MainNavigator';
@@ -178,8 +179,10 @@ export function DetalheMusicaScreen() {
       <Header title={route.params.nome ?? 'Música'} showBack />
 
       {carregando ? (
-        <View style={styles.centro}>
-          <ActivityIndicator size="large" color={colors.primary} />
+        <View style={styles.conteudo}>
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} height={64} radius={radius.lg} />
+          ))}
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.conteudo} showsVerticalScrollIndicator={false}>
@@ -220,7 +223,11 @@ export function DetalheMusicaScreen() {
           </View>
 
           {videos.length === 0 ? (
-            <Text style={styles.vazio}>Nenhum vídeo ainda.</Text>
+            <EmptyState
+              icon="musical-notes"
+              title="Nenhum vídeo ainda"
+              description="Adicione vídeos do YouTube para esta música."
+            />
           ) : (
             CATEGORIAS.map((cat) => {
               const doGrupo = videos.filter((v) => v.categoria === cat.v);
@@ -312,7 +319,6 @@ export function DetalheMusicaScreen() {
 
 const criarEstilos = (colors: Cores) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  centro: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   conteudo: { width: '100%', maxWidth: LARGURA_CONTEUDO, alignSelf: 'center', padding: spacing.lg, gap: spacing.md },
   cabecalho: { gap: spacing.sm },
   capa: { width: '100%', height: 200, borderRadius: radius.xl, backgroundColor: colors.surfaceMuted },
@@ -322,7 +328,6 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
   linkBtn: { flex: 1 },
   acoes: { flexDirection: 'row', gap: spacing.sm },
   acaoBtn: { flex: 1, marginTop: spacing.xs },
-  vazio: { ...typography.bodySmall, color: colors.textMuted, textAlign: 'center', marginTop: spacing.xl },
   grupo: { gap: spacing.sm },
   grupoTitulo: { ...typography.bodySmall, color: colors.textSecondary, fontFamily: fonts.semibold, marginTop: spacing.sm },
   videoCard: { gap: spacing.xs },

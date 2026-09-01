@@ -1,16 +1,18 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '@/components/Icon';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/Button';
+import { EmptyState } from '@/components/EmptyState';
+import { Skeleton } from '@/components/Skeleton';
 import * as panoramaService from '@/services/panorama';
 import { ApiError } from '@/services/api';
 import { MainStackParamList } from '@/navigation/types';
 import { Panorama, PanoramaMembro } from '@/types';
-import { spacing, typography } from '@/theme';
+import { radius, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 
@@ -92,8 +94,10 @@ export function PanoramaEscalasScreen() {
       </View>
 
       {isLoading ? (
-        <View style={[styles.centered, { flex: 1 }]}>
-          <ActivityIndicator size="large" color={colors.primary} />
+        <View style={styles.listContent}>
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} height={64} radius={radius.lg} />
+          ))}
         </View>
       ) : error ? (
         <View style={[styles.centered, { flex: 1 }]}>
@@ -101,10 +105,11 @@ export function PanoramaEscalasScreen() {
           <Button title="Tentar novamente" variant="outline" onPress={() => carregar(mes)} style={styles.retryButton} />
         </View>
       ) : cultos.length === 0 ? (
-        <View style={[styles.centered, { flex: 1 }]}>
-          <Icon name="calendar-outline" size={40} color={colors.textMuted} />
-          <Text style={styles.errorText}>Nenhum culto neste mês.</Text>
-        </View>
+        <EmptyState
+          icon="calendar-outline"
+          title="Nenhum culto neste mês"
+          description="Troque de mês na seta acima ou crie um culto para ver o panorama."
+        />
       ) : (
         <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
           <ScrollView horizontal showsHorizontalScrollIndicator>

@@ -1,6 +1,5 @@
 import React, { useCallback, useState } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   Modal,
   StyleSheet,
@@ -20,6 +19,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { EmptyState } from '@/components/EmptyState';
+import { Skeleton } from '@/components/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { MainStackParamList } from '@/navigation/MainNavigator';
 import * as pastasService from '@/services/pastas';
@@ -123,8 +124,10 @@ export function PastaScreen() {
       />
 
       {carregando ? (
-        <View style={styles.centro}>
-          <ActivityIndicator size="large" color={colors.primary} />
+        <View style={styles.lista}>
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} height={64} radius={radius.lg} />
+          ))}
         </View>
       ) : erro ? (
         <View style={styles.centro}>
@@ -139,7 +142,13 @@ export function PastaScreen() {
           ListHeaderComponent={
             gestor ? <Button title="+ Adicionar música" onPress={() => setModalAdd(true)} style={styles.novo} /> : null
           }
-          ListEmptyComponent={<Text style={styles.vazio}>Nenhuma música nesta pasta ainda.</Text>}
+          ListEmptyComponent={
+            <EmptyState
+              icon="musical-notes"
+              title="Nenhuma música nesta pasta"
+              description="Adicione músicas da biblioteca para organizá-las aqui."
+            />
+          }
           renderItem={({ item }) => (
             <Card
               style={styles.card}
