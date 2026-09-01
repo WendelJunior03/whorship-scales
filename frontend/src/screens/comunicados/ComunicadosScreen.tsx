@@ -16,6 +16,7 @@ import { Button } from '@/components/Button';
 import { Icon } from '@/components/Icon';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
+import { AnimatedItem } from '@/components/AnimatedItem';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { papelOrgDe } from '@/utils/papel';
@@ -160,8 +161,9 @@ export function ComunicadosScreen() {
               description="Os avisos da organização aparecem aqui quando publicados."
             />
           ) : (
-            lista.map((a) => (
-              <TouchableOpacity key={a.id} activeOpacity={0.7} onPress={() => abrirDetalhe(a.id)}>
+            lista.map((a, i) => (
+              <AnimatedItem key={a.id} index={i}>
+                <TouchableOpacity activeOpacity={0.7} onPress={() => abrirDetalhe(a.id)}>
                 <Card style={styles.itemCard}>
                   <View style={[styles.pontoLido, !a.lido && styles.pontoNaoLido]} />
                   <View style={styles.itemTextos}>
@@ -180,7 +182,8 @@ export function ComunicadosScreen() {
                   </View>
                   <Icon name="chevron-forward" size={18} color={colors.textMuted} />
                 </Card>
-              </TouchableOpacity>
+                </TouchableOpacity>
+              </AnimatedItem>
             ))
           )}
           <View style={{ height: 96 }} />
