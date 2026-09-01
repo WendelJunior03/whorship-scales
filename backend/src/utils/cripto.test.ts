@@ -24,7 +24,7 @@ describe('cripto (AES-256-GCM)', () => {
     it('rejeita auth tag truncado (menor que 16 bytes)', async () => {
         const { cifrar, decifrar } = await import('./cripto');
         const pacote = cifrar('x');
-        const [iv, tag, dados] = pacote.split('.');
+        const [iv, tag, dados] = pacote.split('.') as [string, string, string];
         // Trunca o tag para 8 bytes (base64 de 8 bytes tem 12 chars) — deve ser recusado.
         const tagCurto = Buffer.from(tag, 'base64').subarray(0, 8).toString('base64');
         expect(() => decifrar(`${iv}.${tagCurto}.${dados}`)).toThrow('Auth tag inválido.');
