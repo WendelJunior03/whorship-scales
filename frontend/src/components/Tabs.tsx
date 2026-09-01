@@ -23,7 +23,7 @@ interface TabsProps {
 export function Tabs({ tabs, active, onChange, style }: TabsProps) {
   const { colors } = useTheme();
   return (
-    <View style={[styles.row, style]}>
+    <View style={[styles.row, style]} accessibilityRole="tablist">
       {tabs.map((tab) => {
         const ativo = tab.key === active;
         return (

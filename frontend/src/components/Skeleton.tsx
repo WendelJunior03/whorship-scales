@@ -45,6 +45,10 @@ export function Skeleton({ width = '100%', height = 16, radius = radiusTokens.sm
 
   return (
     <Animated.View
+      // Placeholder decorativo: o leitor de tela deve ignorá-lo (o conteúdo real
+      // é anunciado quando carrega).
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
       style={[
         { width, height, borderRadius: radius, backgroundColor: colors.surfaceElevated },
         estiloPulso,
