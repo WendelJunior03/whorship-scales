@@ -1,7 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   ScrollView,
   SectionList,
@@ -15,6 +14,9 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { EmptyState } from '@/components/EmptyState';
+import { Skeleton } from '@/components/Skeleton';
+import { showToast } from '@/utils/toast';
 import * as notificacoesService from '@/services/notificacoes';
 import * as escalaVocalService from '@/services/escalaVocal';
 import * as escalaAvulsaService from '@/services/escalaAvulsa';
@@ -29,7 +31,7 @@ import {
   Notificacao,
   TipoNotificacao,
 } from '@/types';
-import { LARGURA_CONTEUDO, spacing, typography } from '@/theme';
+import { LARGURA_CONTEUDO, radius, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { formatDataRelativa, formatHora } from '@/utils/date';
@@ -183,7 +185,7 @@ export function NotificacoesScreen() {
       }
       marcarComoLida(item);
     } catch (err) {
-      Alert.alert('Erro', err instanceof ApiError ? err.message : 'Não foi possível confirmar.');
+      showToast(err instanceof ApiError ? err.message : 'Não foi possível confirmar.', 'error');
     } finally {
       setActionLoadingId(null);
     }
@@ -210,7 +212,10 @@ export function NotificacoesScreen() {
           );
           marcarComoLida(item);
         } catch (err) {
-          Alert.alert('Erro', err instanceof ApiError ? err.message : 'Não foi possível registrar a recusa.');
+          showToast(
+            err instanceof ApiError ? err.message : 'Não foi possível registrar a recusa.',
+            'error',
+          );
         } finally {
           setActionLoadingId(null);
         }
@@ -281,7 +286,10 @@ export function NotificacoesScreen() {
             );
           }
         } catch (err) {
-          Alert.alert('Erro', err instanceof ApiError ? err.message : 'Não foi possível registrar a recusa.');
+          showToast(
+            err instanceof ApiError ? err.message : 'Não foi possível registrar a recusa.',
+            'error',
+          );
         } finally {
           setActionLoadingId(null);
         }
@@ -291,8 +299,15 @@ export function NotificacoesScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={[styles.screen, styles.centered]} edges={['top']}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <SafeAreaView style={styles.screen} edges={['top']}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Notificações</Text>
+        </View>
+        <View style={styles.listContent}>
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} height={72} radius={radius.lg} />
+          ))}
+        </View>
       </SafeAreaView>
     );
   }
@@ -335,9 +350,11 @@ export function NotificacoesScreen() {
         keyExtractor={(item) => String(item.id)}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
-          <Card>
-            <Text style={styles.emptyText}>Você ainda não tem notificações.</Text>
-          </Card>
+          <EmptyState
+            icon="notifications-outline"
+            title="Nenhuma notificação"
+            description="Quando algo acontecer nas suas escalas, aparece por aqui."
+          />
         }
         renderSectionHeader={({ section }) => (
           <Text style={styles.sectionTitle}>{section.title}</Text>
