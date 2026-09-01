@@ -1,7 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
-  Modal,
   ScrollView,
   SectionList,
   StyleSheet,
@@ -15,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
+import { Modal } from '@/components/Modal';
 import { Skeleton } from '@/components/Skeleton';
 import { showToast } from '@/utils/toast';
 import * as notificacoesService from '@/services/notificacoes';
@@ -406,15 +406,12 @@ export function NotificacoesScreen() {
 
       <Modal
         visible={!!indicacao}
-        animationType="slide"
-        transparent
-        onRequestClose={fecharIndicacao}
+        onClose={fecharIndicacao}
+        title={mostrarListaCandidatos ? 'Quem você indica pra sua vaga?' : 'Recusar presença'}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <View style={styles.modalCorpo}>
             {!mostrarListaCandidatos ? (
               <>
-                <Text style={styles.modalTitle}>Recusar presença</Text>
                 <Button title="Indicar alguém" onPress={abrirListaCandidatos} style={styles.modalButton} />
                 <Button
                   title="Recusar sem indicar"
@@ -422,12 +419,9 @@ export function NotificacoesScreen() {
                   onPress={() => executarRecusa(null)}
                   style={styles.modalButton}
                 />
-                <Button title="Cancelar" variant="outline" onPress={fecharIndicacao} style={styles.modalButton} />
               </>
             ) : (
               <>
-                <Text style={styles.modalTitle}>Quem você indica pra sua vaga?</Text>
-
                 {carregandoCandidatos ? (
                   <ActivityIndicator color={colors.primary} style={styles.modalLoading} />
                 ) : (
@@ -456,7 +450,6 @@ export function NotificacoesScreen() {
                 />
               </>
             )}
-          </View>
         </View>
       </Modal>
     </SafeAreaView>
@@ -569,22 +562,8 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
   acaoBotao: {
     flex: 1,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: spacing.lg,
+  modalCorpo: {
     gap: spacing.md,
-    maxHeight: '70%',
-  },
-  modalTitle: {
-    ...typography.h3,
-    color: colors.text,
   },
   modalLoading: {
     marginVertical: spacing.lg,

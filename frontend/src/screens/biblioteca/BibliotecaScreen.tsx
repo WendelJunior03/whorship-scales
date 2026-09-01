@@ -18,6 +18,7 @@ import { Header } from '@/components/Header';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Input } from '@/components/Input';
+import { Tabs } from '@/components/Tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { MainStackParamList } from '@/navigation/MainNavigator';
 import * as musicasService from '@/services/musicas';
@@ -139,21 +140,6 @@ export function BibliotecaScreen() {
     ? musicas.filter((m) => m.artista === filtroArtista)
     : musicas;
 
-  function abaBtn(chave: Aba, label: string) {
-    const ativo = aba === chave;
-    return (
-      <TouchableOpacity
-        style={[styles.aba, ativo && styles.abaAtiva]}
-        onPress={() => {
-          setAba(chave);
-          if (chave !== 'musicas') setFiltroArtista(null);
-        }}
-      >
-        <Text style={[styles.abaTexto, ativo && styles.abaTextoAtivo]}>{label}</Text>
-      </TouchableOpacity>
-    );
-  }
-
   const cardMusica = (item: Musica) => (
     <Card
       style={styles.card}
@@ -259,11 +245,19 @@ export function BibliotecaScreen() {
     <SafeAreaView style={styles.screen} edges={['top']}>
       <Header title="Biblioteca" showBack />
 
-      <View style={styles.abas}>
-        {abaBtn('musicas', 'Músicas')}
-        {abaBtn('pastas', 'Pastas')}
-        {abaBtn('artistas', 'Artistas')}
-      </View>
+      <Tabs
+        style={styles.abas}
+        active={aba}
+        onChange={(chave) => {
+          setAba(chave as Aba);
+          if (chave !== 'musicas') setFiltroArtista(null);
+        }}
+        tabs={[
+          { key: 'musicas', label: 'Músicas' },
+          { key: 'pastas', label: 'Pastas' },
+          { key: 'artistas', label: 'Artistas' },
+        ]}
+      />
 
       {carregando ? (
         <View style={styles.centro}>
@@ -317,10 +311,6 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     flexDirection: 'row', gap: spacing.xs, paddingHorizontal: spacing.lg, paddingBottom: spacing.sm,
     width: '100%', maxWidth: LARGURA_CONTEUDO, alignSelf: 'center',
   },
-  aba: { flex: 1, paddingVertical: spacing.sm, borderRadius: radius.pill, alignItems: 'center', backgroundColor: colors.surfaceMuted },
-  abaAtiva: { backgroundColor: colors.primary },
-  abaTexto: { ...typography.bodySmall, color: colors.textSecondary, fontFamily: fonts.semibold },
-  abaTextoAtivo: { color: colors.textInverse },
   centro: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.lg },
   erroTexto: { ...typography.bodySmall, color: colors.textSecondary, textAlign: 'center' },
   lista: { width: '100%', maxWidth: LARGURA_CONTEUDO, alignSelf: 'center', padding: spacing.lg, paddingTop: spacing.sm, gap: spacing.sm },
