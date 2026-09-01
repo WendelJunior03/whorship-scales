@@ -25,20 +25,21 @@ export function Card({ children, onPress, style }: CardProps) {
 
   if (onPress) {
     return (
-      <PressableAnimado
-        style={[styles.card, style, estiloEscala]}
-        onPress={onPress}
-        accessibilityRole="button"
-        onPressIn={() => {
-          escala.value = withTiming(0.97, { duration: 100 });
-        }}
-        onPressOut={() => {
-          escala.value = withTiming(1, { duration: 150 });
-        }}
-        entering={FadeInUp.duration(250)}
-      >
-        {children}
-      </PressableAnimado>
+      <Animated.View entering={FadeInUp.duration(250)} style={style}>
+        <PressableAnimado
+          style={[styles.card, estiloEscala]}
+          onPress={onPress}
+          accessibilityRole="button"
+          onPressIn={() => {
+            escala.value = withTiming(0.97, { duration: 100 });
+          }}
+          onPressOut={() => {
+            escala.value = withTiming(1, { duration: 150 });
+          }}
+        >
+          {children}
+        </PressableAnimado>
+      </Animated.View>
     );
   }
 
