@@ -50,6 +50,18 @@ export const recursos: Record<string, RecursoPlano> = {
     'videos.playlist':            { planoMinimo: 'pro', flagAtiva: true },
     'videos.upload':              { planoMinimo: 'pro', flagAtiva: true },
     'videos.privado':             { planoMinimo: 'pro', flagAtiva: true },
+    // Metrônomo (spec 10): básico é free; salvar/usar BPM por música é PRO.
+    'metronomo.por_musica':       { planoMinimo: 'pro', flagAtiva: true },
+    // Panorama (módulo 6): grade base é free; filtros avançados são PRO (follow-up T-11.20).
+    'panorama.filtros_avancados': { planoMinimo: 'pro', flagAtiva: false },
+    // Histórico (módulo 5): janela curta (~30d) é free; retenção estendida é PRO.
+    'historico.estendido':        { planoMinimo: 'pro', flagAtiva: false },
+    // Integrações (módulo 11): login social + sincronizar a própria agenda são FREE
+    // (baixo atrito de entrada); as de operação da igreja ficam no PRO.
+    'integracoes.google_agenda':  { planoMinimo: 'free', flagAtiva: true },
+    'integracoes.whatsapp':       { planoMinimo: 'pro', flagAtiva: false }, // T-11.32 (a construir)
+    'integracoes.holyrics':       { planoMinimo: 'pro', flagAtiva: false }, // T-11.33 (a construir)
+    'integracoes.api_tokens':     { planoMinimo: 'pro', flagAtiva: false }, // T-11.33 (a construir)
     // Ainda não lançado no produto → flag desligada (exemplo real do eixo de flag).
     'backup.automatico':          { planoMinimo: 'pro', flagAtiva: false },
 };

@@ -18,6 +18,21 @@ describe('podeUsar (catálogo + flags)', () => {
     it('lança erro se o recurso não existir no catálogo', () => {
         expect(() => podeUsar({ plano: 'pro' }, 'recurso.inexistente')).toThrow('Recurso não encontrado');
     });
+
+    it('libera recurso FREE (Google Agenda) p/ org free', () => {
+        expect(podeUsar({ plano: 'free' }, 'integracoes.google_agenda')).toBe(true);
+    });
+
+    it('nega integrações de operação ainda não lançadas (WhatsApp/Holyrics/API), mesmo p/ org pro', () => {
+        expect(podeUsar({ plano: 'pro' }, 'integracoes.whatsapp')).toBe(false);
+        expect(podeUsar({ plano: 'pro' }, 'integracoes.holyrics')).toBe(false);
+        expect(podeUsar({ plano: 'pro' }, 'integracoes.api_tokens')).toBe(false);
+    });
+
+    it('quando a cobrança virar (regra pura), FREE não atende recursos PRO recém-marcados', () => {
+        expect(planoAtendeMinimo('free', 'pro')).toBe(false); // ex.: metronomo.por_musica
+        expect(planoAtendeMinimo('free', 'free')).toBe(true);  // ex.: integracoes.google_agenda
+    });
 });
 
 describe('planoPermite (eixo de plano)', () => {
