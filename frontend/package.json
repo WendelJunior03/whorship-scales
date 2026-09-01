@@ -19,6 +19,7 @@
     "expo-secure-store": "~15.0.8",
     "expo-status-bar": "~3.0.9",
     "lucide-react-native": "^1.33.0",
+    "moti": "^0.30.0",
     "pitchy": "^4.1.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",

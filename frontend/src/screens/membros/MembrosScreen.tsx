@@ -11,6 +11,7 @@ import { Header } from '@/components/Header';
 import { Input } from '@/components/Input';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
+import { AnimatedItem } from '@/components/AnimatedItem';
 import { useAuth } from '@/contexts/AuthContext';
 import { MainStackParamList } from '@/navigation/MainNavigator';
 import * as membrosService from '@/services/membros';
@@ -148,21 +149,23 @@ export function MembrosScreen() {
             description="Ajuste a busca ou o filtro para ver a equipe."
           />
         }
-        renderItem={({ item }) => (
-          <Card
-            style={styles.membroCard}
-            onPress={() => navigation.navigate('DetalheMembro', { membroId: item.id })}
-          >
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{item.nome[0]}</Text>
-            </View>
-            <View style={styles.membroInfo}>
-              <Text style={styles.membroNome}>{item.nome}</Text>
-              <Text style={styles.membroPapel}>{papelLabel[item.papel]}</Text>
-            </View>
-            <Badge label={papelOrgLabel[papelOrgDe(item)]} tone={papelOrgTone[papelOrgDe(item)]} />
-            <Icon name="chevron-forward" size={18} color={colors.textMuted} />
-          </Card>
+        renderItem={({ item, index }) => (
+          <AnimatedItem index={index}>
+            <Card
+              style={styles.membroCard}
+              onPress={() => navigation.navigate('DetalheMembro', { membroId: item.id })}
+            >
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{item.nome[0]}</Text>
+              </View>
+              <View style={styles.membroInfo}>
+                <Text style={styles.membroNome}>{item.nome}</Text>
+                <Text style={styles.membroPapel}>{papelLabel[item.papel]}</Text>
+              </View>
+              <Badge label={papelOrgLabel[papelOrgDe(item)]} tone={papelOrgTone[papelOrgDe(item)]} />
+              <Icon name="chevron-forward" size={18} color={colors.textMuted} />
+            </Card>
+          </AnimatedItem>
         )}
       />
 
