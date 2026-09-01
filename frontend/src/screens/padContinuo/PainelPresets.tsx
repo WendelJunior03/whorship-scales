@@ -2,6 +2,7 @@ import React, { forwardRef, useEffect, useImperativeHandle, useState } from 'rea
 import { Modal, Platform, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
 import { Icon } from '@/components/Icon';
+import { EmptyState } from '@/components/EmptyState';
 import { PadPreset } from '@/hooks/usePadPresets';
 import { confirmAction } from '@/utils/confirm';
 import { fonts, radius, spacing, typography } from '@/theme';
@@ -213,7 +214,11 @@ export const PainelPresets = forwardRef<PainelPresetsHandle, PainelPresetsProps>
               </View>
 
               {presets.length === 0 ? (
-                <Text style={styles.vazioTexto}>Nenhum preset salvo ainda.</Text>
+                <EmptyState
+                  icon="musical-notes"
+                  title="Nenhum preset salvo ainda"
+                  description="Salve uma configuração do pad para acessá-la aqui."
+                />
               ) : (
                 <View style={styles.lista}>
                   {presets.map((preset) => (
@@ -287,10 +292,6 @@ const criarEstilos = (colors: Cores) =>
     titulo: {
       ...typography.h3,
       color: colors.text,
-    },
-    vazioTexto: {
-      ...typography.bodySmall,
-      color: colors.textMuted,
     },
     lista: {
       gap: spacing.sm,

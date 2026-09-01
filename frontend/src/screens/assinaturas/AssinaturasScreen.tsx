@@ -1,6 +1,5 @@
 import React, { useCallback, useState } from 'react';
 import {
-  ActivityIndicator,
   Modal,
   ScrollView,
   StyleSheet,
@@ -15,6 +14,8 @@ import { Header } from '@/components/Header';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Icon } from '@/components/Icon';
+import { EmptyState } from '@/components/EmptyState';
+import { Skeleton } from '@/components/Skeleton';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { confirmAction, notifyAction } from '@/utils/confirm';
 import * as assinaturasService from '@/services/assinaturas';
@@ -106,8 +107,10 @@ export function AssinaturasScreen() {
       <Header title="Vagas e planos" subtitle="Assinaturas da organização" showBack />
 
       {carregando ? (
-        <View style={styles.centro}>
-          <ActivityIndicator size="large" color={colors.primary} />
+        <View style={styles.conteudo}>
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} height={64} radius={radius.lg} />
+          ))}
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.conteudo} showsVerticalScrollIndicator={false}>
@@ -172,7 +175,11 @@ export function AssinaturasScreen() {
           {/* Pacotes comprados */}
           <Text style={styles.secao}>Pacotes</Text>
           {assinaturas.filter((a) => a.status !== 'cancelada').length === 0 ? (
-            <Text style={styles.vazio}>Nenhum pacote ativo. As vagas grátis seguem valendo.</Text>
+            <EmptyState
+              icon="card-outline"
+              title="Nenhum pacote ativo"
+              description="As vagas grátis de cada ministério seguem valendo."
+            />
           ) : (
             assinaturas
               .filter((a) => a.status !== 'cancelada')
@@ -221,7 +228,6 @@ export function AssinaturasScreen() {
 const criarEstilos = (colors: Cores) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
-    centro: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     conteudo: { padding: spacing.lg, gap: spacing.sm, maxWidth: 720, width: '100%', alignSelf: 'center' },
     erro: { ...typography.bodySmall, color: colors.error, textAlign: 'center' },
 
@@ -234,7 +240,6 @@ const criarEstilos = (colors: Cores) =>
     compraBtn: {},
 
     secao: { ...typography.h3, color: colors.text, marginTop: spacing.md },
-    vazio: { ...typography.bodySmall, color: colors.textMuted },
 
     minCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md },
     minInfo: { flex: 1, gap: 2 },

@@ -1,8 +1,9 @@
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Badge } from '@/components/Badge';
 import { Card } from '@/components/Card';
 import { Icon } from '@/components/Icon';
+import { Skeleton } from '@/components/Skeleton';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
@@ -114,8 +115,12 @@ export function HomeScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={[styles.screen, styles.centered]} edges={['top']}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <SafeAreaView style={styles.screen} edges={['top']}>
+        <View style={styles.content}>
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} height={64} radius={radius.lg} />
+          ))}
+        </View>
       </SafeAreaView>
     );
   }
@@ -352,7 +357,6 @@ function VazioCard({ texto, styles }: { texto: string; styles: ReturnType<typeof
 const criarEstilos = (colors: Cores, shadows: Sombras) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
-    centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingHorizontal: spacing.lg },
     centeredCard: { alignItems: 'center', gap: spacing.sm },
     errorText: { ...typography.bodySmall, color: colors.textSecondary, textAlign: 'center' },
     retryButton: { paddingVertical: spacing.xs, paddingHorizontal: spacing.md },
