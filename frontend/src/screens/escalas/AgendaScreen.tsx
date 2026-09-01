@@ -1,6 +1,5 @@
 import React, { useCallback, useState } from 'react';
 import {
-  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,6 +12,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { EmptyState } from '@/components/EmptyState';
+import { Skeleton } from '@/components/Skeleton';
 import { Icon } from '@/components/Icon';
 import { MainTabScreenNavigationProp } from '@/navigation/types';
 import * as escalaAvulsaService from '@/services/escalaAvulsa';
@@ -78,8 +79,12 @@ export function AgendaScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={[styles.screen, styles.centered]} edges={['top']}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <SafeAreaView style={styles.screen} edges={['top']}>
+        <View style={styles.content}>
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} height={64} radius={radius.lg} />
+          ))}
+        </View>
       </SafeAreaView>
     );
   }
@@ -158,9 +163,11 @@ export function AgendaScreen() {
         </Card>
 
         {escalaVocal.length === 0 && escalaAvulsa.length === 0 && (
-          <Card>
-            <Text style={styles.emptyText}>Você não tem compromissos futuros registrados.</Text>
-          </Card>
+          <EmptyState
+            icon="calendar-outline"
+            title="Nenhum compromisso futuro"
+            description="Você não tem compromissos futuros registrados."
+          />
         )}
 
         {escalaVocal.length > 0 && (
@@ -303,10 +310,6 @@ const criarEstilos = (colors: Cores, shadows: Sombras) => StyleSheet.create({
   sectionTitle: {
     ...typography.h3,
     color: colors.text,
-  },
-  emptyText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
   },
   compromisso: {
     gap: spacing.sm,

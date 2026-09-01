@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   Modal,
   StyleSheet,
@@ -13,8 +12,10 @@ import { Icon, IconName } from '@/components/Icon';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { EmptyState } from '@/components/EmptyState';
 import { Header } from '@/components/Header';
 import { Input } from '@/components/Input';
+import { Skeleton } from '@/components/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { ministeriosService, membrosService } from '@/services';
@@ -267,8 +268,13 @@ export function MinisterioScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={[styles.screen, styles.centered]} edges={['top']}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <SafeAreaView style={styles.screen} edges={['top']}>
+        <Header title="Ministério" showBack />
+        <View style={styles.listContent}>
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} height={64} radius={radius.lg} />
+          ))}
+        </View>
       </SafeAreaView>
     );
   }
@@ -413,9 +419,11 @@ export function MinisterioScreen() {
             ) : null
           }
           ListEmptyComponent={
-            <Card>
-              <Text style={styles.emptyText}>Nenhum membro neste ministério.</Text>
-            </Card>
+            <EmptyState
+              icon="people-outline"
+              title="Nenhum membro neste ministério"
+              description="Adicione membros da organização para montar a equipe."
+            />
           }
           renderItem={({ item }) => (
             <Card

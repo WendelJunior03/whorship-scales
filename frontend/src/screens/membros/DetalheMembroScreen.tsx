@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   Modal,
   ScrollView,
@@ -16,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { Header } from '@/components/Header';
 import { Input } from '@/components/Input';
+import { Skeleton } from '@/components/Skeleton';
 import { SeletorInstrumentos } from '@/components/SeletorInstrumentos';
 import { formatarData, dataParaISO, isoParaData } from '@/components/EntradaData';
 import { MainStackParamList } from '@/navigation/MainNavigator';
@@ -26,7 +26,7 @@ import { PapelOrg, PapelMinisterio } from '@/types';
 import { papelOrgLabel, papelMinisterioLabel, isAdmin } from '@/utils/papel';
 import { confirmAction } from '@/utils/confirm';
 import { formatTelefone } from '@/utils/telefone';
-import { LARGURA_CONTEUDO, spacing, typography } from '@/theme';
+import { LARGURA_CONTEUDO, radius, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 
@@ -169,8 +169,13 @@ export function DetalheMembroScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={[styles.screen, styles.centered]} edges={['top']}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <SafeAreaView style={styles.screen} edges={['top']}>
+        <Header title="Editar Membro" showBack />
+        <View style={[styles.content, styles.loadingList]}>
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} height={64} radius={radius.lg} />
+          ))}
+        </View>
       </SafeAreaView>
     );
   }
@@ -385,6 +390,9 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     alignSelf: 'center',
     padding: spacing.lg,
     paddingTop: spacing.sm,
+  },
+  loadingList: {
+    gap: spacing.sm,
   },
   avatarBlock: {
     alignSelf: 'center',

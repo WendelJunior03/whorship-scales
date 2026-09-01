@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { Icon } from '@/components/Icon';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -7,7 +7,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { EmptyState } from '@/components/EmptyState';
 import { Header } from '@/components/Header';
+import { Skeleton } from '@/components/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { podeGerir } from '@/utils/papel';
 import { MainStackParamList } from '@/navigation/MainNavigator';
@@ -16,7 +18,7 @@ import * as escalaAvulsaService from '@/services/escalaAvulsa';
 import * as escalaVocalService from '@/services/escalaVocal';
 import { ApiError } from '@/services/api';
 import { Culto } from '@/types';
-import { LARGURA_CONTEUDO, spacing, typography } from '@/theme';
+import { LARGURA_CONTEUDO, radius, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { formatDiaCompleto, formatDiaSemana, formatHora } from '@/utils/date';
@@ -91,8 +93,13 @@ export function ConfirmacoesScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={[styles.screen, styles.centered]} edges={['top']}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <SafeAreaView style={styles.screen} edges={['top']}>
+        <Header title="Confirmações" showBack />
+        <View style={styles.content}>
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} height={64} radius={radius.lg} />
+          ))}
+        </View>
       </SafeAreaView>
     );
   }
@@ -121,11 +128,11 @@ export function ConfirmacoesScreen() {
         keyExtractor={(item) => String(item.culto.id)}
         contentContainerStyle={styles.content}
         ListEmptyComponent={
-          <Card>
-            <Text style={styles.emptyText}>
-              Nenhum culto futuro com vocal ou avulsa escalado ainda.
-            </Text>
-          </Card>
+          <EmptyState
+            icon="checkmark-done-outline"
+            title="Nenhum culto para confirmar"
+            description="Nenhum culto futuro com vocal ou avulsa escalado ainda."
+          />
         }
         renderItem={({ item }) => (
           <Card
@@ -187,10 +194,6 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     paddingTop: spacing.sm,
     gap: spacing.sm,
     flexGrow: 1,
-  },
-  emptyText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
   },
   cultoCard: {
     gap: 4,

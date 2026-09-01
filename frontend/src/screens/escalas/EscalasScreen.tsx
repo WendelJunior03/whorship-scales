@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   Modal,
   Platform,
@@ -20,8 +19,10 @@ import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EntradaHorario } from '@/components/EntradaHorario';
+import { EmptyState } from '@/components/EmptyState';
 import { Header } from '@/components/Header';
 import { OptionsMenu } from '@/components/OptionsMenu';
+import { Skeleton } from '@/components/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { MainStackParamList } from '@/navigation/MainNavigator';
 import * as cultosService from '@/services/cultos';
@@ -177,8 +178,13 @@ export function EscalasScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={[styles.screen, styles.centered]} edges={['top']}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <SafeAreaView style={styles.screen} edges={['top']}>
+        <Header title="Escalas" showBack />
+        <View style={styles.content}>
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} height={64} radius={radius.lg} />
+          ))}
+        </View>
       </SafeAreaView>
     );
   }
@@ -212,11 +218,15 @@ export function EscalasScreen() {
         </View>
 
         {grupos.length === 0 ? (
-          <Card>
-            <Text style={styles.emptyText}>
-              {aba === 'proximas' ? 'Nenhuma escala futura.' : 'Nenhuma escala anterior.'}
-            </Text>
-          </Card>
+          <EmptyState
+            icon="calendar-outline"
+            title={aba === 'proximas' ? 'Nenhuma escala futura' : 'Nenhuma escala anterior'}
+            description={
+              aba === 'proximas'
+                ? 'Quando houver cultos agendados, eles aparecem aqui.'
+                : 'Ainda não há cultos passados para mostrar.'
+            }
+          />
         ) : (
           grupos.map((grupo) => {
             const iso = grupo.cultos[0].data_hora;
@@ -445,7 +455,6 @@ const criarEstilos = (colors: Cores) =>
     abaAtiva: { backgroundColor: colors.primary, borderColor: colors.primary },
     abaText: { ...typography.bodySmall, color: colors.textSecondary },
     abaTextAtivo: { color: colors.textInverse, fontFamily: fonts.semibold },
-    emptyText: { ...typography.bodySmall, color: colors.textSecondary },
     grupo: { gap: spacing.sm },
     grupoHeader: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm, marginTop: spacing.sm },
     grupoData: { ...typography.h3, color: colors.text },
