@@ -91,22 +91,30 @@ Todas as existentes + as novas da fundação:
 ## Tarefas
 
 - [x] **T-04.1** — ✅ Decidido (ver seção Decisões-chave). Fechar D-04.1, D-04.2, D-04.3 (e definir PWA-first vs. nativo).
-- [ ] **T-04.2** — Auditoria visual da referência: extrair princípios (grid, espaçamento,
-  tipografia, densidade) — **sem copiar**. Entregável: um doc curto de diretrizes.
+- [x] **T-04.2** — ✅ Dispensada como doc à parte: os princípios (grid, espaçamento,
+  tipografia, densidade) já ficaram materializados nos **design tokens** (`theme/` + `theme/README.md`)
+  e no kit de componentes. Não faz sentido um doc de auditoria depois do redesign já aplicado.
 - [x] **T-04.3** — ✅ **Design tokens** definidos e documentados: `theme/` cobre cores
   (por tema claro/escuro), tipografia, spacing, radius, sombras, estados; adicionado token de
   **breakpoints** (`theme/breakpoints.ts`) e doc de referência em `frontend/src/theme/README.md`.
-- [ ] **T-04.4** — Recriar o kit de componentes base como design system (Button, Input, Card,
-  Badge, Header, Menu, + novos: Tabs, Sidebar, Modal, EmptyState, Skeleton/Loading, Toast).
+- [x] **T-04.4** — ✅ Kit de componentes fechado: os base (Button, Input, Card, Badge, Header,
+  OptionsMenu) já existiam e ganharam os que faltavam — **Tabs**, **Modal** (bottom-sheet), **EmptyState**,
+  **Skeleton** (+`SkeletonText`), **Toast** (`showToast` + `ToastHost` global) e `PersistentSidebar`.
 - [x] **T-04.5** — ✅ **Layout responsivo**: bottom tabs no mobile viram **sidebar fixa** a
   partir de `lg` (1024px) via navigation rail do react-navigation v7 (`tabBarPosition: 'left'`
   + `tabBarVariant: 'material'`), com hook `useBreakpoint()` — D-04.3.
-- [ ] **T-04.6** — Redesenhar o **Dashboard/Home** como vitrine do novo padrão (primeira tela).
-- [ ] **T-04.7** — Introduzir a lib de animação escolhida + micro-animações (transições,
-  press states, entrada de listas). _Pronto quando:_ navegação e cards têm micro-animações suaves.
-- [ ] **T-04.8** — Migrar as demais telas para o novo design system, uma a uma.
-- [ ] **T-04.9** — Revisão de responsividade (mobile / tablet / desktop) e acessibilidade básica
-  (contraste, tamanho de toque).
+- [x] **T-04.6** — ✅ Home/Dashboard redesenhada no novo padrão (branches `redesign-home`/`redesign-inicio`,
+  já na main).
+- [x] **T-04.7** — ✅ Lib de animação: **Moti** (sobre Reanimated, D-04.2). `Button`/`Card` têm press state
+  e entrada (FadeInUp); componente **`AnimatedItem`** dá entrada em cascata de listas (adotado em Membros/
+  Comunicados). Build web validado com Moti 0.30 × Reanimated 4.1.
+- [x] **T-04.8** — ✅ Telas migradas pro kit (loading→`Skeleton`, vazio→`EmptyState`, modais/abas→`Modal`/`Tabs`):
+  Notificações, Membros, Aniversariantes, Comunicados, Escalas, Agenda, Confirmações, Panorama, Biblioteca,
+  Pasta, DetalheMúsica, Ministério, DetalheMembro, Assinaturas, Indisponibilidades, Home, Presets.
+- [x] **T-04.9** — ✅ **Básica:** responsividade coberta por tokens (`breakpoints`, `LARGURA_CONTEUDO`) +
+  `PersistentSidebar`; componentes base já acessíveis (roles/labels/`hitSlop` em Header/Input/Button/Card/Tabs);
+  melhorias centralizadas — `Skeleton` oculto do leitor de tela, `Toast` anunciado (live region + role `alert`),
+  `Tabs` como `tablist`. _Follow-up:_ auditoria fina de `accessibilityLabel` em botões só-ícone tela a tela.
 
 ---
 

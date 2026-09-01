@@ -80,9 +80,16 @@ export function ToastHost() {
   return (
     <Animated.View
       pointerEvents="none"
+      // Anuncia a mensagem no leitor de tela sem roubar o foco (Android). No iOS,
+      // o accessibilityRole="alert" abaixo cumpre papel equivalente.
+      accessibilityLiveRegion="polite"
       style={[styles.wrap, { top: insets.top + spacing.sm }, estiloAnim]}
     >
-      <View style={[styles.toast, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <View
+        accessible
+        accessibilityRole="alert"
+        style={[styles.toast, { backgroundColor: colors.surface, borderColor: colors.border }]}
+      >
         <Icon name={ICONE[req.tipo]} size={20} color={corTipo[req.tipo]} />
         <Text style={[styles.msg, { color: colors.textPrimary }]} numberOfLines={2}>
           {req.mensagem}
