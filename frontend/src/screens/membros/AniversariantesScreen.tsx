@@ -1,9 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Icon } from '@/components/Icon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { EmptyState } from '@/components/EmptyState';
+import { Skeleton } from '@/components/Skeleton';
 import { Header } from '@/components/Header';
 import * as membrosService from '@/services/membros';
 import { ApiError } from '@/services/api';
@@ -72,8 +74,10 @@ export function AniversariantesScreen() {
       </View>
 
       {isLoading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={colors.primary} />
+        <View style={styles.listContent}>
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} height={64} radius={radius.lg} />
+          ))}
         </View>
       ) : error ? (
         <View style={styles.centered}>
@@ -92,10 +96,11 @@ export function AniversariantesScreen() {
           keyExtractor={(item) => String(item.id)}
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Icon name="gift-outline" size={40} color={colors.textMuted} />
-              <Text style={styles.emptyText}>Nenhum aniversariante em {MESES[mes - 1]}.</Text>
-            </View>
+            <EmptyState
+              icon="gift-outline"
+              title="Nenhum aniversariante"
+              description={`Ninguém faz aniversário em ${MESES[mes - 1]}.`}
+            />
           }
           renderItem={({ item }) => (
             <Card style={styles.itemCard}>
@@ -185,15 +190,5 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     ...typography.body,
     color: colors.primary,
     fontFamily: fonts.semibold,
-  },
-  emptyState: {
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.xl,
-  },
-  emptyText: {
-    ...typography.bodySmall,
-    color: colors.textMuted,
-    textAlign: 'center',
   },
 });

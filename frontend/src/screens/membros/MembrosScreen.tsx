@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Icon } from '@/components/Icon';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -9,13 +9,15 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Header } from '@/components/Header';
 import { Input } from '@/components/Input';
+import { EmptyState } from '@/components/EmptyState';
+import { Skeleton } from '@/components/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { MainStackParamList } from '@/navigation/MainNavigator';
 import * as membrosService from '@/services/membros';
 import { ApiError } from '@/services/api';
 import { Membro, Papel } from '@/types';
 import { papelLabel, isAdmin, papelOrgLabel, papelOrgTone, papelOrgDe } from '@/utils/papel';
-import { LARGURA_CONTEUDO, spacing, typography } from '@/theme';
+import { LARGURA_CONTEUDO, radius, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 
@@ -69,8 +71,13 @@ export function MembrosScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={[styles.screen, styles.centered]} edges={['top']}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <SafeAreaView style={styles.screen} edges={['top']}>
+        <Header title="Membros" showBack />
+        <View style={styles.listContent}>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} height={64} radius={radius.lg} />
+          ))}
+        </View>
       </SafeAreaView>
     );
   }
@@ -135,9 +142,11 @@ export function MembrosScreen() {
           </View>
         }
         ListEmptyComponent={
-          <Card>
-            <Text style={styles.emptyText}>Nenhum membro encontrado.</Text>
-          </Card>
+          <EmptyState
+            icon="people-outline"
+            title="Nenhum membro encontrado"
+            description="Ajuste a busca ou o filtro para ver a equipe."
+          />
         }
         renderItem={({ item }) => (
           <Card
@@ -206,10 +215,6 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
   },
   buscaInput: {
     marginBottom: 0,
-  },
-  emptyText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
   },
   filtros: {
     gap: spacing.sm,

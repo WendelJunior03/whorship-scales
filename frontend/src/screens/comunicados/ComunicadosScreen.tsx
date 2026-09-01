@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   Modal,
   ScrollView,
   StyleSheet,
@@ -15,6 +14,8 @@ import { Header } from '@/components/Header';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Icon } from '@/components/Icon';
+import { EmptyState } from '@/components/EmptyState';
+import { Skeleton } from '@/components/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
 import { papelOrgDe } from '@/utils/papel';
@@ -143,20 +144,21 @@ export function ComunicadosScreen() {
       <Header title="Comunicados" subtitle="Avisos da organização" showBack />
 
       {isLoading ? (
-        <View style={styles.centro}>
-          <ActivityIndicator size="large" color={colors.primary} />
+        <View style={styles.conteudo}>
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} height={72} radius={radius.lg} />
+          ))}
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.conteudo} showsVerticalScrollIndicator={false}>
           {erro && <Text style={styles.erro}>{erro}</Text>}
 
           {lista.length === 0 ? (
-            <View style={styles.emptyState}>
-              <View style={styles.emptyCirculo}>
-                <Icon name="chatbubble-ellipses-outline" size={44} color={colors.textMuted} />
-              </View>
-              <Text style={styles.emptyTexto}>Nenhum comunicado por aqui ainda.</Text>
-            </View>
+            <EmptyState
+              icon="chatbubble-ellipses-outline"
+              title="Nenhum comunicado ainda"
+              description="Os avisos da organização aparecem aqui quando publicados."
+            />
           ) : (
             lista.map((a) => (
               <TouchableOpacity key={a.id} activeOpacity={0.7} onPress={() => abrirDetalhe(a.id)}>
@@ -267,7 +269,6 @@ export function ComunicadosScreen() {
 const criarEstilos = (colors: Cores) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
-    centro: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     conteudo: { padding: spacing.lg, gap: spacing.sm, maxWidth: 720, width: '100%', alignSelf: 'center' },
     erro: { ...typography.bodySmall, color: colors.error, textAlign: 'center' },
 
@@ -280,12 +281,6 @@ const criarEstilos = (colors: Cores) =>
     itemPreview: { ...typography.bodySmall, color: colors.textSecondary },
     itemMeta: { ...typography.caption, color: colors.textMuted },
 
-    emptyState: { alignItems: 'center', gap: spacing.md, paddingVertical: spacing.xl },
-    emptyCirculo: {
-      width: 120, height: 120, borderRadius: 60, backgroundColor: colors.surfaceMuted,
-      alignItems: 'center', justifyContent: 'center',
-    },
-    emptyTexto: { ...typography.bodySmall, color: colors.textMuted, textAlign: 'center' },
 
     fab: {
       position: 'absolute', right: spacing.lg, bottom: spacing.lg,
