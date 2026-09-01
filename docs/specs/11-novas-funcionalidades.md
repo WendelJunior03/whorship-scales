@@ -490,7 +490,14 @@ assinaturas
 **Tarefas:**
 - [x] **T-11.34** — Migration `assinaturas` + regra de limite por ministério (`vagas_gratis + vagas_extras`, ao adicionar membro → 409).
 - [x] **T-11.35** — Distribuição de vagas (PUT `/ministerios/:id/vagas`, limitada ao pool) + tela "Vagas e planos" (compra é **stub**, sem gateway ainda).
-- [ ] **T-11.36** — Definir quais módulos ficam atrás de **PRO** (spec 03) no modelo híbrido.
+- [x] **T-11.36** — ✅ Definido o split Free/PRO no catálogo (`backend/src/config/recursos.ts`).
+  **FREE:** núcleo de gestão (escala/sugestão, confirmação/faltas, roteiro, comentários,
+  indisponibilidades, aniversariantes, avisos), repertório base, Pad "Base 1", metrônomo/afinador
+  básicos, **Login Google/Apple + Google Agenda**, 10 vagas/ministério, histórico ~30d.
+  **PRO:** Pad multicamadas/packs, multitrack, afinador avançado, metrônomo por música, vídeos
+  próprios/playlist/privado, playlists, estatísticas, offline, storage+, multi-org, backup,
+  panorama avançado, histórico estendido, **integrações WhatsApp/Holyrics/API**. Gating dorme
+  até `LIBERAR_TUDO_V1 = false` (virada da cobrança).
 - [ ] **Billing real** (App Store/Play/Stripe) — hoje a compra de pacote é stub (registra direto).
 
 ---
