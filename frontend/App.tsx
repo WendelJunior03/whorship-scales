@@ -14,6 +14,7 @@ import {
 } from '@expo-google-fonts/plus-jakarta-sans';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ConfirmDialogHost } from '@/components/ConfirmDialogHost';
+import { ToastHost } from '@/components/ToastHost';
 import { RootNavigator } from '@/navigation/RootNavigator';
 import { navigationRef } from '@/navigation/navigationRef';
 import { linking } from '@/navigation/linking';
@@ -112,6 +113,7 @@ function RaizApp({ pronto, initialState }: { pronto: boolean; initialState?: Ini
     >
       <RootNavigator />
       <ConfirmDialogHost />
+      <ToastHost />
       <StatusBar style={modo === 'escuro' ? 'light' : 'dark'} />
     </NavigationContainer>
   );
