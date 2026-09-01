@@ -20,6 +20,7 @@ import indisponibilidadeRoutes from './routes/indisponibilidadeRoutes'
 import avisoRoutes from './routes/avisoRoutes'
 import pastaRoutes from './routes/pastaRoutes'
 import assinaturaRoutes from './routes/assinaturaRoutes'
+import integracaoRoutes from './routes/integracaoRoutes'
 
 // App Express montado (sem escutar porta) — index.ts faz o listen; os testes de
 // integração importam este `app` direto (supertest), sem subir servidor.
@@ -54,5 +55,6 @@ app.use('/indisponibilidades', indisponibilidadeRoutes)
 app.use('/avisos', avisoRoutes)
 app.use('/pastas', pastaRoutes)
 app.use('/assinaturas', assinaturaRoutes)
+app.use('/integracoes', integracaoRoutes)
 
 export default app

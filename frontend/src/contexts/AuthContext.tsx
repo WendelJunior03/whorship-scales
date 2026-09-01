@@ -4,6 +4,8 @@ import { getToken, saveToken, clearToken, setUnauthorizedHandler } from '@/servi
 import * as authService from '@/services/auth';
 import * as membrosService from '@/services/membros';
 import * as organizacaoService from '@/services/organizacao';
+import * as integracoesService from '@/services/integracoes';
+import { obterCodigoGoogle, googleClientId } from '@/utils/googleGsi';
 import { NAVIGATION_PERSISTENCE_KEY } from '@/navigation/persistence';
 import { Membro, Organizacao } from '@/types';
 
@@ -13,6 +15,7 @@ interface AuthContextData {
   isAuthenticated: boolean;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
+  entrarComGoogle: () => Promise<void>;
   criarOrganizacao: (
     input: organizacaoService.CriarOrganizacaoInput,
   ) => Promise<organizacaoService.OrganizacaoResumo>;
@@ -90,6 +93,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await autenticarComToken(token);
   }
 
+  async function entrarComGoogle() {
+    const clientId = googleClientId();
+    if (!clientId) throw new Error('Login com Google não está configurado.');
+    const code = await obterCodigoGoogle(clientId);
+    const token = await integracoesService.loginGoogle(code);
+    await autenticarComToken(token);
+  }
+
   async function criarOrganizacao(input: organizacaoService.CriarOrganizacaoInput) {
     const { token, organizacao } = await organizacaoService.criarOrganizacao(input);
     await autenticarComToken(token);
@@ -117,6 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated,
         isLoading,
         signIn,
+        entrarComGoogle,
         criarOrganizacao,
         entrarComCodigo,
         signOut,

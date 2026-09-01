@@ -112,6 +112,7 @@ afterAll(async () => {
     if (!pular && A.orgId && B.orgId) {
         const orgs = [A.orgId, B.orgId];
         await withBypass(async (client) => {
+            await client.query('DELETE FROM contas_vinculadas WHERE org_id = ANY($1)', [orgs]);
             await client.query('DELETE FROM assinaturas WHERE org_id = ANY($1)', [orgs]);
             await client.query('DELETE FROM pasta_musicas WHERE org_id = ANY($1)', [orgs]);
             await client.query('DELETE FROM pastas WHERE org_id = ANY($1)', [orgs]);
@@ -530,5 +531,36 @@ describe('Vagas e assinaturas (módulo 12)', () => {
         const resumoB = await http().get('/assinaturas').set('Authorization', auth(tokens.adminB));
         // Org B tem o próprio pool (não enxerga o pacote da A).
         expect(resumoB.body.resumo.comprado).toBe(0);
+    });
+});
+
+// Módulo 11 — integrações: status público, vínculos do próprio membro, guarda-corpos.
+describe('Integrações / Google (módulo 11)', () => {
+    it('GET /integracoes/status é público e informa o que está configurado', async () => {
+        if (pular) return;
+        const res = await http().get('/integracoes/status');
+        expect(res.status).toBe(200);
+        expect(typeof res.body.google).toBe('boolean');
+    });
+
+    it('membro comum lê os PRÓPRIOS vínculos (lista, vazia por padrão)', async () => {
+        if (pular) return;
+        const res = await http().get('/integracoes').set('Authorization', auth(tokens.vocalA));
+        expect(res.status).toBe(200);
+        expect(Array.isArray(res.body)).toBe(true);
+    });
+
+    it('sincronizar sem conta Google conectada → 400', async () => {
+        if (pular) return;
+        const res = await http()
+            .post('/integracoes/google/agenda/sincronizar')
+            .set('Authorization', auth(tokens.vocalA));
+        expect(res.status).toBe(400);
+    });
+
+    it('login-google sem credenciais no servidor → 503 (não quebra)', async () => {
+        if (pular) return;
+        const res = await http().post('/membros/login-google').send({ code: 'x' });
+        expect([503, 400]).toContain(res.status); // 503 sem config; 400 se config mas code inválido
     });
 });
