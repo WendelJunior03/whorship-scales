@@ -332,8 +332,8 @@ export function HomeScreen() {
         ) : (
           aniversariantes.map((a) => (
             <Card key={a.id} style={styles.ministerioCard}>
-              <View style={styles.ministerioIcon}>
-                <Icon name="gift-outline" size={22} color={colors.primary} />
+              <View style={styles.iconAniv}>
+                <Icon name="gift-outline" size={22} color={colors.warning} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.ministerioNome}>{a.nome}</Text>
@@ -346,7 +346,7 @@ export function HomeScreen() {
         {/* Mais tocadas — atalho pra biblioteca */}
         <Card style={styles.promoCard} onPress={() => navigation.navigate('Biblioteca')}>
           <View style={styles.promoIcon}>
-            <Icon name="musical-notes" size={20} color={colors.primary} />
+            <Icon name="musical-notes" size={20} color={colors.accent} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.promoTitulo}>Mais tocadas</Text>
@@ -440,6 +440,8 @@ const criarEstilos = (colors: Cores, shadows: Sombras) =>
       gap: spacing.md,
       backgroundColor: colors.surfaceElevated,
       borderColor: colors.border,
+      borderRadius: radius.xxl,
+      padding: spacing.lg,
       ...shadows.lg,
     },
     heroTopo: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
@@ -464,9 +466,9 @@ const criarEstilos = (colors: Cores, shadows: Sombras) =>
       paddingTop: spacing.sm,
       gap: spacing.sm,
     },
-    secaoHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.md },
+    secaoHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.lg },
     secaoTituloLinha: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 },
-    secaoTitulo: { ...typography.h3, color: colors.text },
+    secaoTitulo: { ...typography.h2, color: colors.text },
     secaoContador: {
       minWidth: 22,
       height: 22,
@@ -480,14 +482,15 @@ const criarEstilos = (colors: Cores, shadows: Sombras) =>
     secaoSub: { ...typography.caption, color: colors.textMuted },
     secaoAcao: { ...typography.bodySmall, color: colors.primary, fontFamily: fonts.semibold },
     vazioText: { ...typography.bodySmall, color: colors.textSecondary },
-    ministerioCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-    ministerioIcon: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
+    ministerioCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, borderRadius: radius.xxl, padding: spacing.lg },
+    ministerioIcon: { width: 46, height: 46, borderRadius: radius.lg, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
+    iconAniv: { width: 46, height: 46, borderRadius: radius.lg, backgroundColor: 'rgba(242, 180, 83, 0.16)', alignItems: 'center', justifyContent: 'center' },
     ministerioNome: { ...typography.body, color: colors.text, fontFamily: fonts.semibold },
     ministerioMeta: { ...typography.caption, color: colors.textSecondary, marginTop: 1 },
     avisoPonto: { width: 8, height: 8, borderRadius: 4, backgroundColor: 'transparent' },
     avisoPontoNaoLido: { backgroundColor: colors.primary },
     avisoTituloNaoLido: { fontFamily: fonts.bold },
-    escalaCard: { gap: spacing.xs },
+    escalaCard: { gap: spacing.sm, borderRadius: radius.xxl, padding: spacing.lg },
     escalaTopo: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
     escalaData: { ...typography.bodySmall, color: colors.text, fontFamily: fonts.semibold },
     escalaRelativo: { ...typography.caption, color: colors.textMuted },
@@ -509,8 +512,8 @@ const criarEstilos = (colors: Cores, shadows: Sombras) =>
     escalaRodape: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: 2 },
     contador: { flexDirection: 'row', alignItems: 'center', gap: 4 },
     contadorText: { ...typography.caption, color: colors.textMuted },
-    promoCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md },
-    promoIcon: { width: 40, height: 40, borderRadius: radius.md, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
+    promoCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.lg, borderRadius: radius.xxl, padding: spacing.lg },
+    promoIcon: { width: 46, height: 46, borderRadius: radius.lg, backgroundColor: colors.accentSoft, alignItems: 'center', justifyContent: 'center' },
     promoTitulo: { ...typography.body, color: colors.text, fontFamily: fonts.semibold },
     promoSub: { ...typography.caption, color: colors.textSecondary, marginTop: 1 },
   });
