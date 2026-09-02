@@ -24,6 +24,7 @@ import { AniversariantesScreen } from '@/screens/membros/AniversariantesScreen';
 import { ComunicadosScreen } from '@/screens/comunicados/ComunicadosScreen';
 import { AssinaturasScreen } from '@/screens/assinaturas/AssinaturasScreen';
 import { MultitrackScreen } from '@/screens/multitrack/MultitrackScreen';
+import { IntegracoesScreen } from '@/screens/integracoes/IntegracoesScreen';
 
 export type MainStackParamList = {
   MainTabs: undefined;
@@ -47,6 +48,7 @@ export type MainStackParamList = {
   Comunicados: { abrirId?: number } | undefined;
   Assinaturas: undefined;
   Multitrack: undefined;
+  Integracoes: undefined;
 };
 
 const Stack = createStackNavigator<MainStackParamList>();
@@ -75,6 +77,7 @@ function StackNavigator() {
       <Stack.Screen name="Comunicados" component={ComunicadosScreen} />
       <Stack.Screen name="Assinaturas" component={AssinaturasScreen} />
       <Stack.Screen name="Multitrack" component={MultitrackScreen} />
+      <Stack.Screen name="Integracoes" component={IntegracoesScreen} />
     </Stack.Navigator>
   );
 }

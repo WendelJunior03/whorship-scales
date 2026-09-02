@@ -215,6 +215,13 @@ const capacidades: Record<string, RegraCapacidade> = {
         papelMinisterio: [],
         escopo: ['organizacao']
     },
+    // Integrações do ministério (spec 11 — T-11.33): Holyrics e tokens de API.
+    // Gestão pelo admin da org ou líder.
+    'integracao.gerenciar':{
+        papelOrg: ['administrador', 'lider'],
+        papelMinisterio: [],
+        escopo: ['organizacao', 'ministerio']
+    },
 }
 
 export function podeAcessar(usuario: {papelOrg: PapelOrg, papelMinisterio: PapelMinisterio | null}, capacidade: string): boolean {

@@ -38,3 +38,63 @@ export async function sincronizarAgenda(): Promise<{ total: number; message: str
   );
   return data;
 }
+
+// === Holyrics (integração por ministério — T-11.33) ===
+
+export interface HolyricsConfig {
+  host: string;
+  porta: number;
+  /** Backend nunca devolve o token em claro; só indica se há um salvo. */
+  temToken: boolean;
+  ativo: boolean;
+}
+
+export async function getHolyrics(ministerioId: number): Promise<HolyricsConfig | null> {
+  const { data } = await api.get<HolyricsConfig | null>(`/ministerios/${ministerioId}/holyrics`);
+  return data;
+}
+
+export async function salvarHolyrics(
+  ministerioId: number,
+  dados: { host: string; porta: number; token?: string; ativo?: boolean },
+): Promise<HolyricsConfig> {
+  const { data } = await api.put<HolyricsConfig>(`/ministerios/${ministerioId}/holyrics`, dados);
+  return data;
+}
+
+export async function removerHolyrics(ministerioId: number): Promise<void> {
+  await api.delete(`/ministerios/${ministerioId}/holyrics`);
+}
+
+export async function testarHolyrics(ministerioId: number): Promise<{ ok: boolean; message: string }> {
+  const { data } = await api.post<{ ok: boolean; message: string }>(
+    `/ministerios/${ministerioId}/holyrics/testar`,
+  );
+  return data;
+}
+
+// === Tokens de API (leitura, escopo da org — T-11.33) ===
+
+export interface ApiToken {
+  id: number;
+  nome: string;
+  prefixo: string;
+  ministerio_id: number | null;
+  ultimo_uso_em: string | null;
+  created_at: string;
+}
+
+export async function listarApiTokens(): Promise<ApiToken[]> {
+  const { data } = await api.get<ApiToken[]>('/api-tokens');
+  return data;
+}
+
+/** Cria um token; o valor em claro (`token`) só vem NESTA resposta. */
+export async function criarApiToken(nome: string): Promise<ApiToken & { token: string }> {
+  const { data } = await api.post<ApiToken & { token: string }>('/api-tokens', { nome });
+  return data;
+}
+
+export async function revogarApiToken(id: number): Promise<void> {
+  await api.delete(`/api-tokens/${id}`);
+}
