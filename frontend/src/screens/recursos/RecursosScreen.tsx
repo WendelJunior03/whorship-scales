@@ -37,11 +37,11 @@ interface ItemRecurso {
 }
 
 const INSTRUMENTOS: ItemRecurso[] = [
-  { icon: 'musical-note-outline', label: 'Afinador', sublabel: 'Afine o instrumento', route: 'Afinador' },
+  { icon: 'speedometer-outline', label: 'Afinador', sublabel: 'Afine o instrumento', route: 'Afinador' },
   { icon: 'grid-outline', label: 'Octapad', sublabel: 'Pads de som', route: 'Octapad' },
   { icon: 'timer-outline', label: 'Metrônomo', sublabel: 'BPM e tap tempo', route: 'Metronomo' },
   { icon: 'pulse-outline', label: 'Pads Contínuos', sublabel: 'Banco de pads', route: 'PadContinuo' },
-  { icon: 'musical-notes-outline', label: 'Biblioteca', sublabel: 'Músicas, pastas e vídeos', route: 'Biblioteca' },
+  { icon: 'library-outline', label: 'Biblioteca', sublabel: 'Músicas, pastas e vídeos', route: 'Biblioteca' },
   { icon: 'options-outline', label: 'Multitrack / VS', sublabel: 'Player de multitracks', route: 'Multitrack' },
 ];
 
