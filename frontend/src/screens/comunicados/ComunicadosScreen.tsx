@@ -202,7 +202,7 @@ export function ComunicadosScreen() {
         <View style={styles.overlay}>
           <View style={styles.modal}>
             <View style={styles.modalHeader}>
-              <TouchableOpacity onPress={() => setDetalhe(null)} hitSlop={8}>
+              <TouchableOpacity onPress={() => setDetalhe(null)} hitSlop={8} accessibilityLabel="Fechar detalhe">
                 <Icon name="close" size={24} color={colors.text} />
               </TouchableOpacity>
               <View style={{ width: 24 }} />
@@ -234,7 +234,7 @@ export function ComunicadosScreen() {
         <View style={styles.overlay}>
           <View style={styles.modal}>
             <View style={styles.modalHeader}>
-              <TouchableOpacity onPress={() => setFormAberto(false)} hitSlop={8}>
+              <TouchableOpacity onPress={() => setFormAberto(false)} hitSlop={8} accessibilityLabel="Fechar formulário">
                 <Icon name="close" size={24} color={colors.text} />
               </TouchableOpacity>
               <Text style={styles.modalTitulo}>{editId ? 'Editar comunicado' : 'Novo comunicado'}</Text>

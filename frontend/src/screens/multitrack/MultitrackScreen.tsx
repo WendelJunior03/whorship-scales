@@ -238,7 +238,7 @@ export function MultitrackScreen() {
                   </TouchableOpacity>
                   <SliderFaixa valor={f.volume} onChange={(v) => mt.setVolume(f.id, v)} mudo={f.mudo} cor={f.cor} />
                 </View>
-                <TouchableOpacity onPress={() => mt.removerFaixa(f.id)} hitSlop={8} style={styles.remover}>
+                <TouchableOpacity onPress={() => mt.removerFaixa(f.id)} hitSlop={8} style={styles.remover} accessibilityLabel="Remover faixa">
                   <Icon name="close" size={16} color={colors.textMuted} />
                 </TouchableOpacity>
               </Card>
@@ -248,13 +248,13 @@ export function MultitrackScreen() {
           {/* Rodapé discreto: transporte extra + tom + bpm + adicionar */}
           <View style={styles.rodape}>
             <View style={styles.transRow}>
-              <TouchableOpacity onPress={() => mt.seek(mt.posicao - 10)} style={styles.transBtn}>
+              <TouchableOpacity onPress={() => mt.seek(mt.posicao - 10)} style={styles.transBtn} accessibilityLabel="Voltar 10 segundos">
                 <Icon name="play-back" size={18} color={colors.textSecondary} />
               </TouchableOpacity>
-              <TouchableOpacity onPress={mt.stop} style={styles.transBtn}>
+              <TouchableOpacity onPress={mt.stop} style={styles.transBtn} accessibilityLabel="Parar">
                 <Icon name="stop" size={16} color={colors.textSecondary} />
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => mt.seek(mt.posicao + 10)} style={styles.transBtn}>
+              <TouchableOpacity onPress={() => mt.seek(mt.posicao + 10)} style={styles.transBtn} accessibilityLabel="Avançar 10 segundos">
                 <Icon name="play-forward" size={18} color={colors.textSecondary} />
               </TouchableOpacity>
 
@@ -311,7 +311,7 @@ export function MultitrackScreen() {
         <View style={styles.overlay}>
           <View style={styles.modal}>
             <View style={styles.modalHeader}>
-              <TouchableOpacity onPress={() => setModalSalvar(false)} hitSlop={8}>
+              <TouchableOpacity onPress={() => setModalSalvar(false)} hitSlop={8} accessibilityLabel="Fechar">
                 <Icon name="close" size={24} color={colors.text} />
               </TouchableOpacity>
               <Text style={styles.modalTitulo}>Salvar projeto</Text>
@@ -337,7 +337,7 @@ export function MultitrackScreen() {
         <View style={styles.overlay}>
           <View style={styles.modal}>
             <View style={styles.modalHeader}>
-              <TouchableOpacity onPress={() => setEditandoId(null)} hitSlop={8}>
+              <TouchableOpacity onPress={() => setEditandoId(null)} hitSlop={8} accessibilityLabel="Fechar">
                 <Icon name="close" size={24} color={colors.text} />
               </TouchableOpacity>
               <Text style={styles.modalTitulo}>Editar faixa</Text>

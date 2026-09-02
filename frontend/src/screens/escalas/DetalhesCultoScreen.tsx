@@ -1008,10 +1008,10 @@ export function DetalhesCultoScreen() {
                 <Text style={styles.roteiroDuracao}>{formatDuracao(item.duracao_seg)}</Text>
                 {user && podeGerir(user) && (
                   <View style={styles.roteiroAcoes}>
-                    <TouchableOpacity onPress={() => handleMoverRoteiro(index, -1)} hitSlop={6} disabled={index === 0}>
+                    <TouchableOpacity onPress={() => handleMoverRoteiro(index, -1)} hitSlop={6} disabled={index === 0} accessibilityLabel="Mover para cima">
                       <Icon name="chevron-up" size={18} color={index === 0 ? colors.textMuted : colors.textSecondary} />
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleMoverRoteiro(index, 1)} hitSlop={6} disabled={index === roteiro.length - 1}>
+                    <TouchableOpacity onPress={() => handleMoverRoteiro(index, 1)} hitSlop={6} disabled={index === roteiro.length - 1} accessibilityLabel="Mover para baixo">
                       <Icon name="chevron-down" size={18} color={index === roteiro.length - 1 ? colors.textMuted : colors.textSecondary} />
                     </TouchableOpacity>
                     <OptionsMenu

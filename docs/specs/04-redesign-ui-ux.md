@@ -114,7 +114,9 @@ Todas as existentes + as novas da fundação:
 - [x] **T-04.9** — ✅ **Básica:** responsividade coberta por tokens (`breakpoints`, `LARGURA_CONTEUDO`) +
   `PersistentSidebar`; componentes base já acessíveis (roles/labels/`hitSlop` em Header/Input/Button/Card/Tabs);
   melhorias centralizadas — `Skeleton` oculto do leitor de tela, `Toast` anunciado (live region + role `alert`),
-  `Tabs` como `tablist`. _Follow-up:_ auditoria fina de `accessibilityLabel` em botões só-ícone tela a tela.
+  `Tabs` como `tablist`. Auditoria fina de `accessibilityLabel` em botões só-ícone concluída: 12 botões crus
+  (fechar modais, transporte do multitrack, mover roteiro, remover música/faixa, cancelar pacote) em Comunicados,
+  Multitrack, DetalhesCulto, Pasta e Assinaturas ganharam rótulo PT-BR — os componentes base já eram acessíveis.
 
 ---
 

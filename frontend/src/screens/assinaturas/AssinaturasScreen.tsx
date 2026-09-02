@@ -189,7 +189,7 @@ export function AssinaturasScreen() {
                     <Text style={styles.minNome}>{a.plano ?? `+${a.vagas_total}`} vagas</Text>
                     <Text style={styles.minMeta}>{a.ciclo} · {a.status}</Text>
                   </View>
-                  <TouchableOpacity onPress={() => cancelar(a)} hitSlop={8}>
+                  <TouchableOpacity onPress={() => cancelar(a)} hitSlop={8} accessibilityLabel="Cancelar pacote">
                     <Icon name="trash-outline" size={18} color={colors.textMuted} />
                   </TouchableOpacity>
                 </Card>
