@@ -498,7 +498,13 @@ assinaturas
   próprios/playlist/privado, playlists, estatísticas, offline, storage+, multi-org, backup,
   panorama avançado, histórico estendido, **integrações WhatsApp/Holyrics/API**. Gating dorme
   até `LIBERAR_TUDO_V1 = false` (virada da cobrança).
-- [ ] **Billing real** (App Store/Play/Stripe) — hoje a compra de pacote é stub (registra direto).
+- [x] **Billing real** — ✅ **Stripe** (Checkout + Billing + webhook). Modelo simplificado para
+  **freemium com 1 plano PRO** (decisão do dono): **PRO** = assinatura mensal/anual → vagas
+  **ilimitadas** + todos os recursos; **Free** = 10 por ministério + recursos parciais. Isso
+  **substitui** os pacotes de vaga avulsos (T-11.34/35): a tela "Vagas e planos" virou **"Meu
+  plano"** (upgrade + portal de gerenciamento) e o cap de vagas é ignorado quando `plano = 'pro'`.
+  `organizacoes.plano` é atualizado pelos webhooks. **Sandbox-first**: chaves de produção e a virada
+  de `LIBERAR_TUDO_V1 = false` ficam para o go-live.
 
 ---
 
