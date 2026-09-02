@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Linking,
   Modal,
   Platform,
@@ -944,6 +945,13 @@ export function DetalhesCultoScreen() {
                 onPress={() => musica.link_musica && handleAbrirMusica(musica.link_musica)}
               >
                 <Text style={styles.musicaNumero}>{String(index + 1).padStart(2, '0')}</Text>
+                {musica.capa_url ? (
+                  <Image source={{ uri: musica.capa_url }} style={styles.musicaCapa} />
+                ) : (
+                  <View style={styles.musicaCapaFallback}>
+                    <Icon name="musical-notes-outline" size={16} color={colors.textMuted} />
+                  </View>
+                )}
                 <Text style={styles.musicaNome}>{musica.nome}</Text>
                 <Badge
                   label={musica.tom}
@@ -1952,6 +1960,19 @@ const criarEstilos = (colors: Cores) =>
       ...typography.body,
       color: colors.text,
       flex: 1,
+    },
+    musicaCapa: {
+      width: 32,
+      height: 32,
+      borderRadius: radius.sm,
+    },
+    musicaCapaFallback: {
+      width: 32,
+      height: 32,
+      borderRadius: radius.sm,
+      backgroundColor: colors.surfaceElevated,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     tomBadge: {
       width: 38,

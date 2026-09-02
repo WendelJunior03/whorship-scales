@@ -9,7 +9,13 @@ export async function createRepertorio(cultoId: number, nome: string, tom: strin
 }
 
 export async function findAllRepertorios(cultoId: number) {
-    const result = await query('SELECT * FROM repertorio WHERE culto_id = $1', [cultoId])
+    const result = await query(
+        `SELECT repertorio.*, musicas.capa_url
+           FROM repertorio
+           LEFT JOIN musicas ON musicas.id = repertorio.musica_id
+          WHERE repertorio.culto_id = $1`,
+        [cultoId],
+    )
     return result.rows
 }
 

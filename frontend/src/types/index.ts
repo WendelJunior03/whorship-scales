@@ -201,6 +201,8 @@ export interface Repertorio {
   link_musica: string;
   /** Vínculo com a Biblioteca (auto: acha por nome ou cria) — null em linhas antigas. */
   musica_id: number | null;
+  /** Capa da música vinculada (JOIN em musicas) — null se não tiver vínculo/capa. */
+  capa_url: string | null;
 }
 
 /** Item do roteiro/setlist cronometrado de um culto (spec 11, módulo 3). */
