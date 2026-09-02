@@ -33,7 +33,8 @@ export async function createEnsaioParticipante(ensaioId: number, membroId: numbe
 
 export async function findParticipantesByEnsaioId(ensaioId: number) {
     const result = await query(
-        `SELECT ensaio_participantes.id, ensaio_participantes.membro_id, ensaio_participantes.status, membros.nome
+        `SELECT ensaio_participantes.id, ensaio_participantes.membro_id, ensaio_participantes.status,
+                membros.nome, membros.foto_url AS foto
            FROM ensaio_participantes
            JOIN membros ON ensaio_participantes.membro_id = membros.id
           WHERE ensaio_participantes.ensaio_id = $1`,
