@@ -24,16 +24,22 @@ export function SectionHeader({ titulo, subtitulo, contador, acao, style }: Sect
   return (
     <View style={[styles.header, style]}>
       <View style={styles.tituloLinha}>
-        <Text style={styles.titulo}>{titulo}</Text>
+        <Text style={styles.titulo} numberOfLines={1}>
+          {titulo}
+        </Text>
         {contador !== undefined && (
           <View style={styles.contador}>
             <Text style={styles.contadorText}>{contador}</Text>
           </View>
         )}
-        {subtitulo ? <Text style={styles.sub}>{subtitulo}</Text> : null}
+        {subtitulo ? (
+          <Text style={styles.sub} numberOfLines={1}>
+            {subtitulo}
+          </Text>
+        ) : null}
       </View>
       {acao ? (
-        <TouchableOpacity onPress={acao.onPress} hitSlop={6}>
+        <TouchableOpacity onPress={acao.onPress} hitSlop={6} style={styles.acaoWrap}>
           <Text style={styles.acao}>{acao.label}</Text>
         </TouchableOpacity>
       ) : null}
@@ -50,8 +56,8 @@ const criarEstilos = (colors: Cores) =>
       marginTop: spacing.lg,
       marginBottom: spacing.xs,
     },
-    tituloLinha: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 },
-    titulo: { ...typography.h2, color: colors.text },
+    tituloLinha: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1, minWidth: 0 },
+    titulo: { ...typography.h2, color: colors.text, flexShrink: 1 },
     contador: {
       minWidth: 22,
       height: 22,
@@ -60,8 +66,10 @@ const criarEstilos = (colors: Cores) =>
       backgroundColor: colors.surfaceElevated,
       alignItems: 'center',
       justifyContent: 'center',
+      flexShrink: 0,
     },
     contadorText: { ...typography.caption, color: colors.textSecondary, fontFamily: fonts.semibold },
-    sub: { ...typography.caption, color: colors.textMuted },
+    sub: { ...typography.caption, color: colors.textMuted, flexShrink: 1 },
+    acaoWrap: { flexShrink: 0, marginLeft: spacing.sm },
     acao: { ...typography.bodySmall, color: colors.primary, fontFamily: fonts.semibold },
   });
