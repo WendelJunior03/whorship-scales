@@ -42,7 +42,7 @@ export async function findProximoCultoDoMembro(membroId: number) {
 }
 
 export async function findEscalaVocalByCultoId(cultoId: number) {
-    const result = await query(`SELECT escala_vocal.id, escala_vocal.membro_id, escala_vocal.status, membros.nome FROM escala_vocal JOIN membros ON escala_vocal.membro_id = membros.id WHERE escala_vocal.culto_id = $1`, [cultoId]);
+    const result = await query(`SELECT escala_vocal.id, escala_vocal.membro_id, escala_vocal.status, membros.nome, membros.foto_url AS foto FROM escala_vocal JOIN membros ON escala_vocal.membro_id = membros.id WHERE escala_vocal.culto_id = $1`, [cultoId]);
     return result.rows;
 }
 

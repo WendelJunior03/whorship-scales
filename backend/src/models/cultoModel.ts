@@ -21,13 +21,13 @@ export async function findResumoCultos(usuarioId: number) {
                 (SELECT count(*) FROM repertorio r WHERE r.culto_id = c.id)::int AS total_musicas,
                 (SELECT count(*) FROM escala_comentarios ec WHERE ec.culto_id = c.id)::int AS total_comentarios,
                 COALESCE((
-                    SELECT json_agg(json_build_object('membro_id', p.membro_id, 'nome', p.nome) ORDER BY p.nome)
+                    SELECT json_agg(json_build_object('membro_id', p.membro_id, 'nome', p.nome, 'foto', p.foto) ORDER BY p.nome)
                     FROM (
-                        SELECT ev.membro_id, m.nome
+                        SELECT ev.membro_id, m.nome, m.foto_url AS foto
                           FROM escala_vocal ev JOIN membros m ON m.id = ev.membro_id
                          WHERE ev.culto_id = c.id AND ev.status <> 'recusado'
                         UNION
-                        SELECT ea.membro_id, m.nome
+                        SELECT ea.membro_id, m.nome, m.foto_url AS foto
                           FROM escala_avulsa ea JOIN membros m ON m.id = ea.membro_id
                          WHERE ea.culto_id = c.id AND ea.status <> 'recusado'
                     ) p

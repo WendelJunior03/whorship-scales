@@ -99,7 +99,7 @@ export async function findAniversariantesDoMes(mes: number, ministerioId?: numbe
         )`;
     }
     const result = await query(
-        `SELECT id, nome, email,
+        `SELECT id, nome, email, foto_url,
                 to_char(data_nascimento, 'YYYY-MM-DD') AS data_nascimento,
                 EXTRACT(DAY FROM data_nascimento)::int AS dia
            FROM membros

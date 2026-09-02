@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon, IconName } from '@/components/Icon';
+import { Avatar } from '@/components/Avatar';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -438,9 +439,7 @@ export function MinisterioScreen() {
                   : undefined
               }
             >
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{item.nome[0]?.toUpperCase()}</Text>
-              </View>
+              <Avatar nome={item.nome} fotoUrl={item.foto_url} size={44} />
               <View style={styles.membroInfo}>
                 <Text style={styles.membroNome}>{item.nome}</Text>
                 <Text style={styles.membroFuncoes}>
@@ -854,15 +853,6 @@ const criarEstilos = (colors: Cores) =>
     emptyText: { ...typography.bodySmall, color: colors.textSecondary },
     addBtn: { marginBottom: spacing.sm },
     membroCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-    avatar: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      backgroundColor: colors.surfaceElevated,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    avatarText: { ...typography.body, color: colors.primary, fontWeight: '700' },
     membroInfo: { flex: 1 },
     membroNome: { ...typography.body, color: colors.text, fontWeight: '600' },
     membroFuncoes: { ...typography.caption, color: colors.textSecondary },

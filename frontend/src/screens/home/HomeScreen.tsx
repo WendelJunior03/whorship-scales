@@ -43,10 +43,6 @@ function rotuloRelativo(iso: string): string {
   return dias > 0 ? `daqui a ${dias} dias` : `há ${Math.abs(dias)} dias`;
 }
 
-function iniciais(nome: string): string {
-  const p = nome.trim().split(/\s+/);
-  return ((p[0]?.[0] ?? '') + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase();
-}
 
 const MESES_ANIV = [
   'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
@@ -262,9 +258,13 @@ export function HomeScreen() {
               {c.participantes.length > 0 && (
                 <View style={styles.avatares}>
                   {c.participantes.slice(0, 5).map((p, i) => (
-                    <View key={p.membro_id} style={[styles.avatarPeq, i > 0 && styles.avatarSobreposto]}>
-                      <Text style={styles.avatarPeqText}>{iniciais(p.nome)}</Text>
-                    </View>
+                    <Avatar
+                      key={p.membro_id}
+                      nome={p.nome}
+                      fotoUrl={p.foto}
+                      size={28}
+                      style={[styles.avatarBorda, i > 0 ? styles.avatarSobreposto : undefined]}
+                    />
                   ))}
                   {c.participantes.length > 5 && (
                     <View style={[styles.avatarPeq, styles.avatarSobreposto, styles.avatarMais]}>
@@ -512,6 +512,7 @@ const criarEstilos = (colors: Cores, shadows: Sombras) =>
       borderWidth: 2,
       borderColor: colors.surface,
     },
+    avatarBorda: { borderWidth: 2, borderColor: colors.surface },
     avatarSobreposto: { marginLeft: -8 },
     avatarMais: { backgroundColor: colors.surfaceElevated },
     avatarPeqText: { ...typography.caption, color: colors.primary, fontWeight: '700', fontSize: 9 },

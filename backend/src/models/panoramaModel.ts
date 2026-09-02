@@ -18,16 +18,16 @@ export async function getPanorama(inicioISO: string, fimISO: string) {
 
     const linhas = (
         await query(
-            `SELECT culto_id, funcao, membro_id, nome FROM (
+            `SELECT culto_id, funcao, membro_id, nome, foto FROM (
                -- Escala vocal do culto.
-               SELECT ev.culto_id, 'Vocal' AS funcao, ev.membro_id, m.nome, c.data_hora
+               SELECT ev.culto_id, 'Vocal' AS funcao, ev.membro_id, m.nome, m.foto_url AS foto, c.data_hora
                  FROM escala_vocal ev
                  JOIN membros m ON m.id = ev.membro_id
                  JOIN cultos c  ON c.id = ev.culto_id
                 WHERE c.data_hora >= $1 AND c.data_hora < $2 AND ev.status <> 'recusado'
 
                UNION ALL
-               SELECT ea.culto_id, ea.funcao, ea.membro_id, m.nome, c.data_hora
+               SELECT ea.culto_id, ea.funcao, ea.membro_id, m.nome, m.foto_url AS foto, c.data_hora
                  FROM escala_avulsa ea
                  JOIN membros m ON m.id = ea.membro_id
                  JOIN cultos c  ON c.id = ea.culto_id

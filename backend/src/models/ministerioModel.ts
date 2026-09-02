@@ -64,7 +64,7 @@ export async function alterarVagasExtras(id: number, vagasExtras: number) {
 
 export async function listarMembros(ministerioId: number) {
     const result = await query(
-        `SELECT mb.id, mb.nome, mb.email, mm.papel, mm.created_at,
+        `SELECT mb.id, mb.nome, mb.email, mb.foto_url, mm.papel, mm.created_at,
                 COALESCE(
                     (SELECT array_agg(f.nome ORDER BY f.nome)
                      FROM membro_funcoes mf

@@ -12,6 +12,7 @@ import { Input } from '@/components/Input';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
 import { AnimatedItem } from '@/components/AnimatedItem';
+import { Avatar } from '@/components/Avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { MainStackParamList } from '@/navigation/MainNavigator';
 import * as membrosService from '@/services/membros';
@@ -155,9 +156,7 @@ export function MembrosScreen() {
               style={styles.membroCard}
               onPress={() => navigation.navigate('DetalheMembro', { membroId: item.id })}
             >
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{item.nome[0]}</Text>
-              </View>
+              <Avatar nome={item.nome} fotoUrl={item.foto_url} size={44} />
               <View style={styles.membroInfo}>
                 <Text style={styles.membroNome}>{item.nome}</Text>
                 <Text style={styles.membroPapel}>{papelLabel[item.papel]}</Text>
@@ -248,19 +247,6 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     marginBottom: spacing.sm,
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.surfaceElevated,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    ...typography.body,
-    color: colors.primary,
-    fontWeight: '700',
   },
   membroInfo: {
     flex: 1,
