@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import {
-  Alert,
+  ActivityIndicator,
   FlatList,
   Image,
   Modal,
@@ -25,6 +25,7 @@ import { MainStackParamList } from '@/navigation/MainNavigator';
 import * as musicasService from '@/services/musicas';
 import * as pastasService from '@/services/pastas';
 import { ApiError } from '@/services/api';
+import { notifyAction } from '@/utils/confirm';
 import { podeGerir } from '@/utils/papel';
 import { Musica, Pasta, Artista } from '@/types';
 import { fonts, LARGURA_CONTEUDO, radius, spacing, typography } from '@/theme';
@@ -64,6 +65,8 @@ export function BibliotecaScreen() {
   const [bpm, setBpm] = useState('');
   const [cifra, setCifra] = useState('');
   const [audio, setAudio] = useState('');
+  const [capaUrl, setCapaUrl] = useState<string | null>(null);
+  const [buscandoMetadados, setBuscandoMetadados] = useState(false);
   // Modal de pasta
   const [modalPasta, setModalPasta] = useState(false);
   const [nomePasta, setNomePasta] = useState('');
@@ -94,9 +97,29 @@ export function BibliotecaScreen() {
     }, [carregar]),
   );
 
+  async function buscarAutomatico() {
+    if (!nome.trim()) return;
+    setBuscandoMetadados(true);
+    try {
+      const m = await musicasService.buscarMetadados(nome.trim(), artista.trim() || undefined);
+      // Só preenche o que ainda está vazio — não sobrescreve o que a pessoa já digitou.
+      if (m.artista && !artista.trim()) setArtista(m.artista);
+      if (m.tom && !tom.trim()) setTom(m.tom);
+      if (m.bpm && !bpm.trim()) setBpm(String(m.bpm));
+      if (m.capaUrl) setCapaUrl(m.capaUrl);
+      if (!m.artista && !m.tom && !m.bpm && !m.capaUrl) {
+        notifyAction('Nada encontrado', 'Não achei essa música — preencha manualmente.');
+      }
+    } catch (e) {
+      notifyAction('Erro', e instanceof ApiError ? e.message : 'Não foi possível buscar.');
+    } finally {
+      setBuscandoMetadados(false);
+    }
+  }
+
   async function salvarMusica() {
     if (!nome.trim()) {
-      Alert.alert('Nome obrigatório', 'Informe o nome da música.');
+      notifyAction('Nome obrigatório', 'Informe o nome da música.');
       return;
     }
     setSalvando(true);
@@ -108,12 +131,13 @@ export function BibliotecaScreen() {
         bpm: bpm.trim() ? Number(bpm) : null,
         cifraUrl: cifra.trim() || null,
         audioUrl: audio.trim() || null,
+        capaUrl,
       });
       setModalMusica(false);
-      setNome(''); setArtista(''); setTom(''); setBpm(''); setCifra(''); setAudio('');
+      setNome(''); setArtista(''); setTom(''); setBpm(''); setCifra(''); setAudio(''); setCapaUrl(null);
       await carregar();
     } catch (e) {
-      Alert.alert('Erro', e instanceof ApiError ? e.message : 'Não foi possível salvar.');
+      notifyAction('Erro', e instanceof ApiError ? e.message : 'Não foi possível salvar.');
     } finally {
       setSalvando(false);
     }
@@ -121,7 +145,7 @@ export function BibliotecaScreen() {
 
   async function salvarPasta() {
     if (!nomePasta.trim()) {
-      Alert.alert('Nome obrigatório', 'Informe o nome da pasta.');
+      notifyAction('Nome obrigatório', 'Informe o nome da pasta.');
       return;
     }
     setSalvando(true);
@@ -131,7 +155,7 @@ export function BibliotecaScreen() {
       setNomePasta('');
       await carregar();
     } catch (e) {
-      Alert.alert('Erro', e instanceof ApiError ? e.message : 'Não foi possível salvar.');
+      notifyAction('Erro', e instanceof ApiError ? e.message : 'Não foi possível salvar.');
     } finally {
       setSalvando(false);
     }
@@ -300,6 +324,26 @@ export function BibliotecaScreen() {
           <View style={styles.modal}>
             <Text style={styles.modalTitulo}>Nova música</Text>
             <Input icon="musical-note-outline" placeholder="Nome da música" value={nome} onChangeText={setNome} />
+            <TouchableOpacity
+              style={[styles.buscarAuto, !nome.trim() && styles.buscarAutoDesabilitado]}
+              onPress={buscarAutomatico}
+              disabled={!nome.trim() || buscandoMetadados}
+            >
+              {buscandoMetadados ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Icon name="search-outline" size={16} color={colors.primary} />
+              )}
+              <Text style={styles.buscarAutoTexto}>
+                {buscandoMetadados ? 'Buscando...' : 'Buscar artista, tom e BPM automaticamente'}
+              </Text>
+            </TouchableOpacity>
+            {capaUrl && (
+              <View style={styles.capaPreviewLinha}>
+                <Image source={{ uri: capaUrl }} style={styles.capaPreview} />
+                <Text style={styles.capaPreviewTexto} numberOfLines={2}>Capa encontrada automaticamente</Text>
+              </View>
+            )}
             <Input icon="person-outline" placeholder="Artista (opcional)" value={artista} onChangeText={setArtista} containerStyle={styles.modalInput} />
             <Input icon="key-outline" placeholder="Tom (ex.: G) — opcional" value={tom} onChangeText={setTom} containerStyle={styles.modalInput} />
             <Input icon="speedometer-outline" placeholder="BPM (opcional)" value={bpm} onChangeText={setBpm} keyboardType="number-pad" containerStyle={styles.modalInput} />
@@ -353,4 +397,21 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
   modalTitulo: { ...typography.h3, color: colors.text },
   modalInput: { marginTop: 0 },
   modalBtn: { marginTop: spacing.xs },
+  buscarAuto: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+  },
+  buscarAutoDesabilitado: { opacity: 0.4 },
+  buscarAutoTexto: { ...typography.bodySmall, color: colors.primary, fontFamily: fonts.semibold },
+  capaPreviewLinha: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  capaPreview: { width: 40, height: 40, borderRadius: radius.md },
+  capaPreviewTexto: { ...typography.caption, color: colors.textSecondary, flex: 1, minWidth: 0 },
 });

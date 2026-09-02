@@ -8,6 +8,14 @@ export interface MusicaInput {
   artista?: string | null;
   cifraUrl?: string | null;
   audioUrl?: string | null;
+  capaUrl?: string | null;
+}
+
+export interface MetadadosMusica {
+  artista: string | null;
+  capaUrl: string | null;
+  tom: string | null;
+  bpm: number | null;
 }
 
 export async function listarMusicas(): Promise<Musica[]> {
@@ -17,6 +25,13 @@ export async function listarMusicas(): Promise<Musica[]> {
 
 export async function listarArtistas(): Promise<Artista[]> {
   const { data } = await api.get<Artista[]>('/musicas/artistas');
+  return data;
+}
+
+export async function buscarMetadados(nome: string, artista?: string): Promise<MetadadosMusica> {
+  const { data } = await api.get<MetadadosMusica>('/musicas/buscar-metadados', {
+    params: { nome, artista: artista || undefined },
+  });
   return data;
 }
 
