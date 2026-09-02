@@ -358,7 +358,7 @@ export function BibliotecaScreen() {
                 <Icon name="search-outline" size={16} color={colors.primary} />
               )}
               <Text style={styles.buscarAutoTexto}>
-                {buscandoMetadados ? 'Buscando...' : 'Buscar artista, tom e BPM automaticamente'}
+                {buscandoMetadados ? 'Buscando...' : 'Buscar música automaticamente'}
               </Text>
             </TouchableOpacity>
             {capaUrl && (
