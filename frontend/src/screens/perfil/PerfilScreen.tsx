@@ -19,6 +19,7 @@ import { SeloPro } from '@/components/SeloPro';
 import { SeletorTema } from '@/components/SeletorTema';
 import { SectionHeader } from '@/components/SectionHeader';
 import { Avatar } from '@/components/Avatar';
+import { Modal as BottomSheet } from '@/components/Modal';
 import { showToast } from '@/utils/toast';
 import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
@@ -75,9 +76,11 @@ export function PerfilScreen() {
   const { colors } = useTheme();
   const styles = useThemedStyles(criarEstilos);
   const { user, org, signOut, definirUsuario } = useAuth();
+  const [menuFoto, setMenuFoto] = useState(false);
 
   // Trocar foto de perfil: escolhe da galeria, reduz p/ 256px e salva (data URL).
-  async function alterarFoto() {
+  async function escolherFoto() {
+    setMenuFoto(false);
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
       notifyAction('Permissão necessária', 'Autorize o acesso às fotos para trocar o avatar.');
@@ -104,6 +107,23 @@ export function PerfilScreen() {
     } catch (e) {
       notifyAction('Erro', e instanceof ApiError ? e.message : 'Não foi possível atualizar a foto.');
     }
+  }
+
+  async function removerFoto() {
+    setMenuFoto(false);
+    try {
+      const membro = await membrosService.atualizarFoto(null);
+      definirUsuario(membro);
+      showToast('Foto removida', 'success');
+    } catch (e) {
+      notifyAction('Erro', e instanceof ApiError ? e.message : 'Não foi possível remover a foto.');
+    }
+  }
+
+  // Com foto → menu (trocar/remover); sem foto → abre a galeria direto.
+  function abrirOpcoesFoto() {
+    if (user?.foto_url) setMenuFoto(true);
+    else escolherFoto();
   }
   const navigation = useNavigation<MainTabScreenNavigationProp<'Perfil'>>();
 
@@ -260,7 +280,7 @@ export function PerfilScreen() {
           <Avatar nome={user?.nome ?? '—'} fotoUrl={user?.foto_url} size={96} />
           <TouchableOpacity
             style={styles.cameraButton}
-            onPress={alterarFoto}
+            onPress={abrirOpcoesFoto}
             accessibilityRole="button"
             accessibilityLabel="Alterar foto do perfil"
           >
@@ -427,6 +447,11 @@ export function PerfilScreen() {
           </View>
         </View>
       </Modal>
+
+      <BottomSheet visible={menuFoto} onClose={() => setMenuFoto(false)} title="Foto de perfil">
+        <Button title="Escolher outra foto" onPress={escolherFoto} />
+        <Button title="Remover foto" variant="outline" onPress={removerFoto} />
+      </BottomSheet>
     </SafeAreaView>
   );
 }
