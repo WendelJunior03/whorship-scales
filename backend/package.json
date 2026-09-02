@@ -26,7 +26,8 @@
     "jsonwebtoken": "^9.0.3",
     "node-pg-migrate": "^9.0.0",
     "pg": "^8.22.0",
-    "resend": "^6.18.1"
+    "resend": "^6.18.1",
+    "stripe": "^22.6.1"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",

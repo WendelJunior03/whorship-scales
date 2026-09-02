@@ -21,6 +21,8 @@ import avisoRoutes from './routes/avisoRoutes'
 import pastaRoutes from './routes/pastaRoutes'
 import assinaturaRoutes from './routes/assinaturaRoutes'
 import integracaoRoutes from './routes/integracaoRoutes'
+import billingRoutes from './routes/billingRoutes'
+import { webhookController } from './controllers/billingController'
 
 // App Express montado (sem escutar porta) — index.ts faz o listen; os testes de
 // integração importam este `app` direto (supertest), sem subir servidor.
@@ -34,6 +36,11 @@ const allowedOrigins = [
 app.use(cors({
     origin: allowedOrigins,
 }))
+
+// Webhook do Stripe: precisa do corpo CRU (Buffer) pra validar a assinatura HMAC,
+// então é montado ANTES do express.json() e com o parser raw só nesta rota.
+app.post('/billing/webhook', express.raw({ type: 'application/json' }), webhookController)
+
 app.use(express.json());
 
 app.use('/organizacoes', organizacaoRoutes)
@@ -56,5 +63,6 @@ app.use('/avisos', avisoRoutes)
 app.use('/pastas', pastaRoutes)
 app.use('/assinaturas', assinaturaRoutes)
 app.use('/integracoes', integracaoRoutes)
+app.use('/billing', billingRoutes)
 
 export default app
