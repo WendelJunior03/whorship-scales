@@ -18,6 +18,7 @@ export interface PerfilGoogle {
   email: string;
   emailVerificado: boolean;
   nome: string | null;
+  foto: string | null;
 }
 
 function credenciais() {
@@ -90,11 +91,18 @@ export async function buscarPerfil(accessToken: string): Promise<PerfilGoogle> {
   if (!resp.ok) {
     throw new Error(`Falha ao buscar perfil do Google (${resp.status}).`);
   }
-  const d = (await resp.json()) as { sub: string; email: string; email_verified?: boolean; name?: string };
+  const d = (await resp.json()) as {
+    sub: string;
+    email: string;
+    email_verified?: boolean;
+    name?: string;
+    picture?: string;
+  };
   return {
     sub: d.sub,
     email: d.email,
     emailVerificado: d.email_verified ?? false,
     nome: d.name ?? null,
+    foto: d.picture ?? null,
   };
 }

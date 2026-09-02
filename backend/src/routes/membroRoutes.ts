@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { cadastrarUser, myProfile, getMemberById, updateMemberController, deactivateMemberController, updatePasswordController, esqueciSenhaController, redefinirSenhaController, getAniversariantesController } from '../controllers/membroController';
+import { cadastrarUser, myProfile, getMemberById, updateMemberController, deactivateMemberController, updatePasswordController, esqueciSenhaController, redefinirSenhaController, getAniversariantesController, atualizarFotoController } from '../controllers/membroController';
 import { loginUser } from '../controllers/membroController';
 import { loginGoogleController } from '../controllers/integracaoController';
 import { authMiddleware } from '../middlewares/authMiddleware';
@@ -14,6 +14,7 @@ router.post('/login-google', loginGoogleController);
 router.post('/esqueci-senha', esqueciSenhaController);
 router.post('/redefinir-senha', redefinirSenhaController);
 router.get('/me', authMiddleware, myProfile);
+router.put('/me/foto', authMiddleware, atualizarFotoController);
 router.get('/aniversariantes', authMiddleware, getAniversariantesController);
 router.get('/', authMiddleware, autoriza('membro.listar'), listAllMembers);
 router.get('/:id', authMiddleware, getMemberById)

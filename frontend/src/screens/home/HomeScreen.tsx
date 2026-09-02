@@ -5,6 +5,7 @@ import { Card } from '@/components/Card';
 import { Icon } from '@/components/Icon';
 import { Skeleton } from '@/components/Skeleton';
 import { RingStat } from '@/components/RingStat';
+import { Avatar } from '@/components/Avatar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -136,9 +137,7 @@ export function HomeScreen() {
     <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={styles.header}>
         <View style={styles.headerBrand}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{primeiroNome[0]?.toUpperCase() ?? '?'}</Text>
-          </View>
+          <Avatar nome={user?.nome ?? primeiroNome} fotoUrl={user?.foto_url} size={44} />
           <View style={styles.headerTexts}>
             <Text style={styles.greeting}>
               {getSaudacao()}, {primeiroNome}

@@ -21,6 +21,8 @@ interface AuthContextData {
   ) => Promise<organizacaoService.OrganizacaoResumo>;
   entrarComCodigo: (input: organizacaoService.EntrarOrganizacaoInput) => Promise<void>;
   signOut: () => Promise<void>;
+  /** Atualiza o usuário em memória (ex.: depois de trocar a foto de perfil). */
+  definirUsuario: (membro: Membro) => void;
 }
 
 const AuthContext = createContext<AuthContextData | undefined>(undefined);
@@ -132,6 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         criarOrganizacao,
         entrarComCodigo,
         signOut,
+        definirUsuario: setUser,
       }}
     >
       {children}

@@ -2,7 +2,7 @@ import bcrypt from 'bcrypt';
 import { query } from '../config/database';
 import { Request, Response } from 'express';
 import { createMembers, deactivateMember } from '../models/membroModel';
-import { findByEmail, findById, findAllMembers, updateMember, findByIdComSenha, updatePassword, findAniversariantesDoMes } from '../models/membroModel';
+import { findByEmail, findById, findAllMembers, updateMember, findByIdComSenha, updatePassword, findAniversariantesDoMes, atualizarFoto } from '../models/membroModel';
 import { assinarTokenMembro, assinarTokenResetSenha, verificarTokenResetSenha } from '../utils/token';
 import { podeAcessar, mesmoUsuario, PapelOrg, PapelMinisterio } from '../config/capacidades';
 import { enviarEmail } from '../services/emailService';
@@ -65,11 +65,36 @@ export async function myProfile(req: Request, res: Response) {
     }
 
     const { id } = req.user
-    
+
     const membro = await findById(id)
 
     return res.status(200).json(membro)
-} 
+}
+
+/**
+ * PUT /membros/me/foto — o membro define/remove a PRÓPRIA foto. `foto` pode ser uma
+ * URL (http) ou uma imagem reduzida em data URL; `null` remove. Limite de tamanho pra
+ * evitar payload/banco gigante (o app já manda a imagem reduzida).
+ */
+export async function atualizarFotoController(req: Request, res: Response) {
+    if (!req.user) {
+        return res.status(401).json({ message: 'Não autenticado!' });
+    }
+    const foto: unknown = req.body?.foto;
+    if (foto !== null && typeof foto !== 'string') {
+        return res.status(400).json({ message: 'Foto inválida.' });
+    }
+    if (typeof foto === 'string') {
+        if (!/^(data:image\/|https?:\/\/)/.test(foto)) {
+            return res.status(400).json({ message: 'Formato de foto inválido.' });
+        }
+        if (foto.length > 500_000) {
+            return res.status(413).json({ message: 'Foto muito grande — reduza a imagem.' });
+        }
+    }
+    await atualizarFoto(req.user.id, foto ?? null);
+    return res.status(200).json(await findById(req.user.id));
+}
 
 export async function listAllMembers(req: Request, res: Response) {
     const membros = await findAllMembers();

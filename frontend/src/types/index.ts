@@ -79,6 +79,8 @@ export interface Membro {
   ativo?: boolean;
   /** Data de nascimento (YYYY-MM-DD) — módulo 8 (aniversariantes). */
   data_nascimento?: string | null;
+  /** Foto de perfil: URL (Google) ou data URL (upload). */
+  foto_url?: string | null;
 }
 
 /** Item de GET /membros/aniversariantes — aniversariante do mês. */

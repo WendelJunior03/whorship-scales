@@ -43,13 +43,24 @@ export async function findByEmail(email: string) {
 }
 
 export async function findById(id: number) {
-    const membro = await query("SELECT id, nome, telefone, instrumentos, email, papel, papel_org, papel_ministerio, to_char(data_nascimento, 'YYYY-MM-DD') AS data_nascimento FROM membros WHERE ativo = true AND id = $1", [id])
+    const membro = await query("SELECT id, nome, telefone, instrumentos, email, papel, papel_org, papel_ministerio, foto_url, to_char(data_nascimento, 'YYYY-MM-DD') AS data_nascimento FROM membros WHERE ativo = true AND id = $1", [id])
     return membro.rows[0];
 }
 
 export async function findAllMembers() {
-    const membros = await query("SELECT id, nome, telefone, instrumentos, email, papel, papel_org, papel_ministerio, to_char(data_nascimento, 'YYYY-MM-DD') AS data_nascimento FROM membros WHERE ativo = true");
+    const membros = await query("SELECT id, nome, telefone, instrumentos, email, papel, papel_org, papel_ministerio, foto_url, to_char(data_nascimento, 'YYYY-MM-DD') AS data_nascimento FROM membros WHERE ativo = true");
     return membros.rows;
+}
+
+/** Atualiza (ou remove, com null) a foto de perfil do membro. Tenant-scoped (RLS). */
+export async function atualizarFoto(id: number, fotoUrl: string | null) {
+    const r = await query('UPDATE membros SET foto_url = $1 WHERE id = $2 RETURNING id', [fotoUrl, id]);
+    return (r.rowCount ?? 0) > 0;
+}
+
+/** Define a foto só se o membro ainda não tem uma (ex.: 1ª vez que entra com Google). */
+export async function definirFotoSeVazia(id: number, fotoUrl: string) {
+    await query("UPDATE membros SET foto_url = $1 WHERE id = $2 AND (foto_url IS NULL OR foto_url = '')", [fotoUrl, id]);
 }
 
 export async function updateMember(

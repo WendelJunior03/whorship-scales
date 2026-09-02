@@ -44,6 +44,12 @@ export async function getMeuPerfil(): Promise<Membro> {
   return response.data;
 }
 
+/** Define (ou remove, com null) a própria foto de perfil. Devolve o membro atualizado. */
+export async function atualizarFoto(foto: string | null): Promise<Membro> {
+  const { data } = await api.put<Membro>('/membros/me/foto', { foto });
+  return data;
+}
+
 /**
  * Lista todos os membros. Só admin.
  */
