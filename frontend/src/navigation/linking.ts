@@ -37,6 +37,7 @@ export const linking: LinkingOptions<LinkingParamList> = {
       Pasta: 'pastas/:pastaId',
       Assinaturas: 'assinaturas',
       Multitrack: 'multitrack',
+      Integracoes: 'integracoes',
     },
   },
 };

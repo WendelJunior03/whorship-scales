@@ -27,7 +27,8 @@ type RotaRecurso =
   | 'Indisponibilidades'
   | 'Aniversariantes'
   | 'Comunicados'
-  | 'Assinaturas';
+  | 'Assinaturas'
+  | 'Integracoes';
 
 interface ItemRecurso {
   icon: IconName;
@@ -73,6 +74,7 @@ const GESTAO: (ItemRecurso & { soAdmin?: boolean })[] = [
   { icon: 'people-outline', label: 'Membros', sublabel: 'Gerenciar', route: 'Membros', soAdmin: true },
   { icon: 'checkmark-done-outline', label: 'Confirmações', sublabel: 'Acompanhar', route: 'Confirmacoes' },
   { icon: 'card-outline', label: 'Meu plano', sublabel: 'Assinatura PRO da organização', route: 'Assinaturas', soAdmin: true },
+  { icon: 'key-outline', label: 'Integrações', sublabel: 'Tokens de API e Holyrics', route: 'Integracoes', soAdmin: true },
 ];
 
 export function RecursosScreen() {

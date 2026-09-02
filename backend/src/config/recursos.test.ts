@@ -23,10 +23,13 @@ describe('podeUsar (catálogo + flags)', () => {
         expect(podeUsar({ plano: 'free' }, 'integracoes.google_agenda')).toBe(true);
     });
 
-    it('nega integrações de operação ainda não lançadas (WhatsApp/Holyrics/API), mesmo p/ org pro', () => {
+    it('nega integração ainda não lançada (WhatsApp), mesmo p/ org pro', () => {
         expect(podeUsar({ plano: 'pro' }, 'integracoes.whatsapp')).toBe(false);
-        expect(podeUsar({ plano: 'pro' }, 'integracoes.holyrics')).toBe(false);
-        expect(podeUsar({ plano: 'pro' }, 'integracoes.api_tokens')).toBe(false);
+    });
+
+    it('libera Holyrics e Tokens de API (T-11.33) p/ org pro', () => {
+        expect(podeUsar({ plano: 'pro' }, 'integracoes.holyrics')).toBe(true);
+        expect(podeUsar({ plano: 'pro' }, 'integracoes.api_tokens')).toBe(true);
     });
 
     it('quando a cobrança virar (regra pura), FREE não atende recursos PRO recém-marcados', () => {

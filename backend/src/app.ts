@@ -23,6 +23,9 @@ import assinaturaRoutes from './routes/assinaturaRoutes'
 import integracaoRoutes from './routes/integracaoRoutes'
 import billingRoutes from './routes/billingRoutes'
 import { webhookController } from './controllers/billingController'
+import holyricsRoutes from './routes/holyricsRoutes'
+import apiTokenRoutes from './routes/apiTokenRoutes'
+import apiExternaRoutes from './routes/apiExternaRoutes'
 
 // App Express montado (sem escutar porta) — index.ts faz o listen; os testes de
 // integração importam este `app` direto (supertest), sem subir servidor.
@@ -64,5 +67,10 @@ app.use('/pastas', pastaRoutes)
 app.use('/assinaturas', assinaturaRoutes)
 app.use('/integracoes', integracaoRoutes)
 app.use('/billing', billingRoutes)
+// Integração Holyrics é por ministério (segundo router montado em /ministerios).
+app.use('/ministerios', holyricsRoutes)
+app.use('/api-tokens', apiTokenRoutes)
+// API externa read-only, autenticada por Token de API (não por JWT).
+app.use('/api/v1', apiExternaRoutes)
 
 export default app

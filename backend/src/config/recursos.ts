@@ -60,8 +60,8 @@ export const recursos: Record<string, RecursoPlano> = {
     // (baixo atrito de entrada); as de operação da igreja ficam no PRO.
     'integracoes.google_agenda':  { planoMinimo: 'free', flagAtiva: true },
     'integracoes.whatsapp':       { planoMinimo: 'pro', flagAtiva: false }, // T-11.32 (a construir)
-    'integracoes.holyrics':       { planoMinimo: 'pro', flagAtiva: false }, // T-11.33 (a construir)
-    'integracoes.api_tokens':     { planoMinimo: 'pro', flagAtiva: false }, // T-11.33 (a construir)
+    'integracoes.holyrics':       { planoMinimo: 'pro', flagAtiva: true },  // T-11.33
+    'integracoes.api_tokens':     { planoMinimo: 'pro', flagAtiva: true },  // T-11.33
     // Ainda não lançado no produto → flag desligada (exemplo real do eixo de flag).
     'backup.automatico':          { planoMinimo: 'pro', flagAtiva: false },
 };

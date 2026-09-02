@@ -458,7 +458,10 @@ Prioridade dentro da v1: Login Google/Apple → Google Agenda → WhatsApp → H
 - [x] **T-11.30** — Login social **Google** + vínculo no perfil (`contas_vinculadas`); Apple na próxima leva. Guia: `docs/integracao-google.md`.
 - [x] **T-11.31** — **Google Agenda**: sincroniza as escalas do membro (uma via, botão em Perfil).
 - [ ] **T-11.32** — **WhatsApp** (avisos/notificações) — vínculo no perfil + envio.
-- [ ] **T-11.33** — **Holyrics** e **Tokens de API** por ministério (`integracoes_ministerio`, `api_tokens`).
+- [x] **T-11.33** — ✅ **Holyrics** (config cifrada por ministério: host/porta/token + testar conexão best-effort;
+  o envio de repertório fica como follow-up, pois o Holyrics roda na rede local da igreja) e **Tokens de API**
+  (`api_tokens`, escopo da org, **read-only**: guarda só o hash, valor exibido 1x; API externa `/api/v1` autenticada
+  por `Authorization: Bearer`). Ambos atrás de `integracao.gerenciar` + flag PRO. Tela **Integrações** (Recursos, admin).
 
 ---
 
