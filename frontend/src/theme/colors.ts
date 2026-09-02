@@ -3,19 +3,23 @@
 // vira o app inteiro. Cores de "instrumento" (borracha do pad etc.) ficam locais.
 export const colors = {
   // fundo
-  background: '#0B111C',
-  surface: '#141D2E', // cards / seções
-  surfaceElevated: '#1A2740', // controles / inputs / pads
-  surfaceMuted: '#22345A', // hover / ativo
+  background: '#0A0F1A',
+  surface: '#131D31', // cards / seções
+  surfaceElevated: '#1B2942', // controles / inputs / pads
+  surfaceMuted: '#243657', // hover / ativo
 
   // marca / ação
   primary: '#4C82FF',
   primaryDark: '#3567E0',
   primaryLight: '#6E9BFF',
   primarySoft: 'rgba(76, 130, 255, 0.16)',
-  accent: '#6E9BFF',
-  primaryGradient: ['#6E9BFF', '#4C82FF'] as const,
-  bgGradient: ['#111A2C', '#0A0F1A'] as const,
+  accent: '#22D3EE',
+  accentSoft: 'rgba(34, 211, 238, 0.16)',
+  primaryGradient: ['#5A8CFF', '#3D6FE6'] as const,
+  bgGradient: ['#101A2E', '#0A0F1A'] as const,
+  accentGradient: ['#22D3EE', '#3B82F6'] as const,
+  heroGradient: ['#213A5E', '#122C3E'] as const,
+  glow: '#22D3EE',
 
   // texto
   text: '#EAF1FC',

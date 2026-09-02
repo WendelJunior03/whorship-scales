@@ -16,8 +16,15 @@ export interface Cores {
   primaryLight: string;
   primarySoft: string;
   accent: string;
+  accentSoft: string;
   primaryGradient: readonly [string, string];
   bgGradient: readonly [string, string];
+  /** Gradiente de destaque (teal→azul) p/ hero, anéis e estados ativos. */
+  accentGradient: readonly [string, string];
+  /** Gradiente sutil de fundo do card "hero" (destaque da tela). */
+  heroGradient: readonly [string, string];
+  /** Cor do "glow" (sombra colorida) do estado ativo. */
+  glow: string;
   text: string;
   textPrimary: string;
   textSecondary: string;
@@ -35,17 +42,21 @@ export type Sombras = Record<'sm' | 'md' | 'lg', ViewStyle>;
 
 // --- Tema ESCURO (dark/pro) ---
 export const paletaEscura: Cores = {
-  background: '#0B111C',
-  surface: '#141D2E',
-  surfaceElevated: '#1A2740',
-  surfaceMuted: '#22345A',
+  background: '#0A0F1A',
+  surface: '#131D31',
+  surfaceElevated: '#1B2942',
+  surfaceMuted: '#243657',
   primary: '#4C82FF',
   primaryDark: '#3567E0',
   primaryLight: '#6E9BFF',
   primarySoft: 'rgba(76, 130, 255, 0.16)',
-  accent: '#6E9BFF',
-  primaryGradient: ['#6E9BFF', '#4C82FF'],
-  bgGradient: ['#111A2C', '#0A0F1A'],
+  accent: '#22D3EE',
+  accentSoft: 'rgba(34, 211, 238, 0.16)',
+  primaryGradient: ['#5A8CFF', '#3D6FE6'],
+  bgGradient: ['#101A2E', '#0A0F1A'],
+  accentGradient: ['#22D3EE', '#3B82F6'],
+  heroGradient: ['#213A5E', '#122C3E'],
+  glow: '#22D3EE',
   text: '#EAF1FC',
   textPrimary: '#EAF1FC',
   textSecondary: '#93A1BA',
@@ -75,9 +86,13 @@ export const paletaClara: Cores = {
   primaryDark: '#2C43C4',
   primaryLight: '#8AA0FF',
   primarySoft: '#E7ECFD',
-  accent: '#4C6FFF',
+  accent: '#0EA5E9',
+  accentSoft: 'rgba(14, 165, 233, 0.12)',
   primaryGradient: ['#4C6FFF', '#3D5AF1'],
   bgGradient: ['#F4F6FB', '#E9EEFB'],
+  accentGradient: ['#0EA5E9', '#3D5AF1'],
+  heroGradient: ['#FFFFFF', '#EAF1FF'],
+  glow: '#0EA5E9',
   text: '#1E2340',
   textPrimary: '#1E2340',
   textSecondary: '#667085',

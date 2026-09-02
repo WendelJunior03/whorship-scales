@@ -13,6 +13,7 @@ import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
+import { SectionHeader } from '@/components/SectionHeader';
 import { Skeleton } from '@/components/Skeleton';
 import { Icon } from '@/components/Icon';
 import { MainTabScreenNavigationProp } from '@/navigation/types';
@@ -172,9 +173,7 @@ export function AgendaScreen() {
 
         {escalaVocal.length > 0 && (
           <>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Compromissos de vocal</Text>
-            </View>
+            <SectionHeader titulo="Compromissos de vocal" contador={escalaVocal.length} />
 
             {escalaVocal.map((item) => (
               <Card
@@ -201,9 +200,7 @@ export function AgendaScreen() {
 
         {escalaAvulsa.length > 0 && (
           <>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Compromissos</Text>
-            </View>
+            <SectionHeader titulo="Compromissos" contador={escalaAvulsa.length} />
 
             {escalaAvulsa.map((item) => (
               <Card
@@ -303,13 +300,6 @@ const criarEstilos = (colors: Cores, shadows: Sombras) => StyleSheet.create({
   calendarCard: {
     padding: 0,
     overflow: 'hidden',
-  },
-  sectionHeader: {
-    marginTop: spacing.sm,
-  },
-  sectionTitle: {
-    ...typography.h3,
-    color: colors.text,
   },
   compromisso: {
     gap: spacing.sm,

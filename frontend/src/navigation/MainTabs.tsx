@@ -45,7 +45,7 @@ export function MainTabs() {
         headerShown: false,
         sceneStyle: { flex: 1, backgroundColor: colors.background },
         tabBarPosition: 'bottom',
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: styles.label,
         tabBarStyle: styles.bar,
@@ -94,6 +94,12 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     justifyContent: 'center',
   },
   iconWrapActive: {
-    backgroundColor: colors.primarySoft,
+    backgroundColor: colors.accentSoft,
+    // Glow teal por trás do ícone ativo (RN Web traduz p/ box-shadow).
+    shadowColor: colors.glow,
+    shadowOpacity: 0.7,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 8,
   },
 });

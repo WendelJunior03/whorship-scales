@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Pressable, StyleSheet, ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { spacing } from '@/theme';
+import { spacing, radius } from '@/theme';
 import { Cores } from '@/theme/palettes';
 import { useThemedStyles } from '@/contexts/ThemeContext';
 
@@ -74,7 +74,7 @@ export function Card({ children, onPress, style }: CardProps) {
 const criarEstilos = (colors: Cores) => StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 16,
+    borderRadius: radius.xxl,
     padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,

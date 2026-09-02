@@ -17,6 +17,12 @@ import { ApiError } from '@/services/api';
 import { papelOrgLabel, papelOrgTone, papelOrgDe, papelMinisterioLabel, isAdmin } from '@/utils/papel';
 import { SeloPro } from '@/components/SeloPro';
 import { SeletorTema } from '@/components/SeletorTema';
+import { SectionHeader } from '@/components/SectionHeader';
+import { Avatar } from '@/components/Avatar';
+import { Modal as BottomSheet } from '@/components/Modal';
+import { showToast } from '@/utils/toast';
+import * as ImagePicker from 'expo-image-picker';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { useRecurso } from '@/hooks/useRecurso';
 import { fonts, LARGURA_CONTEUDO, radius, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
@@ -69,7 +75,56 @@ function RecursoProRow({
 export function PerfilScreen() {
   const { colors } = useTheme();
   const styles = useThemedStyles(criarEstilos);
-  const { user, org, signOut } = useAuth();
+  const { user, org, signOut, definirUsuario } = useAuth();
+  const [menuFoto, setMenuFoto] = useState(false);
+
+  // Trocar foto de perfil: escolhe da galeria, reduz p/ 256px e salva (data URL).
+  async function escolherFoto() {
+    setMenuFoto(false);
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      notifyAction('Permissão necessária', 'Autorize o acesso às fotos para trocar o avatar.');
+      return;
+    }
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+    const asset = res.canceled ? undefined : res.assets[0];
+    if (!asset) return;
+    try {
+      const reduzida = await manipulateAsync(asset.uri, [{ resize: { width: 256 } }], {
+        compress: 0.6,
+        format: SaveFormat.JPEG,
+        base64: true,
+      });
+      if (!reduzida.base64) return;
+      const membro = await membrosService.atualizarFoto(`data:image/jpeg;base64,${reduzida.base64}`);
+      definirUsuario(membro);
+      showToast('Foto atualizada', 'success');
+    } catch (e) {
+      notifyAction('Erro', e instanceof ApiError ? e.message : 'Não foi possível atualizar a foto.');
+    }
+  }
+
+  async function removerFoto() {
+    setMenuFoto(false);
+    try {
+      const membro = await membrosService.atualizarFoto(null);
+      definirUsuario(membro);
+      showToast('Foto removida', 'success');
+    } catch (e) {
+      notifyAction('Erro', e instanceof ApiError ? e.message : 'Não foi possível remover a foto.');
+    }
+  }
+
+  // Com foto → menu (trocar/remover); sem foto → abre a galeria direto.
+  function abrirOpcoesFoto() {
+    if (user?.foto_url) setMenuFoto(true);
+    else escolherFoto();
+  }
   const navigation = useNavigation<MainTabScreenNavigationProp<'Perfil'>>();
 
   const ehAdmin = user ? isAdmin(user) : false;
@@ -222,11 +277,10 @@ export function PerfilScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.avatarBlock}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{user?.nome?.[0] ?? '?'}</Text>
-          </View>
+          <Avatar nome={user?.nome ?? '—'} fotoUrl={user?.foto_url} size={96} />
           <TouchableOpacity
             style={styles.cameraButton}
+            onPress={abrirOpcoesFoto}
             accessibilityRole="button"
             accessibilityLabel="Alterar foto do perfil"
           >
@@ -314,7 +368,7 @@ export function PerfilScreen() {
         )}
 
         <View style={styles.temaBloco}>
-          <Text style={styles.temaTitulo}>Aparência</Text>
+          <SectionHeader titulo="Aparência" />
           <SeletorTema />
         </View>
 
@@ -393,6 +447,11 @@ export function PerfilScreen() {
           </View>
         </View>
       </Modal>
+
+      <BottomSheet visible={menuFoto} onClose={() => setMenuFoto(false)} title="Foto de perfil">
+        <Button title="Escolher outra foto" onPress={escolherFoto} />
+        <Button title="Remover foto" variant="outline" onPress={removerFoto} />
+      </BottomSheet>
     </SafeAreaView>
   );
 }
@@ -555,11 +614,6 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     width: '100%',
     gap: spacing.sm,
     marginBottom: spacing.lg,
-  },
-  temaTitulo: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    fontFamily: fonts.semibold,
   },
   menu: {
     width: '100%',

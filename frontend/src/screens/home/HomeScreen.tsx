@@ -4,6 +4,9 @@ import { Badge } from '@/components/Badge';
 import { Card } from '@/components/Card';
 import { Icon } from '@/components/Icon';
 import { Skeleton } from '@/components/Skeleton';
+import { RingStat } from '@/components/RingStat';
+import { Avatar } from '@/components/Avatar';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
@@ -113,6 +116,11 @@ export function HomeScreen() {
 
   const primeiroNome = user?.nome?.split(' ')[0] ?? 'membro';
 
+  // Resumo do hero (dados reais já carregados).
+  const proximaEscala = minhasEscalas[0];
+  const confirmadas = minhasEscalas.filter((c) => c.minha_situacao === 'confirmado').length;
+  const confPct = minhasEscalas.length ? (confirmadas / minhasEscalas.length) * 100 : 0;
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.screen} edges={['top']}>
@@ -129,9 +137,7 @@ export function HomeScreen() {
     <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={styles.header}>
         <View style={styles.headerBrand}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{primeiroNome[0]?.toUpperCase() ?? '?'}</Text>
-          </View>
+          <Avatar nome={user?.nome ?? primeiroNome} fotoUrl={user?.foto_url} size={44} />
           <View style={styles.headerTexts}>
             <Text style={styles.greeting}>
               {getSaudacao()}, {primeiroNome}
@@ -154,6 +160,51 @@ export function HomeScreen() {
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+        {/* Hero de resumo (próxima escala + anéis) */}
+        <LinearGradient
+          colors={colors.heroGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.heroCard}
+        >
+          <View style={styles.heroTopo}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.heroLabel}>Próxima escala</Text>
+              {proximaEscala ? (
+                <>
+                  <Text style={styles.heroBig}>{diaMesCurto(proximaEscala.data_hora)}</Text>
+                  <Text style={styles.heroSub}>
+                    {proximaEscala.tipo ?? 'Culto'} · {rotuloRelativo(proximaEscala.data_hora)}
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.heroBig}>Tudo em dia</Text>
+                  <Text style={styles.heroSub}>Nenhuma escala próxima</Text>
+                </>
+              )}
+            </View>
+            <View style={styles.heroIcon}>
+              <Icon name="calendar-outline" size={22} color={colors.accent} />
+            </View>
+          </View>
+          <View style={styles.heroRings}>
+            <RingStat percent={confPct} valor={`${confirmadas}`} label="Confirmadas" cores={colors.accentGradient} />
+            <RingStat
+              percent={(Math.min(ministerios.length, 6) / 6) * 100}
+              valor={`${ministerios.length}`}
+              label="Ministérios"
+              cores={['#6E9BFF', '#4C82FF']}
+            />
+            <RingStat
+              percent={(Math.min(avisos.length, 5) / 5) * 100}
+              valor={`${avisos.length}`}
+              label="Comunicados"
+              cores={['#A78BFA', '#7C5CFF']}
+            />
+          </View>
+        </LinearGradient>
+
         {error ? (
           <Card style={styles.centeredCard}>
             <Icon name="cloud-offline-outline" size={32} color={colors.textMuted} />
@@ -286,8 +337,8 @@ export function HomeScreen() {
         ) : (
           aniversariantes.map((a) => (
             <Card key={a.id} style={styles.ministerioCard}>
-              <View style={styles.ministerioIcon}>
-                <Icon name="gift-outline" size={22} color={colors.primary} />
+              <View style={styles.iconAniv}>
+                <Icon name="gift-outline" size={22} color={colors.warning} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.ministerioNome}>{a.nome}</Text>
@@ -300,7 +351,7 @@ export function HomeScreen() {
         {/* Mais tocadas — atalho pra biblioteca */}
         <Card style={styles.promoCard} onPress={() => navigation.navigate('Biblioteca')}>
           <View style={styles.promoIcon}>
-            <Icon name="musical-notes" size={20} color={colors.primary} />
+            <Icon name="musical-notes" size={20} color={colors.accent} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.promoTitulo}>Mais tocadas</Text>
@@ -390,6 +441,28 @@ const criarEstilos = (colors: Cores, shadows: Sombras) =>
       ...shadows.sm,
     },
     badgeDot: { position: 'absolute', top: 10, right: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.error },
+    heroCard: {
+      gap: spacing.md,
+      borderColor: colors.border,
+      borderWidth: 1,
+      borderRadius: radius.xxl,
+      padding: spacing.lg,
+      overflow: 'hidden',
+      ...shadows.lg,
+    },
+    heroTopo: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+    heroLabel: { ...typography.caption, color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 },
+    heroBig: { ...typography.h1, color: colors.text, marginTop: 2 },
+    heroSub: { ...typography.bodySmall, color: colors.textSecondary, marginTop: 2 },
+    heroIcon: {
+      width: 48,
+      height: 48,
+      borderRadius: radius.pill,
+      backgroundColor: colors.accentSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    heroRings: { flexDirection: 'row', justifyContent: 'space-around', marginTop: spacing.xs },
     scroll: { flex: 1 },
     content: {
       width: '100%',
@@ -399,9 +472,9 @@ const criarEstilos = (colors: Cores, shadows: Sombras) =>
       paddingTop: spacing.sm,
       gap: spacing.sm,
     },
-    secaoHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.md },
+    secaoHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.lg },
     secaoTituloLinha: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 },
-    secaoTitulo: { ...typography.h3, color: colors.text },
+    secaoTitulo: { ...typography.h2, color: colors.text },
     secaoContador: {
       minWidth: 22,
       height: 22,
@@ -415,14 +488,15 @@ const criarEstilos = (colors: Cores, shadows: Sombras) =>
     secaoSub: { ...typography.caption, color: colors.textMuted },
     secaoAcao: { ...typography.bodySmall, color: colors.primary, fontFamily: fonts.semibold },
     vazioText: { ...typography.bodySmall, color: colors.textSecondary },
-    ministerioCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-    ministerioIcon: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
+    ministerioCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, borderRadius: radius.xxl, padding: spacing.lg },
+    ministerioIcon: { width: 46, height: 46, borderRadius: radius.lg, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
+    iconAniv: { width: 46, height: 46, borderRadius: radius.lg, backgroundColor: 'rgba(242, 180, 83, 0.16)', alignItems: 'center', justifyContent: 'center' },
     ministerioNome: { ...typography.body, color: colors.text, fontFamily: fonts.semibold },
     ministerioMeta: { ...typography.caption, color: colors.textSecondary, marginTop: 1 },
     avisoPonto: { width: 8, height: 8, borderRadius: 4, backgroundColor: 'transparent' },
     avisoPontoNaoLido: { backgroundColor: colors.primary },
     avisoTituloNaoLido: { fontFamily: fonts.bold },
-    escalaCard: { gap: spacing.xs },
+    escalaCard: { gap: spacing.sm, borderRadius: radius.xxl, padding: spacing.lg },
     escalaTopo: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
     escalaData: { ...typography.bodySmall, color: colors.text, fontFamily: fonts.semibold },
     escalaRelativo: { ...typography.caption, color: colors.textMuted },
@@ -444,8 +518,8 @@ const criarEstilos = (colors: Cores, shadows: Sombras) =>
     escalaRodape: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: 2 },
     contador: { flexDirection: 'row', alignItems: 'center', gap: 4 },
     contadorText: { ...typography.caption, color: colors.textMuted },
-    promoCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md },
-    promoIcon: { width: 40, height: 40, borderRadius: radius.md, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
+    promoCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.lg, borderRadius: radius.xxl, padding: spacing.lg },
+    promoIcon: { width: 46, height: 46, borderRadius: radius.lg, backgroundColor: colors.accentSoft, alignItems: 'center', justifyContent: 'center' },
     promoTitulo: { ...typography.body, color: colors.text, fontFamily: fonts.semibold },
     promoSub: { ...typography.caption, color: colors.textSecondary, marginTop: 1 },
   });

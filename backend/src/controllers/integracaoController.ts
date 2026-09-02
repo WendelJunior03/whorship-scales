@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { withBypass } from '../config/database';
-import { findByEmail } from '../models/membroModel';
+import { findByEmail, definirFotoSeVazia } from '../models/membroModel';
 import { assinarTokenMembro } from '../utils/token';
 import { cifrar, decifrar, temChaveCripto } from '../utils/cripto';
 import { googleConfigurado, trocarCodigo, buscarPerfil, renovarAccessToken } from '../services/googleOAuth';
@@ -46,12 +46,19 @@ export async function loginGoogleController(req: Request, res: Response) {
     // Vincula (pré-sessão → bypass + org_id explícito). Guarda o refresh cifrado.
     const dados: DadosVinculo = { email: perfil.email, escopo: tokens.escopo };
     if (tokens.refreshToken) dados.refresh = cifrar(tokens.refreshToken);
-    await withBypass((client) =>
-        upsertVinculo(
+    await withBypass(async (client) => {
+        await upsertVinculo(
             { membroId: membro.id, provedor: 'google', provedorUid: perfil.sub, dados, orgId: membro.org_id },
             client,
-        ),
-    );
+        );
+        // Puxa a foto do Google na 1ª vez (sem sobrescrever uma foto já definida).
+        if (perfil.foto) {
+            await client.query(
+                "UPDATE membros SET foto_url = $1 WHERE id = $2 AND (foto_url IS NULL OR foto_url = '')",
+                [perfil.foto, membro.id],
+            );
+        }
+    });
 
     const token = assinarTokenMembro({
         id: membro.id,
@@ -85,6 +92,7 @@ export async function conectarGoogleController(req: Request, res: Response) {
     const dados: DadosVinculo = { email: perfil.email, escopo: tokens.escopo };
     if (tokens.refreshToken) dados.refresh = cifrar(tokens.refreshToken);
     await upsertVinculo({ membroId: req.user.id, provedor: 'google', provedorUid: perfil.sub, dados });
+    if (perfil.foto) await definirFotoSeVazia(req.user.id, perfil.foto);
     return res.status(200).json({ message: 'Conta Google conectada!', email: perfil.email });
 }
 

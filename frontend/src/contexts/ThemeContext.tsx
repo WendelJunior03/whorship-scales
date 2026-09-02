@@ -21,7 +21,9 @@ const ThemeContext = createContext<ThemeData | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const sistema = useColorScheme(); // 'light' | 'dark' | null — reativo a mudanças do SO
-  const [preferencia, setPreferencia] = useState<PreferenciaTema>('sistema');
+  // Padrão do app é ESCURO (dark premium). Quem escolheu outro tema tem a preferência
+  // carregada do AsyncStorage abaixo e sobrescreve este default.
+  const [preferencia, setPreferencia] = useState<PreferenciaTema>('escuro');
 
   useEffect(() => {
     AsyncStorage.getItem(CHAVE)
