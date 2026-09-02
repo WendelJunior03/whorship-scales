@@ -32,6 +32,13 @@ export async function buscarMusica(id: number) {
     return result.rows[0];
 }
 
+/** Match exato (sem diferenciar maiúscula/minúscula) — usado pra não duplicar ao
+ *  vincular o Repertório à Biblioteca automaticamente. */
+export async function buscarMusicaPorNome(nome: string) {
+    const result = await query('SELECT * FROM musicas WHERE lower(nome) = lower($1) LIMIT 1', [nome]);
+    return result.rows[0];
+}
+
 export async function atualizarMusica(id: number, input: MusicaInput) {
     const result = await query(
         `UPDATE musicas

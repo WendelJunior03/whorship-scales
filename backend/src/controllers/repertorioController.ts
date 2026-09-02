@@ -1,7 +1,40 @@
 import { Request, Response } from 'express';
 import { createRepertorio, findAllRepertorios, findRepertorioById, deleteRepertorio } from '../models/repertorioModel';
+import { criarMusica, buscarMusicaPorNome } from '../models/musicaModel';
 import { findProximoCultoDoMembro } from '../models/escalaVocalModel';
 import { findProximoCultoAvulsaDoMembro } from '../models/escalaAvulsaModel';
+import { resolverCapaMusica } from '../utils/capaMusica';
+import { buscarMetadadosMusica } from '../utils/metadadosMusica';
+
+/**
+ * Acha (por nome, sem duplicar) ou cria a música correspondente na Biblioteca —
+ * reaproveita o link já colado no Repertório (capa + áudio) e a busca de artista
+ * por nome (iTunes) que a Biblioteca já usa. Best-effort: se algo falhar aqui, o
+ * item do Repertório ainda é criado (só sem o vínculo).
+ */
+async function acharOuCriarMusicaDoRepertorio(nome: string, tom: string, linkMusica: string): Promise<number | null> {
+    try {
+        const existente = await buscarMusicaPorNome(nome);
+        if (existente) return existente.id;
+
+        const [capaDoLink, metadados] = await Promise.all([
+            resolverCapaMusica(linkMusica),
+            buscarMetadadosMusica(nome),
+        ]);
+        const musica = await criarMusica({
+            nome,
+            tomPadrao: tom || null,
+            bpm: null,
+            artista: metadados.artista,
+            cifraUrl: null,
+            audioUrl: linkMusica,
+            capaUrl: capaDoLink ?? metadados.capaUrl,
+        });
+        return musica.id;
+    } catch {
+        return null;
+    }
+}
 
 export async function createRepertorioController(req: Request, res: Response) {
     try {
@@ -11,7 +44,8 @@ export async function createRepertorioController(req: Request, res: Response) {
             return res.status(400).json({ message: 'Dados inválidos!' })
         }
 
-        await createRepertorio(cultoId, nome, tom, linkMusica);
+        const musicaId = await acharOuCriarMusicaDoRepertorio(nome, tom, linkMusica);
+        await createRepertorio(cultoId, nome, tom, linkMusica, musicaId);
         return res.status(201).json({ message: 'Repertório cadastrado com sucesso!' })
     } catch (error) {
         return res.status(500).json({ message: 'Erro localizado no servidor!'})
