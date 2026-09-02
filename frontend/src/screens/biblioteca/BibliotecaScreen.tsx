@@ -97,6 +97,11 @@ export function BibliotecaScreen() {
     }, [carregar]),
   );
 
+  function fecharModalMusica() {
+    setModalMusica(false);
+    setNome(''); setArtista(''); setTom(''); setBpm(''); setCifra(''); setAudio(''); setCapaUrl(null);
+  }
+
   async function buscarAutomatico() {
     if (!nome.trim()) return;
     setBuscandoMetadados(true);
@@ -133,8 +138,7 @@ export function BibliotecaScreen() {
         audioUrl: audio.trim() || null,
         capaUrl,
       });
-      setModalMusica(false);
-      setNome(''); setArtista(''); setTom(''); setBpm(''); setCifra(''); setAudio(''); setCapaUrl(null);
+      fecharModalMusica();
       await carregar();
     } catch (e) {
       notifyAction('Erro', e instanceof ApiError ? e.message : 'Não foi possível salvar.');
@@ -319,7 +323,7 @@ export function BibliotecaScreen() {
       )}
 
       {/* Modal: nova música */}
-      <Modal visible={modalMusica} animationType="slide" transparent onRequestClose={() => setModalMusica(false)}>
+      <Modal visible={modalMusica} animationType="slide" transparent onRequestClose={fecharModalMusica}>
         <View style={styles.overlay}>
           <View style={styles.modal}>
             <Text style={styles.modalTitulo}>Nova música</Text>
@@ -350,7 +354,7 @@ export function BibliotecaScreen() {
             <Input icon="text-outline" placeholder="Link da cifra (opcional)" value={cifra} onChangeText={setCifra} autoCapitalize="none" containerStyle={styles.modalInput} />
             <Input icon="musical-notes-outline" placeholder="Link do áudio (opcional)" value={audio} onChangeText={setAudio} autoCapitalize="none" containerStyle={styles.modalInput} />
             <Button title="Salvar" onPress={salvarMusica} loading={salvando} style={styles.modalBtn} />
-            <Button title="Cancelar" variant="outline" onPress={() => setModalMusica(false)} disabled={salvando} style={styles.modalBtn} />
+            <Button title="Cancelar" variant="outline" onPress={fecharModalMusica} disabled={salvando} style={styles.modalBtn} />
           </View>
         </View>
       </Modal>
