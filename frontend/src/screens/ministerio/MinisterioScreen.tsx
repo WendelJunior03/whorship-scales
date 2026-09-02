@@ -15,6 +15,7 @@ import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { Header } from '@/components/Header';
 import { Input } from '@/components/Input';
+import { SectionHeader } from '@/components/SectionHeader';
 import { Skeleton } from '@/components/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
@@ -384,7 +385,7 @@ export function MinisterioScreen() {
                 />
               </Card>
 
-              <Text style={styles.grupoTitulo}>Integrações</Text>
+              <SectionHeader titulo="Integrações" />
               <Card style={styles.grupoCard}>
                 <LinhaInfo
                   icon="globe-outline"
@@ -833,7 +834,6 @@ const criarEstilos = (colors: Cores) =>
       overflow: 'hidden',
     },
     vagasBarra: { height: 6, borderRadius: radius.pill, backgroundColor: colors.primary },
-    grupoTitulo: { ...typography.h3, color: colors.text, marginTop: spacing.sm },
     grupoCard: { gap: 0, paddingVertical: spacing.xs },
     linha: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm },
     linhaIcon: {

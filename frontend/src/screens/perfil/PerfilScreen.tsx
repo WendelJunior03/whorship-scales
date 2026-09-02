@@ -17,6 +17,7 @@ import { ApiError } from '@/services/api';
 import { papelOrgLabel, papelOrgTone, papelOrgDe, papelMinisterioLabel, isAdmin } from '@/utils/papel';
 import { SeloPro } from '@/components/SeloPro';
 import { SeletorTema } from '@/components/SeletorTema';
+import { SectionHeader } from '@/components/SectionHeader';
 import { useRecurso } from '@/hooks/useRecurso';
 import { fonts, LARGURA_CONTEUDO, radius, spacing, typography } from '@/theme';
 import { Cores } from '@/theme/palettes';
@@ -314,7 +315,7 @@ export function PerfilScreen() {
         )}
 
         <View style={styles.temaBloco}>
-          <Text style={styles.temaTitulo}>Aparência</Text>
+          <SectionHeader titulo="Aparência" />
           <SeletorTema />
         </View>
 
@@ -555,11 +556,6 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     width: '100%',
     gap: spacing.sm,
     marginBottom: spacing.lg,
-  },
-  temaTitulo: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    fontFamily: fonts.semibold,
   },
   menu: {
     width: '100%',

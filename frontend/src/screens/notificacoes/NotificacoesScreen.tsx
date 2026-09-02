@@ -15,6 +15,7 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { Modal } from '@/components/Modal';
+import { SectionHeader } from '@/components/SectionHeader';
 import { Skeleton } from '@/components/Skeleton';
 import { showToast } from '@/utils/toast';
 import * as notificacoesService from '@/services/notificacoes';
@@ -356,9 +357,7 @@ export function NotificacoesScreen() {
             description="Quando algo acontecer nas suas escalas, aparece por aqui."
           />
         }
-        renderSectionHeader={({ section }) => (
-          <Text style={styles.sectionTitle}>{section.title}</Text>
-        )}
+        renderSectionHeader={({ section }) => <SectionHeader titulo={section.title} />}
         renderItem={({ item }) => {
           const pendente = itemPendenteDaNotificacao(item);
           return (
@@ -502,12 +501,6 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
   emptyText: {
     ...typography.bodySmall,
     color: colors.textSecondary,
-  },
-  sectionTitle: {
-    ...typography.bodySmall,
-    color: colors.textMuted,
-    marginTop: spacing.sm,
-    marginBottom: spacing.xs,
   },
   item: {
     gap: spacing.sm,
