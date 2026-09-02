@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Card } from '@/components/Card';
+import { SectionHeader } from '@/components/SectionHeader';
 import { Icon, IconName } from '@/components/Icon';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme, useThemedStyles } from '@/contexts/ThemeContext';
@@ -86,10 +87,11 @@ export function RecursosScreen() {
   const mostrarGestao = user ? podeGerir(user) : false;
   const gestao = GESTAO.filter((item) => !item.soAdmin || (user && isAdmin(user)));
 
-  const renderCard = (item: ItemRecurso) => (
+  // Cor por categoria (como os cards coloridos da referência), aplicada ao ícone.
+  const renderCard = (item: ItemRecurso, cor: string, corBg: string) => (
     <Card key={item.label} style={styles.card} onPress={() => navigation.navigate(item.route)}>
-      <View style={styles.cardIcon}>
-        <Icon name={item.icon} size={20} color={colors.primary} />
+      <View style={[styles.cardIcon, { backgroundColor: corBg }]}>
+        <Icon name={item.icon} size={20} color={cor} />
       </View>
       <Text style={styles.cardLabel} numberOfLines={2}>
         {item.label}
@@ -112,16 +114,16 @@ export function RecursosScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.sectionTitle}>Instrumentos</Text>
-        <View style={styles.grid}>{INSTRUMENTOS.map(renderCard)}</View>
+        <SectionHeader titulo="Instrumentos" />
+        <View style={styles.grid}>{INSTRUMENTOS.map((item) => renderCard(item, colors.accent, colors.accentSoft))}</View>
 
-        <Text style={styles.sectionTitle}>Pessoal</Text>
-        <View style={styles.grid}>{PESSOAL.map(renderCard)}</View>
+        <SectionHeader titulo="Pessoal" />
+        <View style={styles.grid}>{PESSOAL.map((item) => renderCard(item, colors.primary, colors.primarySoft))}</View>
 
         {mostrarGestao && (
           <>
-            <Text style={styles.sectionTitle}>Gestão</Text>
-            <View style={styles.grid}>{gestao.map(renderCard)}</View>
+            <SectionHeader titulo="Gestão" />
+            <View style={styles.grid}>{gestao.map((item) => renderCard(item, colors.warning, 'rgba(242, 180, 83, 0.16)'))}</View>
           </>
         )}
       </ScrollView>
@@ -160,11 +162,6 @@ const criarEstilos = (colors: Cores, shadows: Sombras) =>
       paddingTop: spacing.sm,
       gap: spacing.md,
     },
-    sectionTitle: {
-      ...typography.h3,
-      color: colors.text,
-      marginTop: spacing.sm,
-    },
     grid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
@@ -172,15 +169,14 @@ const criarEstilos = (colors: Cores, shadows: Sombras) =>
     },
     card: {
       width: '47%',
-      borderRadius: radius.xl,
+      borderRadius: radius.xxl,
       gap: 4,
       ...shadows.sm,
     },
     cardIcon: {
-      width: 40,
-      height: 40,
-      borderRadius: radius.md,
-      backgroundColor: colors.primarySoft,
+      width: 44,
+      height: 44,
+      borderRadius: radius.lg,
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: spacing.xs,
