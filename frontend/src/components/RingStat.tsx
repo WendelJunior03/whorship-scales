@@ -54,18 +54,22 @@ export function RingStat({
               <Stop offset="1" stopColor={grad[1]} />
             </SvgGradient>
           </Defs>
-          <Circle cx={size / 2} cy={size / 2} r={r} stroke={corTrilho ?? colors.surfaceMuted} strokeWidth={stroke} fill="none" />
-          <Circle
-            cx={size / 2}
-            cy={size / 2}
-            r={r}
-            stroke={`url(#${gid})`}
-            strokeWidth={stroke}
-            fill="none"
-            strokeDasharray={`${preenchido} ${circ - preenchido}`}
-            strokeLinecap="round"
-            transform={`rotate(-90 ${size / 2} ${size / 2})`}
-          />
+          {/* Trilho sempre visível (tom fraco da própria cor) → o anel sempre "lê". */}
+          <Circle cx={size / 2} cy={size / 2} r={r} stroke={corTrilho ?? `${grad[0]}2E`} strokeWidth={stroke} fill="none" />
+          {/* Progresso só quando há valor — evita o "pontinho solto" do cap redondo em 0%. */}
+          {pct > 0 && (
+            <Circle
+              cx={size / 2}
+              cy={size / 2}
+              r={r}
+              stroke={`url(#${gid})`}
+              strokeWidth={stroke}
+              fill="none"
+              strokeDasharray={`${preenchido} ${circ - preenchido}`}
+              strokeLinecap="round"
+              transform={`rotate(-90 ${size / 2} ${size / 2})`}
+            />
+          )}
         </Svg>
         <View style={styles.center} pointerEvents="none">
           <Text style={[styles.valor, { color: corValor ?? colors.text }]}>{valor}</Text>
