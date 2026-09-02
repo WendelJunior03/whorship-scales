@@ -164,7 +164,7 @@ export function PastaScreen() {
                 </Text>
               </View>
               {gestor && (
-                <TouchableOpacity onPress={() => remover(item)} hitSlop={8}>
+                <TouchableOpacity onPress={() => remover(item)} hitSlop={8} accessibilityLabel="Remover música">
                   <Icon name="trash-outline" size={18} color={colors.textMuted} />
                 </TouchableOpacity>
               )}
