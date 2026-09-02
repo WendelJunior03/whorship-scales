@@ -88,6 +88,7 @@ export interface Aniversariante {
   id: number;
   nome: string;
   email: string;
+  foto_url?: string | null;
   data_nascimento: string; // YYYY-MM-DD
   dia: number;
 }
@@ -105,7 +106,7 @@ export interface CultoResumo {
   tipo: string | null;
   total_musicas: number;
   total_comentarios: number;
-  participantes: { membro_id: number; nome: string }[];
+  participantes: { membro_id: number; nome: string; foto?: string | null }[];
   minha_situacao: 'confirmado' | 'pendente' | null;
 }
 
@@ -150,6 +151,7 @@ export interface MinisterioMembro {
   id: number;
   nome: string;
   email: string;
+  foto_url?: string | null;
   papel: PapelNoMinisterio;
   funcoes: string[];
   classificacoes: string[];
@@ -253,6 +255,7 @@ export interface Aviso {
 export interface PanoramaMembro {
   membro_id: number;
   nome: string;
+  foto?: string | null;
 }
 
 /** Matriz do mês: `celulas[funcao][cultoId]` = membros escalados naquela célula. */
@@ -362,6 +365,7 @@ export interface EscalaVocalDoCultoItem {
   id: number;
   membro_id: number;
   nome: string;
+  foto?: string | null;
   status: StatusEscalaVocal;
 }
 
@@ -373,6 +377,7 @@ export interface EscalaAvulsaDoCultoItem {
   id: number;
   membro_id: number;
   nome: string;
+  foto?: string | null;
   funcao: string;
   status: StatusEscalaVocal;
 }

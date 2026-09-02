@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { Header } from '@/components/Header';
 import * as membrosService from '@/services/membros';
 import { ApiError } from '@/services/api';
+import { Avatar } from '@/components/Avatar';
 import { Aniversariante } from '@/types';
 import { LARGURA_CONTEUDO, radius, spacing, typography, fonts } from '@/theme';
 import { Cores } from '@/theme/palettes';
@@ -18,11 +19,6 @@ const MESES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
 ];
-
-function iniciais(nome: string): string {
-  const p = nome.trim().split(/\s+/);
-  return ((p[0]?.[0] ?? '') + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase();
-}
 
 /** "YYYY-MM-DD" -> "DD/MM", parseando local (sem fuso). */
 function diaMes(iso: string): string {
@@ -104,9 +100,7 @@ export function AniversariantesScreen() {
           }
           renderItem={({ item }) => (
             <Card style={styles.itemCard}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{iniciais(item.nome)}</Text>
-              </View>
+              <Avatar nome={item.nome} fotoUrl={item.foto_url} size={44} />
               <Text style={styles.itemNome} numberOfLines={1}>
                 {item.nome}
               </Text>
@@ -167,19 +161,6 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.pill,
-    backgroundColor: colors.primarySoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    ...typography.body,
-    color: colors.primary,
-    fontFamily: fonts.semibold,
   },
   itemNome: {
     flex: 1,

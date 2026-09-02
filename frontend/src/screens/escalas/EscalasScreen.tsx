@@ -15,6 +15,7 @@ import { Calendar, DateData } from 'react-native-calendars';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Avatar } from '@/components/Avatar';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -54,11 +55,6 @@ function rotuloRelativo(iso: string): string {
   if (dias === 1) return 'Amanhã';
   if (dias === -1) return 'Ontem';
   return dias > 0 ? `daqui a ${dias} dias` : `há ${Math.abs(dias)} dias`;
-}
-
-function iniciais(nome: string): string {
-  const p = nome.trim().split(/\s+/);
-  return ((p[0]?.[0] ?? '') + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase();
 }
 
 interface Grupo {
@@ -270,9 +266,13 @@ export function EscalasScreen() {
                       {culto.participantes.length > 0 && (
                         <View style={styles.avatares}>
                           {culto.participantes.slice(0, 5).map((p, i) => (
-                            <View key={p.membro_id} style={[styles.avatar, i > 0 && styles.avatarSobreposto]}>
-                              <Text style={styles.avatarText}>{iniciais(p.nome)}</Text>
-                            </View>
+                            <Avatar
+                              key={p.membro_id}
+                              nome={p.nome}
+                              fotoUrl={p.foto}
+                              size={30}
+                              style={[i > 0 ? styles.avatarSobreposto : undefined, styles.avatarBorda]}
+                            />
                           ))}
                           {culto.participantes.length > 5 && (
                             <View style={[styles.avatar, styles.avatarSobreposto, styles.avatarMais]}>
@@ -475,6 +475,7 @@ const criarEstilos = (colors: Cores) =>
       borderColor: colors.surface,
     },
     avatarSobreposto: { marginLeft: -8 },
+    avatarBorda: { borderWidth: 2, borderColor: colors.surface },
     avatarMais: { backgroundColor: colors.surfaceElevated },
     avatarText: { ...typography.caption, color: colors.primary, fontWeight: '700', fontSize: 10 },
     cultoRodape: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.xs },

@@ -12,6 +12,7 @@ import { Icon } from '@/components/Icon';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { Header } from '@/components/Header';
 import { Input } from '@/components/Input';
@@ -204,9 +205,7 @@ export function DetalheMembroScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.avatarBlock}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{nome ? nome[0] : '+'}</Text>
-          </View>
+          <Avatar nome={nome || '—'} size={96} />
         </View>
 
         <View style={styles.form}>
@@ -397,18 +396,6 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
   avatarBlock: {
     alignSelf: 'center',
     marginBottom: spacing.xl,
-  },
-  avatar: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: colors.surfaceElevated,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    ...typography.h1,
-    color: colors.primary,
   },
   form: {
     gap: spacing.md,

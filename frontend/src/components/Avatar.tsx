@@ -15,7 +15,7 @@ interface AvatarProps {
   /** URL (Google) ou data URL (upload). Sem foto → mostra as iniciais. */
   fotoUrl?: string | null;
   size?: number;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 /** Avatar do membro: foto quando existe, senão as iniciais num círculo. */

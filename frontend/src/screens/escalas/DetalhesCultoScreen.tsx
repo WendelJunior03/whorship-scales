@@ -18,6 +18,7 @@ import { Calendar, DateData } from 'react-native-calendars';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Avatar } from '@/components/Avatar';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -119,6 +120,7 @@ function parseDuracao(txt: string): number | null {
 interface EquipeItem {
   chave: string;
   nome: string;
+  foto?: string | null;
   funcao: string;
   status?: StatusEscalaVocal;
   origem: 'vocal' | 'avulsa';
@@ -237,6 +239,7 @@ export function DetalhesCultoScreen() {
         .map((item) => ({
           chave: `vocal-${item.id}`,
           nome: item.nome,
+          foto: item.foto,
           funcao: 'Vocal',
           status: item.status,
           origem: 'vocal',
@@ -247,6 +250,7 @@ export function DetalhesCultoScreen() {
         .map((item) => ({
           chave: `avulsa-${item.id}`,
           nome: item.nome,
+          foto: item.foto,
           funcao: item.funcao,
           status: item.status,
           origem: 'avulsa',
@@ -1061,9 +1065,7 @@ export function DetalhesCultoScreen() {
 
               return (
                 <View key={membro.chave} style={styles.membroAvatarBlock}>
-                  <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>{membro.nome[0]}</Text>
-                  </View>
+                  <Avatar nome={membro.nome} fotoUrl={membro.foto} size={48} />
                   <Text style={styles.membroNome} numberOfLines={1}>
                     {membro.nome}
                   </Text>
@@ -1191,9 +1193,7 @@ export function DetalhesCultoScreen() {
               >
                 {ensaioParticipantes.map((participante) => (
                   <View key={participante.id} style={styles.membroAvatarBlock}>
-                    <View style={styles.avatar}>
-                      <Text style={styles.avatarText}>{participante.nome[0]}</Text>
-                    </View>
+                    <Avatar nome={participante.nome} size={48} />
                     <Text style={styles.membroNome} numberOfLines={1}>
                       {participante.nome}
                     </Text>
@@ -1972,19 +1972,6 @@ const criarEstilos = (colors: Cores) =>
       alignItems: 'center',
       width: 72,
       gap: 4,
-    },
-    avatar: {
-      width: 48,
-      height: 48,
-      borderRadius: 24,
-      backgroundColor: colors.surfaceElevated,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    avatarText: {
-      ...typography.body,
-      color: colors.primary,
-      fontWeight: '700',
     },
     membroNome: {
       ...typography.caption,

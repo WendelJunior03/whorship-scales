@@ -6,7 +6,7 @@ export async function createEscalaAvulsa(membroId: number, cultoId: number, func
 }
 
 export async function findEscalaAvulsaByCultoId(cultoId: number) {
-    const result = await query(`SELECT escala_avulsa.id, escala_avulsa.membro_id, escala_avulsa.funcao, escala_avulsa.status, membros.nome FROM escala_avulsa JOIN membros ON escala_avulsa.membro_id = membros.id WHERE escala_avulsa.culto_id = $1`, [cultoId]);
+    const result = await query(`SELECT escala_avulsa.id, escala_avulsa.membro_id, escala_avulsa.funcao, escala_avulsa.status, membros.nome, membros.foto_url AS foto FROM escala_avulsa JOIN membros ON escala_avulsa.membro_id = membros.id WHERE escala_avulsa.culto_id = $1`, [cultoId]);
     return result.rows;
 }
 

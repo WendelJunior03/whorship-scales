@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '@/components/Icon';
+import { Avatar } from '@/components/Avatar';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
@@ -39,11 +40,6 @@ function mesVizinho(mes: string, delta: number): string {
   const [ano, m] = mes.split('-').map(Number);
   const d = new Date(Date.UTC(ano, m - 1 + delta, 1));
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
-}
-
-function iniciais(nome: string): string {
-  const partes = nome.trim().split(/\s+/);
-  return ((partes[0]?.[0] ?? '') + (partes.length > 1 ? partes[partes.length - 1][0] : '')).toUpperCase();
 }
 
 export function PanoramaEscalasScreen() {
@@ -160,9 +156,7 @@ export function PanoramaEscalasScreen() {
                         ) : (
                           membros.map((m) => (
                             <View key={m.membro_id} style={styles.membroRow}>
-                              <View style={styles.avatar}>
-                                <Text style={styles.avatarText}>{iniciais(m.nome)}</Text>
-                              </View>
+                              <Avatar nome={m.nome} fotoUrl={m.foto} size={26} />
                               <Text style={styles.membroNome} numberOfLines={1}>{m.nome}</Text>
                             </View>
                           ))
@@ -235,15 +229,6 @@ const criarEstilos = (colors: Cores) =>
       padding: spacing.xs,
     },
     membroRow: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'stretch' },
-    avatar: {
-      width: 26,
-      height: 26,
-      borderRadius: 13,
-      backgroundColor: colors.primarySoft,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    avatarText: { ...typography.caption, color: colors.primary, fontWeight: '700', fontSize: 10 },
     membroNome: { ...typography.caption, color: colors.text, flex: 1 },
     dica: { ...typography.caption, color: colors.textMuted, marginTop: spacing.sm, textAlign: 'center' },
   });
