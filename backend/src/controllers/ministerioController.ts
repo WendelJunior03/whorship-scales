@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import * as model from '../models/ministerioModel';
 import { findById as buscarMembro } from '../models/membroModel';
+import { buscarOrgPorId } from '../models/organizacaoModel';
 
 // Ministérios (spec 11, módulo 1). A autorização por capacidade acontece na rota
 // (autoriza('ministerio.*')); aqui ficam validação de input e regras de recurso.
@@ -86,14 +87,20 @@ export async function adicionarMembroController(req: Request, res: Response) {
         return res.status(404).json({ message: 'Membro não encontrado nesta organização!' });
     }
 
-    // Limite de vagas do ministério (10 grátis + extras — modelo híbrido, D-11.2).
+    // Limite de vagas do ministério. No plano PRO as vagas são ILIMITADAS (billing);
+    // no Free vale o cap (10 grátis + eventuais extras legadas). O plano é lido do
+    // banco (fonte da verdade que os webhooks do Stripe atualizam).
     if (!(await model.membroEstaNoMinisterio(ministerioId, membroId))) {
-        const total = await model.contarMembros(ministerioId);
-        const limite = ministerio.vagas_gratis + ministerio.vagas_extras;
-        if (total >= limite) {
-            return res.status(409).json({
-                message: `Limite de vagas do ministério atingido (${limite}). Adicione vagas para incluir mais membros.`,
-            });
+        const org = req.orgId ? await buscarOrgPorId(req.orgId) : undefined;
+        const ilimitado = org?.plano === 'pro';
+        if (!ilimitado) {
+            const total = await model.contarMembros(ministerioId);
+            const limite = ministerio.vagas_gratis + ministerio.vagas_extras;
+            if (total >= limite) {
+                return res.status(409).json({
+                    message: `Limite de vagas do ministério atingido (${limite}). Assine o PRO para vagas ilimitadas.`,
+                });
+            }
         }
     }
 

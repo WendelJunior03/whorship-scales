@@ -72,7 +72,7 @@ const GESTAO: (ItemRecurso & { soAdmin?: boolean })[] = [
   { icon: 'stats-chart-outline', label: 'Panorama', sublabel: 'Escalas do mês', route: 'PanoramaEscalas' },
   { icon: 'people-outline', label: 'Membros', sublabel: 'Gerenciar', route: 'Membros', soAdmin: true },
   { icon: 'checkmark-done-outline', label: 'Confirmações', sublabel: 'Acompanhar', route: 'Confirmacoes' },
-  { icon: 'card-outline', label: 'Vagas e planos', sublabel: 'Assinaturas e vagas', route: 'Assinaturas', soAdmin: true },
+  { icon: 'card-outline', label: 'Meu plano', sublabel: 'Assinatura PRO da organização', route: 'Assinaturas', soAdmin: true },
 ];
 
 export function RecursosScreen() {
