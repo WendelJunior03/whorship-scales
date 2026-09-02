@@ -25,7 +25,7 @@ import { MainStackParamList } from '@/navigation/MainNavigator';
 import * as musicasService from '@/services/musicas';
 import * as pastasService from '@/services/pastas';
 import { ApiError } from '@/services/api';
-import { notifyAction } from '@/utils/confirm';
+import { confirmAction, notifyAction } from '@/utils/confirm';
 import { podeGerir } from '@/utils/papel';
 import { Musica, Pasta, Artista } from '@/types';
 import { fonts, LARGURA_CONTEUDO, radius, spacing, typography } from '@/theme';
@@ -165,6 +165,20 @@ export function BibliotecaScreen() {
     }
   }
 
+  function removerMusica(musica: Musica) {
+    confirmAction(
+      { title: 'Excluir música', message: `Excluir "${musica.nome}" da biblioteca?`, confirmLabel: 'Excluir', destructive: true },
+      async () => {
+        try {
+          await musicasService.apagarMusica(musica.id);
+          await carregar();
+        } catch (e) {
+          notifyAction('Erro', e instanceof ApiError ? e.message : 'Não foi possível excluir.');
+        }
+      },
+    );
+  }
+
   const musicasFiltradas = filtroArtista
     ? musicas.filter((m) => m.artista === filtroArtista)
     : musicas;
@@ -185,6 +199,11 @@ export function BibliotecaScreen() {
         <Text style={styles.cardNome}>{item.nome}</Text>
         <Text style={styles.cardMeta}>{metaMusica(item)}</Text>
       </View>
+      {gestor && (
+        <TouchableOpacity onPress={() => removerMusica(item)} hitSlop={8} accessibilityLabel="Excluir música">
+          <Icon name="trash-outline" size={18} color={colors.textMuted} />
+        </TouchableOpacity>
+      )}
       <Icon name="chevron-forward" size={18} color={colors.textMuted} />
     </Card>
   );
