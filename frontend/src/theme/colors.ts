@@ -18,6 +18,7 @@ export const colors = {
   primaryGradient: ['#5A8CFF', '#3D6FE6'] as const,
   bgGradient: ['#101A2E', '#0A0F1A'] as const,
   accentGradient: ['#22D3EE', '#3B82F6'] as const,
+  heroGradient: ['#213A5E', '#122C3E'] as const,
   glow: '#22D3EE',
 
   // texto

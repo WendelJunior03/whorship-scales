@@ -5,6 +5,7 @@ import { Card } from '@/components/Card';
 import { Icon } from '@/components/Icon';
 import { Skeleton } from '@/components/Skeleton';
 import { RingStat } from '@/components/RingStat';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
@@ -161,7 +162,12 @@ export function HomeScreen() {
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         {/* Hero de resumo (próxima escala + anéis) */}
-        <Card style={styles.heroCard}>
+        <LinearGradient
+          colors={colors.heroGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.heroCard}
+        >
           <View style={styles.heroTopo}>
             <View style={{ flex: 1 }}>
               <Text style={styles.heroLabel}>Próxima escala</Text>
@@ -198,7 +204,7 @@ export function HomeScreen() {
               cores={['#A78BFA', '#7C5CFF']}
             />
           </View>
-        </Card>
+        </LinearGradient>
 
         {error ? (
           <Card style={styles.centeredCard}>
@@ -438,10 +444,11 @@ const criarEstilos = (colors: Cores, shadows: Sombras) =>
     badgeDot: { position: 'absolute', top: 10, right: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.error },
     heroCard: {
       gap: spacing.md,
-      backgroundColor: colors.surfaceElevated,
       borderColor: colors.border,
+      borderWidth: 1,
       borderRadius: radius.xxl,
       padding: spacing.lg,
+      overflow: 'hidden',
       ...shadows.lg,
     },
     heroTopo: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },

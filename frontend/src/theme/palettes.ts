@@ -21,6 +21,8 @@ export interface Cores {
   bgGradient: readonly [string, string];
   /** Gradiente de destaque (teal→azul) p/ hero, anéis e estados ativos. */
   accentGradient: readonly [string, string];
+  /** Gradiente sutil de fundo do card "hero" (destaque da tela). */
+  heroGradient: readonly [string, string];
   /** Cor do "glow" (sombra colorida) do estado ativo. */
   glow: string;
   text: string;
@@ -53,6 +55,7 @@ export const paletaEscura: Cores = {
   primaryGradient: ['#5A8CFF', '#3D6FE6'],
   bgGradient: ['#101A2E', '#0A0F1A'],
   accentGradient: ['#22D3EE', '#3B82F6'],
+  heroGradient: ['#213A5E', '#122C3E'],
   glow: '#22D3EE',
   text: '#EAF1FC',
   textPrimary: '#EAF1FC',
@@ -88,6 +91,7 @@ export const paletaClara: Cores = {
   primaryGradient: ['#4C6FFF', '#3D5AF1'],
   bgGradient: ['#F4F6FB', '#E9EEFB'],
   accentGradient: ['#0EA5E9', '#3D5AF1'],
+  heroGradient: ['#FFFFFF', '#EAF1FF'],
   glow: '#0EA5E9',
   text: '#1E2340',
   textPrimary: '#1E2340',
