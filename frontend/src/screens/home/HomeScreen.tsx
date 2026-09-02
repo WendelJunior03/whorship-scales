@@ -4,6 +4,7 @@ import { Badge } from '@/components/Badge';
 import { Card } from '@/components/Card';
 import { Icon } from '@/components/Icon';
 import { Skeleton } from '@/components/Skeleton';
+import { RingStat } from '@/components/RingStat';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
@@ -113,6 +114,11 @@ export function HomeScreen() {
 
   const primeiroNome = user?.nome?.split(' ')[0] ?? 'membro';
 
+  // Resumo do hero (dados reais já carregados).
+  const proximaEscala = minhasEscalas[0];
+  const confirmadas = minhasEscalas.filter((c) => c.minha_situacao === 'confirmado').length;
+  const confPct = minhasEscalas.length ? (confirmadas / minhasEscalas.length) * 100 : 0;
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.screen} edges={['top']}>
@@ -154,6 +160,46 @@ export function HomeScreen() {
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+        {/* Hero de resumo (próxima escala + anéis) */}
+        <Card style={styles.heroCard}>
+          <View style={styles.heroTopo}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.heroLabel}>Próxima escala</Text>
+              {proximaEscala ? (
+                <>
+                  <Text style={styles.heroBig}>{diaMesCurto(proximaEscala.data_hora)}</Text>
+                  <Text style={styles.heroSub}>
+                    {proximaEscala.tipo ?? 'Culto'} · {rotuloRelativo(proximaEscala.data_hora)}
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.heroBig}>Tudo em dia</Text>
+                  <Text style={styles.heroSub}>Nenhuma escala próxima</Text>
+                </>
+              )}
+            </View>
+            <View style={styles.heroIcon}>
+              <Icon name="calendar-outline" size={22} color={colors.accent} />
+            </View>
+          </View>
+          <View style={styles.heroRings}>
+            <RingStat percent={confPct} valor={`${confirmadas}`} label="Confirmadas" cores={colors.accentGradient} />
+            <RingStat
+              percent={(Math.min(ministerios.length, 6) / 6) * 100}
+              valor={`${ministerios.length}`}
+              label="Ministérios"
+              cores={['#6E9BFF', '#4C82FF']}
+            />
+            <RingStat
+              percent={(Math.min(avisos.length, 5) / 5) * 100}
+              valor={`${avisos.length}`}
+              label="Comunicados"
+              cores={['#A78BFA', '#7C5CFF']}
+            />
+          </View>
+        </Card>
+
         {error ? (
           <Card style={styles.centeredCard}>
             <Icon name="cloud-offline-outline" size={32} color={colors.textMuted} />
@@ -390,6 +436,25 @@ const criarEstilos = (colors: Cores, shadows: Sombras) =>
       ...shadows.sm,
     },
     badgeDot: { position: 'absolute', top: 10, right: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.error },
+    heroCard: {
+      gap: spacing.md,
+      backgroundColor: colors.surfaceElevated,
+      borderColor: colors.border,
+      ...shadows.lg,
+    },
+    heroTopo: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+    heroLabel: { ...typography.caption, color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 },
+    heroBig: { ...typography.h1, color: colors.text, marginTop: 2 },
+    heroSub: { ...typography.bodySmall, color: colors.textSecondary, marginTop: 2 },
+    heroIcon: {
+      width: 48,
+      height: 48,
+      borderRadius: radius.pill,
+      backgroundColor: colors.accentSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    heroRings: { flexDirection: 'row', justifyContent: 'space-around', marginTop: spacing.xs },
     scroll: { flex: 1 },
     content: {
       width: '100%',
