@@ -1193,7 +1193,7 @@ export function DetalhesCultoScreen() {
               >
                 {ensaioParticipantes.map((participante) => (
                   <View key={participante.id} style={styles.membroAvatarBlock}>
-                    <Avatar nome={participante.nome} size={48} />
+                    <Avatar nome={participante.nome} fotoUrl={participante.foto} size={48} />
                     <Text style={styles.membroNome} numberOfLines={1}>
                       {participante.nome}
                     </Text>

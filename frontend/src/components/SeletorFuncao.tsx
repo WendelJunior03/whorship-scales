@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Icon } from '@/components/Icon';
 import { IconeInstrumento } from '@/components/SeletorInstrumentos';
 import { INSTRUMENTOS } from '@/config/instrumentos';
@@ -45,8 +45,17 @@ export function SeletorFuncao({ selecionado, onChange, placeholder = 'Selecionar
         transparent
         onRequestClose={() => setModalAberto(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <Pressable style={styles.modalOverlay} onPress={() => setModalAberto(false)}>
+          <Pressable style={styles.modalContent} onPress={() => {}}>
+            <TouchableOpacity
+              onPress={() => setModalAberto(false)}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel="Fechar"
+              style={styles.fechar}
+            >
+              <Icon name="close-circle" size={24} color={colors.textMuted} />
+            </TouchableOpacity>
             <Text style={styles.modalTitle}>Escolher função</Text>
             {INSTRUMENTOS.map((opcao) => {
               const ativo = selecionado === opcao.nome;
@@ -67,8 +76,8 @@ export function SeletorFuncao({ selecionado, onChange, placeholder = 'Selecionar
                 </TouchableOpacity>
               );
             })}
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
     </>
   );
@@ -108,9 +117,16 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     padding: spacing.lg,
     gap: spacing.sm,
   },
+  fechar: {
+    position: 'absolute',
+    top: spacing.md,
+    right: spacing.md,
+    zIndex: 1,
+  },
   modalTitle: {
     ...typography.h3,
     color: colors.text,
+    paddingRight: spacing.xl,
     marginBottom: spacing.xs,
   },
   modalItem: {
