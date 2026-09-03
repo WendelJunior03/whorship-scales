@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import * as model from '../models/musicaModel';
 import { resolverCapaMusica } from '../utils/capaMusica';
 import { buscarMetadadosMusica, buscarCandidatosGetSongBpm } from '../utils/metadadosMusica';
+import { buscarMusicasAgregado } from '../services/musicSearch/aggregator';
 
 function validarBpm(bpm: unknown): { ok: true; valor: number | null } | { ok: false } {
     if (bpm === undefined || bpm === null || bpm === '') {
@@ -67,6 +68,21 @@ export async function buscarCandidatosController(req: Request, res: Response) {
     }
     const candidatos = await buscarCandidatosGetSongBpm(termo);
     return res.status(200).json(candidatos);
+}
+
+/**
+ * GET /musicas/buscar-agregado?q= — autocomplete unificado (Deezer + iTunes +
+ * GetSongBPM + YouTube quando ativo), já deduplicado/ordenado/cacheado (antes de
+ * /:id). Substitui `buscar-getsongbpm` no dropdown da Biblioteca — o endpoint
+ * antigo continua no ar (não removido), só não é mais chamado pelo frontend.
+ */
+export async function buscarAgregadoController(req: Request, res: Response) {
+    const termo = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+    if (termo.length < 3) {
+        return res.status(200).json([]);
+    }
+    const resultados = await buscarMusicasAgregado(termo);
+    return res.status(200).json(resultados);
 }
 
 export async function listarMusicasController(_req: Request, res: Response) {
