@@ -1479,6 +1479,11 @@ export function DetalhesCultoScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
+          <ScrollView
+            contentContainerStyle={styles.modalScrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
             <Text style={styles.modalTitle}>Adicionar música</Text>
 
             <View style={styles.buscaRepertorioWrap}>
@@ -1558,6 +1563,7 @@ export function DetalhesCultoScreen() {
               disabled={salvandoMusica}
               style={styles.modalButton}
             />
+          </ScrollView>
           </View>
         </View>
       </Modal>
@@ -2116,6 +2122,10 @@ const criarEstilos = (colors: Cores) =>
       borderTopLeftRadius: 20,
       borderTopRightRadius: 20,
       padding: spacing.lg,
+      gap: spacing.md,
+      maxHeight: '85%',
+    },
+    modalScrollContent: {
       gap: spacing.md,
     },
     modalTitle: {
