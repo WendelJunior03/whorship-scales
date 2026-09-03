@@ -60,16 +60,28 @@ interface GetSongBpmResposta {
     search?: GetSongBpmResultado[];
 }
 
+// ⚠️ O host documentado (api.getsongbpm.com) fica atrás de um desafio anti-bot da
+// Cloudflare que bloqueia fetch de servidor (sem navegador) — sempre retorna 403 com
+// uma página de challenge, não o JSON da API. api.getsong.co é o host de verdade
+// (confirmado testando os dois direto). Não trocar de volta sem testar de novo.
+const GETSONGBPM_HOST = 'https://api.getsong.co';
+
 async function buscarNoGetSongBpm(lookup: string): Promise<GetSongBpmResultado[]> {
     const apiKey = process.env.GETSONGBPM_API_KEY;
     if (!apiKey) return [];
     try {
-        const url = `https://api.getsongbpm.com/search/?api_key=${apiKey}&type=song&lookup=${encodeURIComponent(lookup)}`;
+        const url = `${GETSONGBPM_HOST}/search/?api_key=${apiKey}&type=song&lookup=${encodeURIComponent(lookup)}`;
         const resp = await fetch(url);
-        if (!resp.ok) return [];
+        if (!resp.ok) {
+            // Log só no servidor (nunca no cliente) — sem isso, chave errada/expirada vira
+            // "não achei nada" silencioso, difícil de diagnosticar de fora.
+            console.warn(`[GetSongBPM] busca falhou (${resp.status}):`, await resp.text().catch(() => ''));
+            return [];
+        }
         const data = (await resp.json()) as GetSongBpmResposta;
         return data.search ?? [];
-    } catch {
+    } catch (e) {
+        console.warn('[GetSongBPM] erro de rede:', e);
         return [];
     }
 }

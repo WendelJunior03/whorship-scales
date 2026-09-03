@@ -4,6 +4,7 @@ import {
   FlatList,
   Image,
   Modal,
+  Pressable,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -381,8 +382,17 @@ export function BibliotecaScreen() {
 
       {/* Modal: nova música */}
       <Modal visible={modalMusica} animationType="slide" transparent onRequestClose={fecharModalMusica}>
-        <View style={styles.overlay}>
-          <View style={styles.modal}>
+        <Pressable style={styles.overlay} onPress={fecharModalMusica}>
+          <Pressable style={styles.modal} onPress={() => {}}>
+            <TouchableOpacity
+              onPress={fecharModalMusica}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel="Fechar"
+              style={styles.fechar}
+            >
+              <Icon name="close-circle" size={24} color={colors.textMuted} />
+            </TouchableOpacity>
             <Text style={styles.modalTitulo}>Nova música</Text>
             <View style={styles.buscaWrap}>
               <Input
@@ -428,8 +438,8 @@ export function BibliotecaScreen() {
             <Input icon="musical-notes-outline" placeholder="Link do áudio (opcional)" value={audio} onChangeText={setAudio} autoCapitalize="none" containerStyle={styles.modalInput} />
             <Button title="Salvar" onPress={salvarMusica} loading={salvando} style={styles.modalBtn} />
             <Button title="Cancelar" variant="outline" onPress={fecharModalMusica} disabled={salvando} style={styles.modalBtn} />
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
 
       {/* Modal: nova pasta */}
@@ -471,7 +481,8 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
   cardMeta: { ...typography.caption, color: colors.textMuted },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
   modal: { backgroundColor: colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: spacing.lg, gap: spacing.md, maxHeight: '90%' },
-  modalTitulo: { ...typography.h3, color: colors.text },
+  fechar: { position: 'absolute', top: spacing.md, right: spacing.md, zIndex: 1 },
+  modalTitulo: { ...typography.h3, color: colors.text, paddingRight: spacing.xl },
   modalInput: { marginTop: 0 },
   modalBtn: { marginTop: spacing.xs },
   buscaWrap: { position: 'relative' },
