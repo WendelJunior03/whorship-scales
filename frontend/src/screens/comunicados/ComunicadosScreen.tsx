@@ -121,6 +121,10 @@ export function ComunicadosScreen() {
   }
 
   function excluir(aviso: Aviso) {
+    // Fecha o modal de detalhe ANTES de abrir a confirmação — nunca dois Modal do RN
+    // abertos ao mesmo tempo (mesmo bug de travamento/sobreposição já visto nos
+    // presets do Pad Contínuo).
+    setDetalhe(null);
     confirmAction(
       {
         title: 'Excluir comunicado',
@@ -131,7 +135,6 @@ export function ComunicadosScreen() {
       async () => {
         try {
           await avisosService.deletarAviso(aviso.id);
-          setDetalhe(null);
           await carregar();
         } catch (e) {
           notifyAction('Erro', e instanceof ApiError ? e.message : 'Não foi possível remover.');

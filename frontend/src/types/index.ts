@@ -282,6 +282,7 @@ export interface EnsaioParticipante {
   id: number;
   membro_id: number;
   nome: string;
+  foto?: string | null;
   status: StatusEscalaVocal;
 }
 
