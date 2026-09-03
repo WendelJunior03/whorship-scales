@@ -387,7 +387,7 @@ export function BibliotecaScreen() {
             <View style={styles.buscaWrap}>
               <Input
                 icon="musical-note-outline"
-                placeholder="Nome da música (digite 3+ letras pra buscar)"
+                placeholder="Nome da música"
                 value={nome}
                 onChangeText={aoDigitarNome}
               />
