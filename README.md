@@ -249,6 +249,14 @@ Detalhes e decisões de produto em [`docs/specs/`](./docs/specs/README.md).
 
 ---
 
+## Créditos
+
+Dados de tom e BPM sugeridos automaticamente ao cadastrar uma música vêm da
+[GetSongBPM](https://getsongbpm.com) — usada gratuitamente sob a condição de
+manter este link de volta ao site deles.
+
+---
+
 ## Licença
 
 Distribuído sob a licença MIT. Consulte o arquivo [LICENSE](./LICENSE) para mais detalhes.
