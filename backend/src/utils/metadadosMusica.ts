@@ -3,7 +3,10 @@
  * cadastro — o admin sempre confirma/edita antes de salvar, nada aqui é gravado
  * direto no banco.
  *
- *  - Artista + capa: iTunes Search API (gratuita, sem chave/cadastro).
+ *  - Artista + capa: Deezer Search API (gratuita, sem chave/cadastro) — trocado do
+ *    iTunes por ter catálogo bem maior de música gospel/BR (testado: dezenas a
+ *    centenas de resultados pra artistas gospel BR, contra praticamente nada no
+ *    iTunes pros mesmos termos).
  *  - Tom + BPM: GetSongBPM (https://getsongbpm.com/api) — gratuita, mas exige
  *    cadastro pra gerar uma API key (GETSONGBPM_API_KEY). Sem a chave configurada,
  *    essa parte fica desligada (retorna null) e o resto continua funcionando —
@@ -20,28 +23,28 @@ interface MetadadosMusica {
     bpm: number | null;
 }
 
-interface ITunesResultado {
-    artistName?: string;
-    artworkUrl100?: string;
+interface DeezerResultado {
+    artist?: { name?: string };
+    album?: { cover_big?: string };
 }
 
-interface ITunesResposta {
-    results?: ITunesResultado[];
+interface DeezerResposta {
+    data?: DeezerResultado[];
 }
 
-async function buscarITunes(nome: string, artista?: string): Promise<{ artista: string | null; capaUrl: string | null }> {
+async function buscarDeezer(nome: string, artista?: string): Promise<{ artista: string | null; capaUrl: string | null }> {
     try {
         const termo = artista ? `${nome} ${artista}` : nome;
-        const url = `https://itunes.apple.com/search?term=${encodeURIComponent(termo)}&media=music&entity=song&limit=1`;
+        const url = `https://api.deezer.com/search?q=${encodeURIComponent(termo)}&limit=1`;
         const resp = await fetch(url);
         if (!resp.ok) return { artista: null, capaUrl: null };
-        const data = (await resp.json()) as ITunesResposta;
-        const item = data.results?.[0];
+        const data = (await resp.json()) as DeezerResposta;
+        const item = data.data?.[0];
         if (!item) return { artista: null, capaUrl: null };
         return {
-            artista: item.artistName ?? null,
-            // iTunes só serve 100x100 por padrão — trocar pra uma versão maior (mesmo arquivo).
-            capaUrl: item.artworkUrl100 ? item.artworkUrl100.replace('100x100', '600x600') : null,
+            artista: item.artist?.name ?? null,
+            // cover_big = 500x500 (Deezer já serve o tamanho pronto, sem hack de URL).
+            capaUrl: item.album?.cover_big ?? null,
         };
     } catch {
         return { artista: null, capaUrl: null };
@@ -103,11 +106,11 @@ async function buscarGetSongBpm(nome: string, _artista?: string): Promise<{ tom:
 }
 
 export async function buscarMetadadosMusica(nome: string, artista?: string): Promise<MetadadosMusica> {
-    const [itunes, bpm] = await Promise.all([
-        buscarITunes(nome, artista),
+    const [deezer, bpm] = await Promise.all([
+        buscarDeezer(nome, artista),
         buscarGetSongBpm(nome, artista),
     ]);
-    return { ...itunes, ...bpm };
+    return { ...deezer, ...bpm };
 }
 
 export interface CandidatoMusica {
