@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import * as model from '../models/musicaModel';
 import { resolverCapaMusica } from '../utils/capaMusica';
+import { buscarMetadadosMusica } from '../utils/metadadosMusica';
 
 function validarBpm(bpm: unknown): { ok: true; valor: number | null } | { ok: false } {
     if (bpm === undefined || bpm === null || bpm === '') {
@@ -20,6 +21,9 @@ function textoOuNull(v: unknown): string | null {
 
 async function montarInput(body: Record<string, unknown>, bpm: number | null): Promise<model.MusicaInput> {
     const audioUrl = textoOuNull(body.audioUrl);
+    // Capa: se o front já mandou uma explícita (ex.: escolhida na busca automática
+    // por nome), usa ela. Senão, tenta derivar do link de áudio (YouTube/Spotify).
+    const capaExplicita = textoOuNull(body.capaUrl);
     return {
         nome: String(body.nome).trim(),
         tomPadrao: textoOuNull(body.tomPadrao),
@@ -27,8 +31,7 @@ async function montarInput(body: Record<string, unknown>, bpm: number | null): P
         artista: textoOuNull(body.artista),
         cifraUrl: textoOuNull(body.cifraUrl),
         audioUrl,
-        // Capa derivada do link de áudio (YouTube/Spotify) — null se não der.
-        capaUrl: await resolverCapaMusica(audioUrl),
+        capaUrl: capaExplicita ?? (await resolverCapaMusica(audioUrl)),
     };
 }
 
@@ -43,6 +46,17 @@ export async function criarMusicaController(req: Request, res: Response) {
     }
     const musica = await model.criarMusica(await montarInput(req.body, b.valor));
     return res.status(201).json(musica);
+}
+
+/** GET /musicas/buscar-metadados — sugestão de artista/capa/tom/bpm pelo nome (antes de /:id). */
+export async function buscarMetadadosController(req: Request, res: Response) {
+    const nome = typeof req.query.nome === 'string' ? req.query.nome.trim() : '';
+    if (!nome) {
+        return res.status(400).json({ message: 'Informe o nome da música.' });
+    }
+    const artista = typeof req.query.artista === 'string' ? req.query.artista.trim() : undefined;
+    const metadados = await buscarMetadadosMusica(nome, artista || undefined);
+    return res.status(200).json(metadados);
 }
 
 export async function listarMusicasController(_req: Request, res: Response) {

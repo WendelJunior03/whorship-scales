@@ -3,6 +3,7 @@ import {
     criarMusicaController,
     listarMusicasController,
     listarArtistasController,
+    buscarMetadadosController,
     getMusicaController,
     atualizarMusicaController,
     apagarMusicaController,
@@ -14,6 +15,7 @@ const router = Router();
 
 router.get('/', authMiddleware, listarMusicasController);
 router.get('/artistas', authMiddleware, listarArtistasController);
+router.get('/buscar-metadados', authMiddleware, autoriza('musica.gerenciar'), buscarMetadadosController);
 router.get('/:id', authMiddleware, getMusicaController);
 router.post('/', authMiddleware, autoriza('musica.gerenciar'), criarMusicaController);
 router.put('/:id', authMiddleware, autoriza('musica.gerenciar'), atualizarMusicaController);
