@@ -49,33 +49,40 @@ async function buscarITunes(nome: string, artista?: string): Promise<{ artista: 
 }
 
 interface GetSongBpmResultado {
+    title?: string;
     tempo?: string | number;
     key_of?: string;
+    open_key?: string;
+    artist?: { name?: string };
 }
 
 interface GetSongBpmResposta {
     search?: GetSongBpmResultado[];
 }
 
-async function buscarGetSongBpm(nome: string, artista?: string): Promise<{ tom: string | null; bpm: number | null }> {
+async function buscarNoGetSongBpm(lookup: string): Promise<GetSongBpmResultado[]> {
     const apiKey = process.env.GETSONGBPM_API_KEY;
-    if (!apiKey) return { tom: null, bpm: null };
+    if (!apiKey) return [];
     try {
-        const lookup = artista ? `song:${nome} artist:${artista}` : `song:${nome}`;
         const url = `https://api.getsongbpm.com/search/?api_key=${apiKey}&type=song&lookup=${encodeURIComponent(lookup)}`;
         const resp = await fetch(url);
-        if (!resp.ok) return { tom: null, bpm: null };
+        if (!resp.ok) return [];
         const data = (await resp.json()) as GetSongBpmResposta;
-        const item = data.search?.[0];
-        if (!item) return { tom: null, bpm: null };
-        const tempo = item.tempo !== undefined ? Number(item.tempo) : NaN;
-        return {
-            tom: item.key_of ?? null,
-            bpm: Number.isFinite(tempo) ? Math.round(tempo) : null,
-        };
+        return data.search ?? [];
     } catch {
-        return { tom: null, bpm: null };
+        return [];
     }
+}
+
+async function buscarGetSongBpm(nome: string, artista?: string): Promise<{ tom: string | null; bpm: number | null }> {
+    const lookup = artista ? `song:${nome} artist:${artista}` : `song:${nome}`;
+    const item = (await buscarNoGetSongBpm(lookup))[0];
+    if (!item) return { tom: null, bpm: null };
+    const tempo = item.tempo !== undefined ? Number(item.tempo) : NaN;
+    return {
+        tom: item.key_of ?? item.open_key ?? null,
+        bpm: Number.isFinite(tempo) ? Math.round(tempo) : null,
+    };
 }
 
 export async function buscarMetadadosMusica(nome: string, artista?: string): Promise<MetadadosMusica> {
@@ -84,4 +91,33 @@ export async function buscarMetadadosMusica(nome: string, artista?: string): Pro
         buscarGetSongBpm(nome, artista),
     ]);
     return { ...itunes, ...bpm };
+}
+
+export interface CandidatoMusica {
+    titulo: string;
+    artista: string | null;
+    tom: string | null;
+    bpm: number | null;
+}
+
+/**
+ * Busca ao vivo (autocomplete) — devolve VÁRIOS candidatos pra pessoa escolher,
+ * em vez de já cravar um só. Só a GetSongBPM tem esse tipo de busca por título
+ * parcial; sem GETSONGBPM_API_KEY configurada devolve lista vazia (autocomplete
+ * fica inerte, sem erro).
+ */
+export async function buscarCandidatosGetSongBpm(termo: string): Promise<CandidatoMusica[]> {
+    const itens = await buscarNoGetSongBpm(`song:${termo}`);
+    return itens
+        .filter((item) => item.title)
+        .slice(0, 8)
+        .map((item) => {
+            const tempo = item.tempo !== undefined ? Number(item.tempo) : NaN;
+            return {
+                titulo: item.title as string,
+                artista: item.artist?.name ?? null,
+                tom: item.key_of ?? item.open_key ?? null,
+                bpm: Number.isFinite(tempo) ? Math.round(tempo) : null,
+            };
+        });
 }

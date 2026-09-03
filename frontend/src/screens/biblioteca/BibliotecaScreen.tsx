@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -23,6 +23,7 @@ import { Tabs } from '@/components/Tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { MainStackParamList } from '@/navigation/MainNavigator';
 import * as musicasService from '@/services/musicas';
+import { CandidatoMusica } from '@/services/musicas';
 import * as pastasService from '@/services/pastas';
 import { ApiError } from '@/services/api';
 import { confirmAction, notifyAction } from '@/utils/confirm';
@@ -66,7 +67,11 @@ export function BibliotecaScreen() {
   const [cifra, setCifra] = useState('');
   const [audio, setAudio] = useState('');
   const [capaUrl, setCapaUrl] = useState<string | null>(null);
-  const [buscandoMetadados, setBuscandoMetadados] = useState(false);
+  const [resultadosBusca, setResultadosBusca] = useState<CandidatoMusica[]>([]);
+  const [buscandoLista, setBuscandoLista] = useState(false);
+  const [erroBusca, setErroBusca] = useState<string | null>(null);
+  const timerBuscaRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tokenBuscaRef = useRef(0);
   // Modal de pasta
   const [modalPasta, setModalPasta] = useState(false);
   const [nomePasta, setNomePasta] = useState('');
@@ -98,27 +103,60 @@ export function BibliotecaScreen() {
   );
 
   function fecharModalMusica() {
+    if (timerBuscaRef.current) clearTimeout(timerBuscaRef.current);
     setModalMusica(false);
     setNome(''); setArtista(''); setTom(''); setBpm(''); setCifra(''); setAudio(''); setCapaUrl(null);
+    setResultadosBusca([]); setBuscandoLista(false); setErroBusca(null);
   }
 
-  async function buscarAutomatico() {
-    if (!nome.trim()) return;
-    setBuscandoMetadados(true);
+  // Busca ao vivo (autocomplete) na GetSongBPM enquanto digita o nome — com debounce
+  // e "token" pra ignorar respostas antigas se a pessoa continuar digitando rápido.
+  async function buscarLista(termo: string) {
+    const minhaVez = ++tokenBuscaRef.current;
+    setBuscandoLista(true);
+    setErroBusca(null);
     try {
-      const m = await musicasService.buscarMetadados(nome.trim(), artista.trim() || undefined);
-      // Só preenche o que ainda está vazio — não sobrescreve o que a pessoa já digitou.
-      if (m.artista && !artista.trim()) setArtista(m.artista);
-      if (m.tom && !tom.trim()) setTom(m.tom);
-      if (m.bpm && !bpm.trim()) setBpm(String(m.bpm));
-      if (m.capaUrl) setCapaUrl(m.capaUrl);
-      if (!m.artista && !m.tom && !m.bpm && !m.capaUrl) {
-        notifyAction('Nada encontrado', 'Não achei essa música — preencha manualmente.');
-      }
-    } catch (e) {
-      notifyAction('Erro', e instanceof ApiError ? e.message : 'Não foi possível buscar.');
+      const candidatos = await musicasService.buscarCandidatos(termo);
+      if (tokenBuscaRef.current !== minhaVez) return;
+      setResultadosBusca(candidatos);
+    } catch {
+      if (tokenBuscaRef.current !== minhaVez) return;
+      setResultadosBusca([]);
+      setErroBusca('Não foi possível buscar agora.');
     } finally {
-      setBuscandoMetadados(false);
+      if (tokenBuscaRef.current === minhaVez) setBuscandoLista(false);
+    }
+  }
+
+  function aoDigitarNome(texto: string) {
+    setNome(texto);
+    setErroBusca(null);
+    if (timerBuscaRef.current) clearTimeout(timerBuscaRef.current);
+    const termo = texto.trim();
+    if (termo.length < 3) {
+      tokenBuscaRef.current++; // invalida qualquer busca em andamento
+      setResultadosBusca([]);
+      setBuscandoLista(false);
+      return;
+    }
+    timerBuscaRef.current = setTimeout(() => buscarLista(termo), 400);
+  }
+
+  // Escolheu um item da lista: preenche nome/artista/tom/bpm na hora (já veio tudo
+  // na resposta da busca) e, em segundo plano, busca só a capa (iTunes — a
+  // GetSongBPM não tem esse dado) sem travar o formulário.
+  async function escolherCandidato(c: CandidatoMusica) {
+    setNome(c.titulo);
+    setArtista(c.artista ?? '');
+    setTom(c.tom ?? '');
+    setBpm(c.bpm ? String(c.bpm) : '');
+    setResultadosBusca([]);
+    setErroBusca(null);
+    try {
+      const meta = await musicasService.buscarMetadados(c.titulo, c.artista ?? undefined);
+      if (meta.capaUrl) setCapaUrl(meta.capaUrl);
+    } catch {
+      // capa é só um extra — não interrompe o preenchimento se falhar.
     }
   }
 
@@ -346,21 +384,37 @@ export function BibliotecaScreen() {
         <View style={styles.overlay}>
           <View style={styles.modal}>
             <Text style={styles.modalTitulo}>Nova música</Text>
-            <Input icon="musical-note-outline" placeholder="Nome da música" value={nome} onChangeText={setNome} />
-            <TouchableOpacity
-              style={[styles.buscarAuto, !nome.trim() && styles.buscarAutoDesabilitado]}
-              onPress={buscarAutomatico}
-              disabled={!nome.trim() || buscandoMetadados}
-            >
-              {buscandoMetadados ? (
-                <ActivityIndicator size="small" color={colors.primary} />
-              ) : (
-                <Icon name="search-outline" size={16} color={colors.primary} />
+            <View style={styles.buscaWrap}>
+              <Input
+                icon="musical-note-outline"
+                placeholder="Nome da música (digite 3+ letras pra buscar)"
+                value={nome}
+                onChangeText={aoDigitarNome}
+              />
+              {buscandoLista && (
+                <ActivityIndicator size="small" color={colors.primary} style={styles.buscaSpinner} />
               )}
-              <Text style={styles.buscarAutoTexto}>
-                {buscandoMetadados ? 'Buscando...' : 'Buscar música automaticamente'}
-              </Text>
-            </TouchableOpacity>
+              {resultadosBusca.length > 0 && (
+                <View style={styles.resultadosLista}>
+                  {resultadosBusca.map((c, i) => (
+                    <TouchableOpacity
+                      key={`${c.titulo}-${i}`}
+                      style={styles.resultadoItem}
+                      onPress={() => escolherCandidato(c)}
+                    >
+                      <View style={styles.resultadoTextos}>
+                        <Text style={styles.resultadoTitulo} numberOfLines={1}>{c.titulo}</Text>
+                        <Text style={styles.resultadoMeta} numberOfLines={1}>
+                          {[c.artista, c.tom, c.bpm ? `${c.bpm} BPM` : null].filter(Boolean).join(' · ') || 'Sem mais detalhes'}
+                        </Text>
+                      </View>
+                      <Icon name="add-circle-outline" size={20} color={colors.primary} />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+              {erroBusca && <Text style={styles.buscaErro}>{erroBusca}</Text>}
+            </View>
             {capaUrl && (
               <View style={styles.capaPreviewLinha}>
                 <Image source={{ uri: capaUrl }} style={styles.capaPreview} />
@@ -420,15 +474,29 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
   modalTitulo: { ...typography.h3, color: colors.text },
   modalInput: { marginTop: 0 },
   modalBtn: { marginTop: spacing.xs },
-  buscarAuto: {
+  buscaWrap: { position: 'relative' },
+  buscaSpinner: { position: 'absolute', right: spacing.md, top: 18 },
+  resultadosLista: {
+    marginTop: spacing.xs,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    overflow: 'hidden',
+  },
+  resultadoItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
-  buscarAutoDesabilitado: { opacity: 0.4 },
-  buscarAutoTexto: { ...typography.bodySmall, color: colors.primary, fontFamily: fonts.semibold },
+  resultadoTextos: { flex: 1, minWidth: 0, gap: 2 },
+  resultadoTitulo: { ...typography.body, color: colors.text, fontFamily: fonts.semibold },
+  resultadoMeta: { ...typography.caption, color: colors.textMuted },
+  buscaErro: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
   capaPreviewLinha: {
     flexDirection: 'row',
     alignItems: 'center',
