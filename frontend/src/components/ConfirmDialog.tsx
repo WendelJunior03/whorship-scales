@@ -65,6 +65,17 @@ const criarEstilos = (colors: Cores) =>
       alignItems: 'center',
       justifyContent: 'center',
       padding: spacing.lg,
+      // ConfirmDialogHost fica montado desde o início do app (raiz, dentro do
+      // ThemeProvider) — no react-native-web, o Modal cria seu próprio portal no
+      // <body> assim que monta, então esse portal nasce ANTES de qualquer modal
+      // de tela (que só existe quando a pessoa abre aquela tela/ação). Sem um
+      // z-index explícito, elementos mais recentes no DOM desenham por cima dos
+      // mais antigos — ou seja, esse diálogo (que deveria SEMPRE ficar por cima,
+      // já que geralmente aparece em resposta a uma ação dentro de outro modal)
+      // ficava atrás. Um z-index bem alto garante a prioridade independente da
+      // ordem de montagem.
+      zIndex: 9999,
+      elevation: 24,
     },
     card: {
       width: '100%',
