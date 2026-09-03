@@ -25,15 +25,22 @@ export interface CandidatoMusica {
   bpm: number | null;
 }
 
+/** Links de descoberta externos (nunca reprodução/streaming) associados à música. */
+export interface LinksMusica {
+  spotify?: string;
+  cifraClub?: string;
+}
+
 /** Formato único vindo do agregador (backend) — não importa de qual fonte
- *  (Deezer/iTunes/GetSongBPM/YouTube) cada item veio. */
+ *  (Deezer/iTunes/GetSongBPM/YouTube/Spotify) cada item veio. */
 export interface MusicSearchResult {
   id: string;
   title: string;
   artist: string;
   coverUrl?: string;
-  source: 'deezer' | 'itunes' | 'youtube' | 'getsongbpm';
+  source: 'deezer' | 'itunes' | 'youtube' | 'getsongbpm' | 'spotify';
   externalId: string;
+  links?: LinksMusica;
 }
 
 export async function listarMusicas(): Promise<Musica[]> {

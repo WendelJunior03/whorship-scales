@@ -151,6 +151,9 @@ export function BibliotecaScreen() {
     setNome(item.title);
     setArtista(item.artist);
     if (item.coverUrl) setCapaUrl(item.coverUrl);
+    // Só preenche o que ainda está vazio — não sobrescreve link que a pessoa já colou.
+    if (item.links?.spotify && !audio.trim()) setAudio(item.links.spotify);
+    if (item.links?.cifraClub && !cifra.trim()) setCifra(item.links.cifraClub);
     setResultadosBusca([]);
     setErroBusca(null);
   }
