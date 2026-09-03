@@ -57,7 +57,9 @@ interface GetSongBpmResultado {
 }
 
 interface GetSongBpmResposta {
-    search?: GetSongBpmResultado[];
+    // Quando não acha nada, a API devolve `search` como OBJETO de erro
+    // (`{ error: "no result" }`), não uma lista vazia — precisa checar o tipo.
+    search?: GetSongBpmResultado[] | { error?: string };
 }
 
 // ⚠️ O host documentado (api.getsongbpm.com) fica atrás de um desafio anti-bot da
@@ -79,16 +81,19 @@ async function buscarNoGetSongBpm(lookup: string): Promise<GetSongBpmResultado[]
             return [];
         }
         const data = (await resp.json()) as GetSongBpmResposta;
-        return data.search ?? [];
+        return Array.isArray(data.search) ? data.search : [];
     } catch (e) {
         console.warn('[GetSongBPM] erro de rede:', e);
         return [];
     }
 }
 
-async function buscarGetSongBpm(nome: string, artista?: string): Promise<{ tom: string | null; bpm: number | null }> {
-    const lookup = artista ? `song:${nome} artist:${artista}` : `song:${nome}`;
-    const item = (await buscarNoGetSongBpm(lookup))[0];
+async function buscarGetSongBpm(nome: string, _artista?: string): Promise<{ tom: string | null; bpm: number | null }> {
+    // `_artista` fica na assinatura só por compatibilidade de chamada — não entra na
+    // busca: testado direto contra a API, tanto "song:X artist:Y" quanto "X artist:Y"
+    // e "X Y" davam "no result" mesmo pra combinações óbvias (ex.: "Yesterday" +
+    // "Beatles"). Só o título puro (sem prefixo `song:`) encontra.
+    const item = (await buscarNoGetSongBpm(nome))[0];
     if (!item) return { tom: null, bpm: null };
     const tempo = item.tempo !== undefined ? Number(item.tempo) : NaN;
     return {
@@ -119,7 +124,7 @@ export interface CandidatoMusica {
  * fica inerte, sem erro).
  */
 export async function buscarCandidatosGetSongBpm(termo: string): Promise<CandidatoMusica[]> {
-    const itens = await buscarNoGetSongBpm(`song:${termo}`);
+    const itens = await buscarNoGetSongBpm(termo);
     return itens
         .filter((item) => item.title)
         .slice(0, 8)
