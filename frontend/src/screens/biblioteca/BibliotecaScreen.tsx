@@ -144,7 +144,7 @@ export function BibliotecaScreen() {
   }
 
   // Escolheu um item da lista: preenche nome/artista/tom/bpm na hora (já veio tudo
-  // na resposta da busca) e, em segundo plano, busca só a capa (iTunes — a
+  // na resposta da busca) e, em segundo plano, busca só a capa (Deezer — a
   // GetSongBPM não tem esse dado) sem travar o formulário.
   async function escolherCandidato(c: CandidatoMusica) {
     setNome(c.titulo);
@@ -158,6 +158,29 @@ export function BibliotecaScreen() {
       if (meta.capaUrl) setCapaUrl(meta.capaUrl);
     } catch {
       // capa é só um extra — não interrompe o preenchimento se falhar.
+    }
+  }
+
+  // Apertou Enter no campo Nome (ex.: o louvor não apareceu na lista de sugestões
+  // da GetSongBPM — comum pra gospel BR) — tenta achar capa/artista (Deezer, catálogo
+  // bem maior) e tom/bpm (GetSongBPM) mesmo sem escolher nenhum item da lista.
+  async function buscarAoConfirmar() {
+    if (!nome.trim()) return;
+    if (timerBuscaRef.current) clearTimeout(timerBuscaRef.current);
+    tokenBuscaRef.current++; // invalida qualquer busca da lista em andamento
+    setResultadosBusca([]);
+    setErroBusca(null);
+    setBuscandoLista(true);
+    try {
+      const meta = await musicasService.buscarMetadados(nome.trim(), artista.trim() || undefined);
+      if (meta.artista && !artista.trim()) setArtista(meta.artista);
+      if (meta.tom && !tom.trim()) setTom(meta.tom);
+      if (meta.bpm && !bpm.trim()) setBpm(String(meta.bpm));
+      if (meta.capaUrl) setCapaUrl(meta.capaUrl);
+    } catch {
+      setErroBusca('Não foi possível buscar agora.');
+    } finally {
+      setBuscandoLista(false);
     }
   }
 
@@ -400,6 +423,8 @@ export function BibliotecaScreen() {
                 placeholder="Nome da música"
                 value={nome}
                 onChangeText={aoDigitarNome}
+                onSubmitEditing={buscarAoConfirmar}
+                returnKeyType="search"
               />
               {buscandoLista && (
                 <ActivityIndicator size="small" color={colors.primary} style={styles.buscaSpinner} />
