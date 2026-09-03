@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -35,6 +35,8 @@ import * as escalaAvulsaService from '@/services/escalaAvulsa';
 import * as escalaVocalService from '@/services/escalaVocal';
 import * as membrosService from '@/services/membros';
 import * as repertorioService from '@/services/repertorio';
+import * as musicasService from '@/services/musicas';
+import { MusicSearchResult } from '@/services/musicas';
 import * as roteiroService from '@/services/roteiro';
 import * as comentariosService from '@/services/comentarios';
 import * as historicoService from '@/services/historico';
@@ -169,6 +171,12 @@ export function DetalhesCultoScreen() {
   const [novoTom, setNovoTom] = useState('');
   const [novoLink, setNovoLink] = useState('');
   const [buscandoTitulo, setBuscandoTitulo] = useState(false);
+  // Autocomplete (mesmo agregador de fontes da Biblioteca) no campo Nome do repertório.
+  const [resultadosBuscaRepertorio, setResultadosBuscaRepertorio] = useState<MusicSearchResult[]>([]);
+  const [buscandoListaRepertorio, setBuscandoListaRepertorio] = useState(false);
+  const [erroBuscaRepertorio, setErroBuscaRepertorio] = useState<string | null>(null);
+  const timerBuscaRepertorioRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tokenBuscaRepertorioRef = useRef(0);
   const [salvandoMusica, setSalvandoMusica] = useState(false);
   const [excluindoMusicaId, setExcluindoMusicaId] = useState<number | null>(null);
 
@@ -293,10 +301,58 @@ export function DetalhesCultoScreen() {
   }
 
   function abrirRepertorioModal() {
+    if (timerBuscaRepertorioRef.current) clearTimeout(timerBuscaRepertorioRef.current);
     setNovoNomeMusica('');
     setNovoTom('');
     setNovoLink('');
+    setResultadosBuscaRepertorio([]);
+    setErroBuscaRepertorio(null);
     setRepertorioModalAberto(true);
+  }
+
+  // Busca ao vivo (mesmo agregador — Deezer/iTunes/GetSongBPM/Spotify — da
+  // Biblioteca) enquanto digita o nome. Complementa o "cola o link e o nome
+  // preenche sozinho" que já existia — os dois convivem, nenhum substitui o outro.
+  async function buscarListaRepertorio(termo: string) {
+    const minhaVez = ++tokenBuscaRepertorioRef.current;
+    setBuscandoListaRepertorio(true);
+    setErroBuscaRepertorio(null);
+    try {
+      const resultados = await musicasService.buscarAgregado(termo);
+      if (tokenBuscaRepertorioRef.current !== minhaVez) return;
+      setResultadosBuscaRepertorio(resultados);
+    } catch {
+      if (tokenBuscaRepertorioRef.current !== minhaVez) return;
+      setResultadosBuscaRepertorio([]);
+      setErroBuscaRepertorio('Não foi possível buscar agora.');
+    } finally {
+      if (tokenBuscaRepertorioRef.current === minhaVez) setBuscandoListaRepertorio(false);
+    }
+  }
+
+  function aoDigitarNomeMusica(texto: string) {
+    setNovoNomeMusica(texto);
+    setErroBuscaRepertorio(null);
+    if (timerBuscaRepertorioRef.current) clearTimeout(timerBuscaRepertorioRef.current);
+    const termo = texto.trim();
+    if (termo.length < 3) {
+      tokenBuscaRepertorioRef.current++;
+      setResultadosBuscaRepertorio([]);
+      setBuscandoListaRepertorio(false);
+      return;
+    }
+    timerBuscaRepertorioRef.current = setTimeout(() => buscarListaRepertorio(termo), 400);
+  }
+
+  // Escolheu um item da lista: preenche o nome; se o resultado tiver link do
+  // Spotify, usa como link de referência (só se o campo ainda estiver vazio —
+  // não sobrescreve o que a pessoa já colou). Tom continua sempre manual — o
+  // agregador não expõe essa informação por enquanto.
+  function escolherCandidatoRepertorio(item: MusicSearchResult) {
+    setNovoNomeMusica(item.title);
+    if (item.links?.spotify && !novoLink.trim()) setNovoLink(item.links.spotify);
+    setResultadosBuscaRepertorio([]);
+    setErroBuscaRepertorio(null);
   }
 
   // Ao sair do campo de link, tenta puxar o título (YouTube ou Spotify) pra
@@ -316,7 +372,9 @@ export function DetalhesCultoScreen() {
 
   async function handleAdicionarMusica() {
     if (!novoNomeMusica.trim() || !novoTom.trim() || !novoLink.trim()) {
-      Alert.alert('Preencha tudo', 'Nome, tom e link da música são obrigatórios.');
+      // Alert.alert não renderiza de forma confiável no react-native-web — a pessoa
+      // clicava em "Adicionar" com campo vazio e nada visível acontecia.
+      notifyAction('Preencha tudo', 'Nome, tom e link da música são obrigatórios.');
       return;
     }
 
@@ -331,7 +389,7 @@ export function DetalhesCultoScreen() {
       setRepertorioModalAberto(false);
       await carregarDados();
     } catch (err) {
-      Alert.alert(
+      notifyAction(
         'Erro',
         err instanceof ApiError ? err.message : 'Não foi possível adicionar a música.',
       );
@@ -1423,15 +1481,44 @@ export function DetalhesCultoScreen() {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Adicionar música</Text>
 
-            <View style={[styles.modalInput, { flexDirection: 'row', alignItems: 'center' }]}>
-              <TextInput
-                style={[styles.modalTextInput, { flex: 1 }]}
-                placeholder="Nome da música"
-                placeholderTextColor={colors.textMuted}
-                value={novoNomeMusica}
-                onChangeText={setNovoNomeMusica}
-              />
-              {buscandoTitulo && <ActivityIndicator size="small" color={colors.primary} />}
+            <View style={styles.buscaRepertorioWrap}>
+              <View style={[styles.modalInput, { flexDirection: 'row', alignItems: 'center' }]}>
+                <TextInput
+                  style={[styles.modalTextInput, { flex: 1 }]}
+                  placeholder="Nome da música"
+                  placeholderTextColor={colors.textMuted}
+                  value={novoNomeMusica}
+                  onChangeText={aoDigitarNomeMusica}
+                />
+                {(buscandoTitulo || buscandoListaRepertorio) && (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                )}
+              </View>
+              {resultadosBuscaRepertorio.length > 0 && (
+                <View style={styles.resultadosRepertorioLista}>
+                  {resultadosBuscaRepertorio.map((item) => (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={styles.resultadoRepertorioItem}
+                      onPress={() => escolherCandidatoRepertorio(item)}
+                    >
+                      {item.coverUrl ? (
+                        <Image source={{ uri: item.coverUrl }} style={styles.resultadoRepertorioCapa} />
+                      ) : (
+                        <View style={styles.resultadoRepertorioCapaFallback}>
+                          <Icon name="musical-notes-outline" size={16} color={colors.textMuted} />
+                        </View>
+                      )}
+                      <View style={styles.resultadoRepertorioTextos}>
+                        <Text style={styles.resultadoRepertorioTitulo} numberOfLines={1}>{item.title}</Text>
+                        <Text style={styles.resultadoRepertorioMeta} numberOfLines={1}>{item.artist || 'Artista desconhecido'}</Text>
+                      </View>
+                      <Icon name="add-circle-outline" size={20} color={colors.primary} />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+              {erroBuscaRepertorio && <Text style={styles.buscaRepertorioErro}>{erroBuscaRepertorio}</Text>}
             </View>
             <View style={styles.modalInput}>
               <TextInput
@@ -2058,6 +2145,38 @@ const criarEstilos = (colors: Cores) =>
       color: colors.textSecondary,
       marginTop: -spacing.xs,
     },
+    buscaRepertorioWrap: { position: 'relative' },
+    resultadosRepertorioLista: {
+      marginTop: spacing.xs,
+      marginBottom: spacing.xs,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      overflow: 'hidden',
+    },
+    resultadoRepertorioItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    resultadoRepertorioCapa: { width: 36, height: 36, borderRadius: radius.sm },
+    resultadoRepertorioCapaFallback: {
+      width: 36,
+      height: 36,
+      borderRadius: radius.sm,
+      backgroundColor: colors.surfaceElevated,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    resultadoRepertorioTextos: { flex: 1, minWidth: 0, gap: 2 },
+    resultadoRepertorioTitulo: { ...typography.body, color: colors.text, fontWeight: '600' },
+    resultadoRepertorioMeta: { ...typography.caption, color: colors.textMuted },
+    buscaRepertorioErro: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
     modalButton: {
       marginTop: spacing.xs,
     },
