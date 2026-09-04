@@ -18,6 +18,13 @@ export interface MetadadosMusica {
   bpm: number | null;
 }
 
+export interface CandidatoMusica {
+  titulo: string;
+  artista: string | null;
+  tom: string | null;
+  bpm: number | null;
+}
+
 export async function listarMusicas(): Promise<Musica[]> {
   const { data } = await api.get<Musica[]>('/musicas');
   return data;
@@ -31,6 +38,14 @@ export async function listarArtistas(): Promise<Artista[]> {
 export async function buscarMetadados(nome: string, artista?: string): Promise<MetadadosMusica> {
   const { data } = await api.get<MetadadosMusica>('/musicas/buscar-metadados', {
     params: { nome, artista: artista || undefined },
+  });
+  return data;
+}
+
+/** Autocomplete ao vivo (GetSongBPM) — vários candidatos pra escolher. */
+export async function buscarCandidatos(termo: string): Promise<CandidatoMusica[]> {
+  const { data } = await api.get<CandidatoMusica[]>('/musicas/buscar-getsongbpm', {
+    params: { q: termo },
   });
   return data;
 }

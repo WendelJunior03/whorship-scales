@@ -3,7 +3,10 @@
  * cadastro — o admin sempre confirma/edita antes de salvar, nada aqui é gravado
  * direto no banco.
  *
- *  - Artista + capa: iTunes Search API (gratuita, sem chave/cadastro).
+ *  - Artista + capa: Deezer Search API (gratuita, sem chave/cadastro) — trocado do
+ *    iTunes por ter catálogo bem maior de música gospel/BR (testado: dezenas a
+ *    centenas de resultados pra artistas gospel BR, contra praticamente nada no
+ *    iTunes pros mesmos termos).
  *  - Tom + BPM: GetSongBPM (https://getsongbpm.com/api) — gratuita, mas exige
  *    cadastro pra gerar uma API key (GETSONGBPM_API_KEY). Sem a chave configurada,
  *    essa parte fica desligada (retorna null) e o resto continua funcionando —
@@ -20,28 +23,28 @@ interface MetadadosMusica {
     bpm: number | null;
 }
 
-interface ITunesResultado {
-    artistName?: string;
-    artworkUrl100?: string;
+interface DeezerResultado {
+    artist?: { name?: string };
+    album?: { cover_big?: string };
 }
 
-interface ITunesResposta {
-    results?: ITunesResultado[];
+interface DeezerResposta {
+    data?: DeezerResultado[];
 }
 
-async function buscarITunes(nome: string, artista?: string): Promise<{ artista: string | null; capaUrl: string | null }> {
+async function buscarDeezer(nome: string, artista?: string): Promise<{ artista: string | null; capaUrl: string | null }> {
     try {
         const termo = artista ? `${nome} ${artista}` : nome;
-        const url = `https://itunes.apple.com/search?term=${encodeURIComponent(termo)}&media=music&entity=song&limit=1`;
+        const url = `https://api.deezer.com/search?q=${encodeURIComponent(termo)}&limit=1`;
         const resp = await fetch(url);
         if (!resp.ok) return { artista: null, capaUrl: null };
-        const data = (await resp.json()) as ITunesResposta;
-        const item = data.results?.[0];
+        const data = (await resp.json()) as DeezerResposta;
+        const item = data.data?.[0];
         if (!item) return { artista: null, capaUrl: null };
         return {
-            artista: item.artistName ?? null,
-            // iTunes só serve 100x100 por padrão — trocar pra uma versão maior (mesmo arquivo).
-            capaUrl: item.artworkUrl100 ? item.artworkUrl100.replace('100x100', '600x600') : null,
+            artista: item.artist?.name ?? null,
+            // cover_big = 500x500 (Deezer já serve o tamanho pronto, sem hack de URL).
+            capaUrl: item.album?.cover_big ?? null,
         };
     } catch {
         return { artista: null, capaUrl: null };
@@ -49,39 +52,92 @@ async function buscarITunes(nome: string, artista?: string): Promise<{ artista: 
 }
 
 interface GetSongBpmResultado {
+    title?: string;
     tempo?: string | number;
     key_of?: string;
+    open_key?: string;
+    artist?: { name?: string };
 }
 
 interface GetSongBpmResposta {
-    search?: GetSongBpmResultado[];
+    // Quando não acha nada, a API devolve `search` como OBJETO de erro
+    // (`{ error: "no result" }`), não uma lista vazia — precisa checar o tipo.
+    search?: GetSongBpmResultado[] | { error?: string };
 }
 
-async function buscarGetSongBpm(nome: string, artista?: string): Promise<{ tom: string | null; bpm: number | null }> {
+// ⚠️ O host documentado (api.getsongbpm.com) fica atrás de um desafio anti-bot da
+// Cloudflare que bloqueia fetch de servidor (sem navegador) — sempre retorna 403 com
+// uma página de challenge, não o JSON da API. api.getsong.co é o host de verdade
+// (confirmado testando os dois direto). Não trocar de volta sem testar de novo.
+const GETSONGBPM_HOST = 'https://api.getsong.co';
+
+async function buscarNoGetSongBpm(lookup: string): Promise<GetSongBpmResultado[]> {
     const apiKey = process.env.GETSONGBPM_API_KEY;
-    if (!apiKey) return { tom: null, bpm: null };
+    if (!apiKey) return [];
     try {
-        const lookup = artista ? `song:${nome} artist:${artista}` : `song:${nome}`;
-        const url = `https://api.getsongbpm.com/search/?api_key=${apiKey}&type=song&lookup=${encodeURIComponent(lookup)}`;
+        const url = `${GETSONGBPM_HOST}/search/?api_key=${apiKey}&type=song&lookup=${encodeURIComponent(lookup)}`;
         const resp = await fetch(url);
-        if (!resp.ok) return { tom: null, bpm: null };
+        if (!resp.ok) {
+            // Log só no servidor (nunca no cliente) — sem isso, chave errada/expirada vira
+            // "não achei nada" silencioso, difícil de diagnosticar de fora.
+            console.warn(`[GetSongBPM] busca falhou (${resp.status}):`, await resp.text().catch(() => ''));
+            return [];
+        }
         const data = (await resp.json()) as GetSongBpmResposta;
-        const item = data.search?.[0];
-        if (!item) return { tom: null, bpm: null };
-        const tempo = item.tempo !== undefined ? Number(item.tempo) : NaN;
-        return {
-            tom: item.key_of ?? null,
-            bpm: Number.isFinite(tempo) ? Math.round(tempo) : null,
-        };
-    } catch {
-        return { tom: null, bpm: null };
+        return Array.isArray(data.search) ? data.search : [];
+    } catch (e) {
+        console.warn('[GetSongBPM] erro de rede:', e);
+        return [];
     }
 }
 
+async function buscarGetSongBpm(nome: string, _artista?: string): Promise<{ tom: string | null; bpm: number | null }> {
+    // `_artista` fica na assinatura só por compatibilidade de chamada — não entra na
+    // busca: testado direto contra a API, tanto "song:X artist:Y" quanto "X artist:Y"
+    // e "X Y" davam "no result" mesmo pra combinações óbvias (ex.: "Yesterday" +
+    // "Beatles"). Só o título puro (sem prefixo `song:`) encontra.
+    const item = (await buscarNoGetSongBpm(nome))[0];
+    if (!item) return { tom: null, bpm: null };
+    const tempo = item.tempo !== undefined ? Number(item.tempo) : NaN;
+    return {
+        tom: item.key_of ?? item.open_key ?? null,
+        bpm: Number.isFinite(tempo) ? Math.round(tempo) : null,
+    };
+}
+
 export async function buscarMetadadosMusica(nome: string, artista?: string): Promise<MetadadosMusica> {
-    const [itunes, bpm] = await Promise.all([
-        buscarITunes(nome, artista),
+    const [deezer, bpm] = await Promise.all([
+        buscarDeezer(nome, artista),
         buscarGetSongBpm(nome, artista),
     ]);
-    return { ...itunes, ...bpm };
+    return { ...deezer, ...bpm };
+}
+
+export interface CandidatoMusica {
+    titulo: string;
+    artista: string | null;
+    tom: string | null;
+    bpm: number | null;
+}
+
+/**
+ * Busca ao vivo (autocomplete) — devolve VÁRIOS candidatos pra pessoa escolher,
+ * em vez de já cravar um só. Só a GetSongBPM tem esse tipo de busca por título
+ * parcial; sem GETSONGBPM_API_KEY configurada devolve lista vazia (autocomplete
+ * fica inerte, sem erro).
+ */
+export async function buscarCandidatosGetSongBpm(termo: string): Promise<CandidatoMusica[]> {
+    const itens = await buscarNoGetSongBpm(termo);
+    return itens
+        .filter((item) => item.title)
+        .slice(0, 8)
+        .map((item) => {
+            const tempo = item.tempo !== undefined ? Number(item.tempo) : NaN;
+            return {
+                titulo: item.title as string,
+                artista: item.artist?.name ?? null,
+                tom: item.key_of ?? item.open_key ?? null,
+                bpm: Number.isFinite(tempo) ? Math.round(tempo) : null,
+            };
+        });
 }
