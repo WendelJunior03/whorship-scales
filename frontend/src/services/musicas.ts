@@ -25,6 +25,24 @@ export interface CandidatoMusica {
   bpm: number | null;
 }
 
+/** Links de descoberta externos (nunca reprodução/streaming) associados à música. */
+export interface LinksMusica {
+  spotify?: string;
+  cifraClub?: string;
+}
+
+/** Formato único vindo do agregador (backend) — não importa de qual fonte
+ *  (Deezer/iTunes/GetSongBPM/YouTube/Spotify) cada item veio. */
+export interface MusicSearchResult {
+  id: string;
+  title: string;
+  artist: string;
+  coverUrl?: string;
+  source: 'deezer' | 'itunes' | 'youtube' | 'getsongbpm' | 'spotify';
+  externalId: string;
+  links?: LinksMusica;
+}
+
 export async function listarMusicas(): Promise<Musica[]> {
   const { data } = await api.get<Musica[]>('/musicas');
   return data;
@@ -42,9 +60,19 @@ export async function buscarMetadados(nome: string, artista?: string): Promise<M
   return data;
 }
 
-/** Autocomplete ao vivo (GetSongBPM) — vários candidatos pra escolher. */
+/** Autocomplete ao vivo (GetSongBPM, só essa fonte) — mantido por compatibilidade,
+ *  não é mais usado pelo dropdown da Biblioteca (ver `buscarAgregado`). */
 export async function buscarCandidatos(termo: string): Promise<CandidatoMusica[]> {
   const { data } = await api.get<CandidatoMusica[]>('/musicas/buscar-getsongbpm', {
+    params: { q: termo },
+  });
+  return data;
+}
+
+/** Autocomplete ao vivo — agregador de várias fontes (Deezer, iTunes, GetSongBPM,
+ *  YouTube quando ativo), já deduplicado. Usado pelo dropdown de Nova música. */
+export async function buscarAgregado(termo: string): Promise<MusicSearchResult[]> {
+  const { data } = await api.get<MusicSearchResult[]>('/musicas/buscar-agregado', {
     params: { q: termo },
   });
   return data;

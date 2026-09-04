@@ -24,7 +24,7 @@ import { Tabs } from '@/components/Tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { MainStackParamList } from '@/navigation/MainNavigator';
 import * as musicasService from '@/services/musicas';
-import { CandidatoMusica } from '@/services/musicas';
+import { MusicSearchResult } from '@/services/musicas';
 import * as pastasService from '@/services/pastas';
 import { ApiError } from '@/services/api';
 import { confirmAction, notifyAction } from '@/utils/confirm';
@@ -68,7 +68,7 @@ export function BibliotecaScreen() {
   const [cifra, setCifra] = useState('');
   const [audio, setAudio] = useState('');
   const [capaUrl, setCapaUrl] = useState<string | null>(null);
-  const [resultadosBusca, setResultadosBusca] = useState<CandidatoMusica[]>([]);
+  const [resultadosBusca, setResultadosBusca] = useState<MusicSearchResult[]>([]);
   const [buscandoLista, setBuscandoLista] = useState(false);
   const [erroBusca, setErroBusca] = useState<string | null>(null);
   const timerBuscaRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -110,16 +110,18 @@ export function BibliotecaScreen() {
     setResultadosBusca([]); setBuscandoLista(false); setErroBusca(null);
   }
 
-  // Busca ao vivo (autocomplete) na GetSongBPM enquanto digita o nome — com debounce
-  // e "token" pra ignorar respostas antigas se a pessoa continuar digitando rápido.
+  // Busca ao vivo (autocomplete) no agregador (Deezer + iTunes + GetSongBPM +
+  // YouTube quando ativo, já deduplicado pelo backend) enquanto digita o nome —
+  // com debounce e "token" pra ignorar respostas antigas se a pessoa continuar
+  // digitando rápido.
   async function buscarLista(termo: string) {
     const minhaVez = ++tokenBuscaRef.current;
     setBuscandoLista(true);
     setErroBusca(null);
     try {
-      const candidatos = await musicasService.buscarCandidatos(termo);
+      const resultados = await musicasService.buscarAgregado(termo);
       if (tokenBuscaRef.current !== minhaVez) return;
-      setResultadosBusca(candidatos);
+      setResultadosBusca(resultados);
     } catch {
       if (tokenBuscaRef.current !== minhaVez) return;
       setResultadosBusca([]);
@@ -143,22 +145,17 @@ export function BibliotecaScreen() {
     timerBuscaRef.current = setTimeout(() => buscarLista(termo), 400);
   }
 
-  // Escolheu um item da lista: preenche nome/artista/tom/bpm na hora (já veio tudo
-  // na resposta da busca) e, em segundo plano, busca só a capa (Deezer — a
-  // GetSongBPM não tem esse dado) sem travar o formulário.
-  async function escolherCandidato(c: CandidatoMusica) {
-    setNome(c.titulo);
-    setArtista(c.artista ?? '');
-    setTom(c.tom ?? '');
-    setBpm(c.bpm ? String(c.bpm) : '');
+  // Escolheu um item da lista: o agregador já devolve tudo que mostramos (nome,
+  // artista, capa) num resultado só — não precisa de uma segunda chamada.
+  function escolherCandidato(item: MusicSearchResult) {
+    setNome(item.title);
+    setArtista(item.artist);
+    if (item.coverUrl) setCapaUrl(item.coverUrl);
+    // Só preenche o que ainda está vazio — não sobrescreve link que a pessoa já colou.
+    if (item.links?.spotify && !audio.trim()) setAudio(item.links.spotify);
+    if (item.links?.cifraClub && !cifra.trim()) setCifra(item.links.cifraClub);
     setResultadosBusca([]);
     setErroBusca(null);
-    try {
-      const meta = await musicasService.buscarMetadados(c.titulo, c.artista ?? undefined);
-      if (meta.capaUrl) setCapaUrl(meta.capaUrl);
-    } catch {
-      // capa é só um extra — não interrompe o preenchimento se falhar.
-    }
   }
 
   // Apertou Enter no campo Nome (ex.: o louvor não apareceu na lista de sugestões
@@ -431,17 +428,22 @@ export function BibliotecaScreen() {
               )}
               {resultadosBusca.length > 0 && (
                 <View style={styles.resultadosLista}>
-                  {resultadosBusca.map((c, i) => (
+                  {resultadosBusca.map((item) => (
                     <TouchableOpacity
-                      key={`${c.titulo}-${i}`}
+                      key={item.id}
                       style={styles.resultadoItem}
-                      onPress={() => escolherCandidato(c)}
+                      onPress={() => escolherCandidato(item)}
                     >
+                      {item.coverUrl ? (
+                        <Image source={{ uri: item.coverUrl }} style={styles.resultadoCapa} />
+                      ) : (
+                        <View style={styles.resultadoCapaFallback}>
+                          <Icon name="musical-notes-outline" size={16} color={colors.textMuted} />
+                        </View>
+                      )}
                       <View style={styles.resultadoTextos}>
-                        <Text style={styles.resultadoTitulo} numberOfLines={1}>{c.titulo}</Text>
-                        <Text style={styles.resultadoMeta} numberOfLines={1}>
-                          {[c.artista, c.tom, c.bpm ? `${c.bpm} BPM` : null].filter(Boolean).join(' · ') || 'Sem mais detalhes'}
-                        </Text>
+                        <Text style={styles.resultadoTitulo} numberOfLines={1}>{item.title}</Text>
+                        <Text style={styles.resultadoMeta} numberOfLines={1}>{item.artist || 'Artista desconhecido'}</Text>
                       </View>
                       <Icon name="add-circle-outline" size={20} color={colors.primary} />
                     </TouchableOpacity>
@@ -528,6 +530,15 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+  },
+  resultadoCapa: { width: 36, height: 36, borderRadius: radius.sm },
+  resultadoCapaFallback: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surfaceElevated,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   resultadoTextos: { flex: 1, minWidth: 0, gap: 2 },
   resultadoTitulo: { ...typography.body, color: colors.text, fontFamily: fonts.semibold },
