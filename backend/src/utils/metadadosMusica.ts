@@ -24,8 +24,9 @@ interface MetadadosMusica {
 }
 
 interface DeezerResultado {
+    title?: string;
     artist?: { name?: string };
-    album?: { cover_big?: string };
+    album?: { cover_big?: string; cover_medium?: string };
 }
 
 interface DeezerResposta {
@@ -118,26 +119,47 @@ export interface CandidatoMusica {
     artista: string | null;
     tom: string | null;
     bpm: number | null;
+    capaUrl: string | null;
 }
 
 /**
- * Busca ao vivo (autocomplete) — devolve VÁRIOS candidatos pra pessoa escolher,
- * em vez de já cravar um só. Só a GetSongBPM tem esse tipo de busca por título
- * parcial; sem GETSONGBPM_API_KEY configurada devolve lista vazia (autocomplete
- * fica inerte, sem erro).
+ * Busca ao vivo (autocomplete) — devolve VÁRIOS candidatos pra pessoa escolher
+ * enquanto digita, em vez de já cravar um só.
+ *
+ * Usa a Deezer (gratuita, sem chave) porque ela faz busca por título parcial e
+ * traz vários resultados com título + artista + capa — e tem catálogo BR/gospel
+ * bem maior que a GetSongBPM. Tom/BPM não vêm daqui (a Deezer não expõe): ficam
+ * null e são preenchidos ao escolher o item, via GetSongBPM (quando há chave).
  */
-export async function buscarCandidatosGetSongBpm(termo: string): Promise<CandidatoMusica[]> {
-    const itens = await buscarNoGetSongBpm(termo);
-    return itens
-        .filter((item) => item.title)
-        .slice(0, 8)
-        .map((item) => {
-            const tempo = item.tempo !== undefined ? Number(item.tempo) : NaN;
-            return {
-                titulo: item.title as string,
-                artista: item.artist?.name ?? null,
-                tom: item.key_of ?? item.open_key ?? null,
-                bpm: Number.isFinite(tempo) ? Math.round(tempo) : null,
-            };
-        });
+export async function buscarCandidatosMusica(termo: string): Promise<CandidatoMusica[]> {
+    try {
+        const url = `https://api.deezer.com/search?q=${encodeURIComponent(termo)}&limit=15`;
+        const resp = await fetch(url);
+        if (!resp.ok) return [];
+        const data = (await resp.json()) as DeezerResposta;
+        const itens = data.data ?? [];
+        // Deezer repete o mesmo louvor em vários álbuns/singles — dedup por
+        // título+artista pra lista não vir cheia de duplicados.
+        const vistos = new Set<string>();
+        const candidatos: CandidatoMusica[] = [];
+        for (const item of itens) {
+            const titulo = item.title?.trim();
+            if (!titulo) continue;
+            const artista = item.artist?.name ?? null;
+            const chave = `${titulo.toLowerCase()}|${(artista ?? '').toLowerCase()}`;
+            if (vistos.has(chave)) continue;
+            vistos.add(chave);
+            candidatos.push({
+                titulo,
+                artista,
+                tom: null,
+                bpm: null,
+                capaUrl: item.album?.cover_big ?? item.album?.cover_medium ?? null,
+            });
+            if (candidatos.length >= 8) break;
+        }
+        return candidatos;
+    } catch {
+        return [];
+    }
 }

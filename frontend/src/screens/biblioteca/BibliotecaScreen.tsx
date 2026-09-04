@@ -143,21 +143,24 @@ export function BibliotecaScreen() {
     timerBuscaRef.current = setTimeout(() => buscarLista(termo), 400);
   }
 
-  // Escolheu um item da lista: preenche nome/artista/tom/bpm na hora (já veio tudo
-  // na resposta da busca) e, em segundo plano, busca só a capa (Deezer — a
-  // GetSongBPM não tem esse dado) sem travar o formulário.
+  // Escolheu um item da lista: preenche nome/artista/capa na hora (tudo já veio na
+  // resposta da Deezer) e, em segundo plano, completa tom/BPM via GetSongBPM
+  // (buscarMetadados) — que a Deezer não expõe — sem travar o formulário.
   async function escolherCandidato(c: CandidatoMusica) {
     setNome(c.titulo);
     setArtista(c.artista ?? '');
     setTom(c.tom ?? '');
     setBpm(c.bpm ? String(c.bpm) : '');
+    if (c.capaUrl) setCapaUrl(c.capaUrl);
     setResultadosBusca([]);
     setErroBusca(null);
     try {
       const meta = await musicasService.buscarMetadados(c.titulo, c.artista ?? undefined);
-      if (meta.capaUrl) setCapaUrl(meta.capaUrl);
+      if (meta.tom && !c.tom) setTom(meta.tom);
+      if (meta.bpm && !c.bpm) setBpm(String(meta.bpm));
+      if (meta.capaUrl && !c.capaUrl) setCapaUrl(meta.capaUrl);
     } catch {
-      // capa é só um extra — não interrompe o preenchimento se falhar.
+      // tom/BPM são só um extra — não interrompem o preenchimento se falhar.
     }
   }
 
@@ -437,6 +440,7 @@ export function BibliotecaScreen() {
                       style={styles.resultadoItem}
                       onPress={() => escolherCandidato(c)}
                     >
+                      {c.capaUrl && <Image source={{ uri: c.capaUrl }} style={styles.resultadoCapa} />}
                       <View style={styles.resultadoTextos}>
                         <Text style={styles.resultadoTitulo} numberOfLines={1}>{c.titulo}</Text>
                         <Text style={styles.resultadoMeta} numberOfLines={1}>
@@ -529,6 +533,7 @@ const criarEstilos = (colors: Cores) => StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  resultadoCapa: { width: 40, height: 40, borderRadius: radius.sm, backgroundColor: colors.border },
   resultadoTextos: { flex: 1, minWidth: 0, gap: 2 },
   resultadoTitulo: { ...typography.body, color: colors.text, fontFamily: fonts.semibold },
   resultadoMeta: { ...typography.caption, color: colors.textMuted },
