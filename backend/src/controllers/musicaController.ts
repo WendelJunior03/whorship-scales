@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import * as model from '../models/musicaModel';
 import { resolverCapaMusica } from '../utils/capaMusica';
-import { buscarMetadadosMusica, buscarCandidatosGetSongBpm } from '../utils/metadadosMusica';
+import { buscarMetadadosMusica, buscarCandidatosMusica } from '../utils/metadadosMusica';
 
 function validarBpm(bpm: unknown): { ok: true; valor: number | null } | { ok: false } {
     if (bpm === undefined || bpm === null || bpm === '') {
@@ -59,13 +59,13 @@ export async function buscarMetadadosController(req: Request, res: Response) {
     return res.status(200).json(metadados);
 }
 
-/** GET /musicas/buscar-getsongbpm?q= — autocomplete ao vivo (vários candidatos, antes de /:id). */
+/** GET /musicas/buscar-candidatos?q= — autocomplete ao vivo (vários candidatos, antes de /:id). */
 export async function buscarCandidatosController(req: Request, res: Response) {
     const termo = typeof req.query.q === 'string' ? req.query.q.trim() : '';
     if (termo.length < 3) {
         return res.status(200).json([]);
     }
-    const candidatos = await buscarCandidatosGetSongBpm(termo);
+    const candidatos = await buscarCandidatosMusica(termo);
     return res.status(200).json(candidatos);
 }
 
