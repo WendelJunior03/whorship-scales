@@ -94,6 +94,10 @@ export function OctapadScreen() {
   const [volume, setVolume] = useState(0.85);
   const [gridLargura, setGridLargura] = useState(0);
   const [painelAberto, setPainelAberto] = useState(false);
+  // Medidas reais (não chutadas) pra caber os 8 pads sem rolar quando a tela está
+  // deitada — altura do conteúdo disponível (já dentro da SafeAreaView) e do cabeçalho.
+  const [alturaContainer, setAlturaContainer] = useState(0);
+  const [alturaHeader, setAlturaHeader] = useState(0);
 
   // A Biblioteca de Drums (tela separada) grava o som escolhido direto no storage — recarrega
   // ao voltar pra essa tela pra refletir a troca (instância de hook diferente da de lá).
@@ -103,9 +107,22 @@ export function OctapadScreen() {
     }, [recarregar]),
   );
 
-  const { width } = useWindowDimensions();
-  const colunas = width >= BREAKPOINT_LARGO ? 4 : 2;
-  const padSize = gridLargura > 0 ? (gridLargura - PAD_GAP * (colunas - 1)) / colunas : 0;
+  const { width, height } = useWindowDimensions();
+  // Deitada = mais larga que alta. Nesse caso força 4 colunas (2 linhas) pra caber os
+  // 8 pads sem precisar rolar, independente do breakpoint de largura.
+  const paisagem = width > height;
+  const colunas = paisagem || width >= BREAKPOINT_LARGO ? 4 : 2;
+  const linhas = Math.ceil(KIT_PADRAO.length / colunas);
+  const padSizePorLargura = gridLargura > 0 ? (gridLargura - PAD_GAP * (colunas - 1)) / colunas : 0;
+  // Em paisagem a altura da tela costuma ser o fator limitante (não a largura) — mede o
+  // espaço disponível abaixo do cabeçalho e limita o tamanho do pad pra a grade inteira caber.
+  const alturaDisponivelGrade = alturaContainer - alturaHeader - spacing.sm * 2;
+  const padSizePorAltura =
+    alturaDisponivelGrade > 0 ? (alturaDisponivelGrade - PAD_GAP * (linhas - 1)) / linhas : 0;
+  const padSize =
+    paisagem && alturaContainer > 0 && alturaHeader > 0 && padSizePorAltura > 0
+      ? Math.min(padSizePorLargura, padSizePorAltura)
+      : padSizePorLargura;
 
   function handlePad(id: string) {
     tocar(id, volume);
@@ -118,17 +135,19 @@ export function OctapadScreen() {
     <View style={styles.raiz}>
       <LinearGradient colors={colors.bgGradient} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-        <View style={styles.container}>
-          <Header
-            title="Octapad"
-            subtitle="Bateria eletrônica"
-            showBack
-            rightActions={
-              suportado
-                ? [{ icon: 'settings-outline', label: 'Personalizar aparência do octapad', onPress: () => setPainelAberto(true) }]
-                : []
-            }
-          />
+        <View style={styles.container} onLayout={(e) => setAlturaContainer(e.nativeEvent.layout.height)}>
+          <View onLayout={(e) => setAlturaHeader(e.nativeEvent.layout.height)}>
+            <Header
+              title="Octapad"
+              subtitle="Bateria eletrônica"
+              showBack
+              rightActions={
+                suportado
+                  ? [{ icon: 'settings-outline', label: 'Personalizar aparência do octapad', onPress: () => setPainelAberto(true) }]
+                  : []
+              }
+            />
+          </View>
 
           {!suportado ? (
             <View style={styles.aviso}>
