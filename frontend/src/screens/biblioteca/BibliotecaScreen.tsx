@@ -27,7 +27,7 @@ import * as musicasService from '@/services/musicas';
 import { CandidatoMusica } from '@/services/musicas';
 import * as pastasService from '@/services/pastas';
 import { ApiError } from '@/services/api';
-import { confirmAction, notifyAction } from '@/utils/confirm';
+import { notifyAction } from '@/utils/confirm';
 import { podeGerir } from '@/utils/papel';
 import { Musica, Pasta, Artista } from '@/types';
 import { fonts, LARGURA_CONTEUDO, radius, spacing, typography } from '@/theme';
@@ -159,8 +159,10 @@ export function BibliotecaScreen() {
       if (meta.tom && !c.tom) setTom(meta.tom);
       if (meta.bpm && !c.bpm) setBpm(String(meta.bpm));
       if (meta.capaUrl && !c.capaUrl) setCapaUrl(meta.capaUrl);
+      if (meta.linkSpotify && !audio.trim()) setAudio(meta.linkSpotify);
+      if (meta.linkCifraClub && !cifra.trim()) setCifra(meta.linkCifraClub);
     } catch {
-      // tom/BPM são só um extra — não interrompem o preenchimento se falhar.
+      // tom/BPM/links são só um extra — não interrompem o preenchimento se falhar.
     }
   }
 
@@ -180,6 +182,8 @@ export function BibliotecaScreen() {
       if (meta.tom && !tom.trim()) setTom(meta.tom);
       if (meta.bpm && !bpm.trim()) setBpm(String(meta.bpm));
       if (meta.capaUrl) setCapaUrl(meta.capaUrl);
+      if (meta.linkSpotify && !audio.trim()) setAudio(meta.linkSpotify);
+      if (meta.linkCifraClub && !cifra.trim()) setCifra(meta.linkCifraClub);
     } catch {
       setErroBusca('Não foi possível buscar agora.');
     } finally {
@@ -230,18 +234,14 @@ export function BibliotecaScreen() {
     }
   }
 
-  function removerMusica(musica: Musica) {
-    confirmAction(
-      { title: 'Excluir música', message: `Excluir "${musica.nome}" da biblioteca?`, confirmLabel: 'Excluir', destructive: true },
-      async () => {
-        try {
-          await musicasService.apagarMusica(musica.id);
-          await carregar();
-        } catch (e) {
-          notifyAction('Erro', e instanceof ApiError ? e.message : 'Não foi possível excluir.');
-        }
-      },
-    );
+  // Exclui direto, sem confirmação — decisão do dono do projeto.
+  async function removerMusica(musica: Musica) {
+    try {
+      await musicasService.apagarMusica(musica.id);
+      await carregar();
+    } catch (e) {
+      notifyAction('Erro', e instanceof ApiError ? e.message : 'Não foi possível excluir.');
+    }
   }
 
   const musicasFiltradas = filtroArtista

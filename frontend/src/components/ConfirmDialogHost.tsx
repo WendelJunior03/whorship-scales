@@ -18,17 +18,26 @@ export function ConfirmDialogHost() {
   const fechar = () => setReq(null);
   const soAviso = !req || req.cancelLabel === null;
 
+  // Só renderiza o <Modal> (e o portal dele) quando existe um pedido de verdade
+  // — em vez de sempre montado com `visible` alternando. No react-native-web o
+  // Modal cria o portal no <body> assim que MONTA (não só quando fica visível);
+  // como este host vive na raiz do app, seu portal nasceria antes de qualquer
+  // modal de tela e ficaria atrás dele (quem monta depois desenha por cima).
+  // Montando o Modal só na hora do pedido, ele sempre nasce DEPOIS de qualquer
+  // modal de tela que já esteja aberto — fica por cima sem depender de z-index.
+  if (!req) return null;
+
   return (
     <ConfirmDialog
-      visible={!!req}
-      titulo={req?.titulo ?? ''}
-      mensagem={req?.mensagem ?? ''}
-      confirmLabel={req?.confirmLabel}
-      cancelLabel={req?.cancelLabel}
+      visible
+      titulo={req.titulo}
+      mensagem={req.mensagem}
+      confirmLabel={req.confirmLabel}
+      cancelLabel={req.cancelLabel}
       onConfirm={() => {
         const r = req;
         fechar();
-        r?.onConfirm?.();
+        r.onConfirm?.();
       }}
       onCancel={
         soAviso
@@ -36,7 +45,7 @@ export function ConfirmDialogHost() {
           : () => {
               const r = req;
               fechar();
-              r?.onCancel?.();
+              r.onCancel?.();
             }
       }
     />

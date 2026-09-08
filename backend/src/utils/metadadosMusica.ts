@@ -11,16 +11,26 @@
  *    cadastro pra gerar uma API key (GETSONGBPM_API_KEY). Sem a chave configurada,
  *    essa parte fica desligada (retorna null) e o resto continua funcionando —
  *    mesmo padrão do billing/Stripe (integração opcional, app não quebra sem ela).
+ *  - Link do Spotify: Spotify Web API (Client Credentials, sem login) — opcional,
+ *    sem SPOTIFY_CLIENT_ID/SECRET fica null e o resto continua igual.
+ *  - Link do Cifra Club: sem API pública, então é sempre um link de PESQUISA
+ *    (`cifraclub.com.br/search/?q=`) montado a partir de nome+artista — nunca falha
+ *    (não depende de rede), só fica null se não tiver nem nome.
  *
- * Qualquer falha em qualquer uma das duas fontes → campos null (sugestão é
+ * Qualquer falha em qualquer uma das fontes → campos null (sugestão é
  * best-effort; o admin sempre pode preencher manualmente).
  */
+
+import { obterTokenSpotify } from './spotifyAuth';
+import { resolverLinkCifraClub } from './cifraClub';
 
 interface MetadadosMusica {
     artista: string | null;
     capaUrl: string | null;
     tom: string | null;
     bpm: number | null;
+    linkSpotify: string | null;
+    linkCifraClub: string | null;
 }
 
 interface DeezerResultado {
@@ -106,12 +116,48 @@ async function buscarGetSongBpm(nome: string, _artista?: string): Promise<{ tom:
     };
 }
 
+interface SpotifyTrack {
+    external_urls?: { spotify?: string };
+}
+
+interface SpotifySearchResposta {
+    tracks?: { items?: SpotifyTrack[] };
+}
+
+/** Só o link oficial — artista/capa já vêm da Deezer, não precisa buscar de novo. */
+async function buscarLinkSpotify(nome: string, artista?: string): Promise<string | null> {
+    const token = await obterTokenSpotify();
+    if (!token) return null;
+    try {
+        const termo = artista ? `${nome} ${artista}` : nome;
+        const params = new URLSearchParams({ q: termo, type: 'track', limit: '1' });
+        const resp = await fetch(`https://api.spotify.com/v1/search?${params}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!resp.ok) {
+            console.warn(`[Spotify] busca falhou (${resp.status}):`, await resp.text().catch(() => ''));
+            return null;
+        }
+        const data = (await resp.json()) as SpotifySearchResposta;
+        return data.tracks?.items?.[0]?.external_urls?.spotify ?? null;
+    } catch (e) {
+        console.warn('[Spotify] erro de rede:', e);
+        return null;
+    }
+}
+
 export async function buscarMetadadosMusica(nome: string, artista?: string): Promise<MetadadosMusica> {
-    const [deezer, bpm] = await Promise.all([
+    const [deezer, bpm, linkSpotify] = await Promise.all([
         buscarDeezer(nome, artista),
         buscarGetSongBpm(nome, artista),
+        buscarLinkSpotify(nome, artista),
     ]);
-    return { ...deezer, ...bpm };
+    return {
+        ...deezer,
+        ...bpm,
+        linkSpotify,
+        linkCifraClub: resolverLinkCifraClub(nome, artista ?? deezer.artista ?? ''),
+    };
 }
 
 export interface CandidatoMusica {
