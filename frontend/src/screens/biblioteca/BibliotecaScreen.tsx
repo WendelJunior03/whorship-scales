@@ -237,7 +237,7 @@ export function BibliotecaScreen() {
   // Exclui direto, sem confirmação — decisão do dono do projeto.
   function removerMusica(musica: Musica) {
     confirmAction(
-      { title: 'Excluir música', message: `Excluir "${musica.nome}" da biblioteca?`, confirmLabel: 'Excluir', destructive: true },
+      { title: 'Excluir música', message: `Deseja realmente excluir "${musica.nome}" da biblioteca?`, confirmLabel: 'Excluir', destructive: true },
       async () => {
         try {
           await musicasService.apagarMusica(musica.id);
