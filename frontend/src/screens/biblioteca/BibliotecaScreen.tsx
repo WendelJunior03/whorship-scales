@@ -27,7 +27,7 @@ import * as musicasService from '@/services/musicas';
 import { CandidatoMusica } from '@/services/musicas';
 import * as pastasService from '@/services/pastas';
 import { ApiError } from '@/services/api';
-import { notifyAction } from '@/utils/confirm';
+import { confirmAction, notifyAction } from '@/utils/confirm';
 import { podeGerir } from '@/utils/papel';
 import { Musica, Pasta, Artista } from '@/types';
 import { fonts, LARGURA_CONTEUDO, radius, spacing, typography } from '@/theme';
@@ -235,13 +235,18 @@ export function BibliotecaScreen() {
   }
 
   // Exclui direto, sem confirmação — decisão do dono do projeto.
-  async function removerMusica(musica: Musica) {
-    try {
-      await musicasService.apagarMusica(musica.id);
-      await carregar();
-    } catch (e) {
-      notifyAction('Erro', e instanceof ApiError ? e.message : 'Não foi possível excluir.');
-    }
+  function removerMusica(musica: Musica) {
+    confirmAction(
+      { title: 'Excluir música', message: `Excluir "${musica.nome}" da biblioteca?`, confirmLabel: 'Excluir', destructive: true },
+      async () => {
+        try {
+          await musicasService.apagarMusica(musica.id);
+          await carregar();
+        } catch (e) {
+          notifyAction('Erro', e instanceof ApiError ? e.message : 'Não foi possível excluir.');
+        }
+      },
+    );
   }
 
   const musicasFiltradas = filtroArtista
