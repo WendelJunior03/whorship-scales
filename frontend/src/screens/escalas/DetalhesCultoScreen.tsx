@@ -378,10 +378,10 @@ export function DetalhesCultoScreen() {
   }
 
   async function handleAdicionarMusica() {
-    if (!novoNomeMusica.trim() || !novoTom.trim() || !novoLink.trim()) {
+    if (!novoNomeMusica.trim() || !novoTom.trim()) {
       // Alert.alert não renderiza de forma confiável no react-native-web — a pessoa
       // clicava em "Adicionar" com campo vazio e nada visível acontecia.
-      notifyAction('Preencha tudo', 'Nome, tom e link da música são obrigatórios.');
+      notifyAction('Preencha tudo', 'Nome e tom da música são obrigatórios.');
       return;
     }
 
@@ -391,7 +391,9 @@ export function DetalhesCultoScreen() {
         cultoId,
         nome: novoNomeMusica.trim(),
         tom: novoTom.trim(),
-        linkMusica: novoLink.trim(),
+        // Opcional: sem link, o backend ainda puxa cifra/áudio sozinho pelo nome
+        // (mesma busca do autocomplete) ao vincular com a Biblioteca.
+        linkMusica: novoLink.trim() || null,
       });
       setRepertorioModalAberto(false);
       await carregarDados();
@@ -1544,7 +1546,7 @@ export function DetalhesCultoScreen() {
             <View style={styles.modalInput}>
               <TextInput
                 style={styles.modalTextInput}
-                placeholder="Link de referência"
+                placeholder="Link de referência (opcional)"
                 placeholderTextColor={colors.textMuted}
                 value={novoLink}
                 onChangeText={setNovoLink}
@@ -1554,7 +1556,8 @@ export function DetalhesCultoScreen() {
               />
             </View>
             <Text style={styles.linkDica}>
-              Link do YouTube ou Spotify? O nome da música é preenchido automaticamente.
+              Link do YouTube ou Spotify? O nome da música é preenchido automaticamente. Sem
+              link? Sem problema — cifra e áudio de referência são sugeridos sozinhos pelo nome.
             </Text>
 
             <Button

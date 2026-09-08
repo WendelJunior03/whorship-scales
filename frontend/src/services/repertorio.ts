@@ -5,7 +5,8 @@ export interface CriarRepertorioInput {
   cultoId: number;
   nome: string;
   tom: string;
-  linkMusica: string;
+  /** Opcional — sem link, a Biblioteca ainda sugere áudio/cifra sozinha pelo nome. */
+  linkMusica?: string | null;
 }
 
 export interface MeuProximoCulto {
