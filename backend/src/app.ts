@@ -31,11 +31,22 @@ import apiExternaRoutes from './routes/apiExternaRoutes'
 // integração importam este `app` direto (supertest), sem subir servidor.
 export const app = express()
 
-const allowedOrigins = [
-    'https://deep-scales.vercel.app',
-    'http://localhost:8081',
-    'http://localhost:19006',
-]
+// Origens liberadas no CORS. Em produção, defina CORS_ORIGINS (lista separada por
+// vírgula) — ex.: "https://app.meudominio.com,https://deep-scales.vercel.app".
+// FRONTEND_URL (usada nos e-mails/retornos) também entra na lista se estiver setada.
+// Sempre inclui os hosts de dev locais pra não quebrar o desenvolvimento.
+const defaultDevOrigins = ['http://localhost:8081', 'http://localhost:19006']
+const allowedOrigins = Array.from(
+    new Set(
+        [
+            ...(process.env.CORS_ORIGINS?.split(',') ?? []),
+            process.env.FRONTEND_URL ?? '',
+            ...defaultDevOrigins,
+        ]
+            .map((o) => o.trim())
+            .filter(Boolean),
+    ),
+)
 app.use(cors({
     origin: allowedOrigins,
 }))
