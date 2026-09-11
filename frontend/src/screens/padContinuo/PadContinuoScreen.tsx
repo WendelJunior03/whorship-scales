@@ -1,8 +1,7 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
-import { useFocusEffect } from '@react-navigation/native';
 import { Icon } from '@/components/Icon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '@/components/Header';
@@ -49,7 +48,6 @@ export function PadContinuoScreen() {
     ajustarCutoffMaster,
     loFilterMaster,
     ajustarLoFilterMaster,
-    pararTudo,
   } = usePadContinuo();
   const { liberado: camadasExtrasLiberadas, isPro } = useRecurso('pads.camadas_extras');
   const { aparencia, atualizar, restaurarPadrao } = usePadAparencia();
@@ -112,11 +110,6 @@ export function PadContinuoScreen() {
   const corDestaque = hexParaRgba(corDestaqueBase, ALPHA_DESTAQUE_MIN + aparencia.brilho * (1 - ALPHA_DESTAQUE_MIN));
   const corInativa = aparencia.corInativo ?? undefined;
 
-  const pararTudoRef = useRef(pararTudo);
-  useEffect(() => {
-    pararTudoRef.current = pararTudo;
-  }, [pararTudo]);
-
   // Mantém a tela ligada enquanto QUALQUER camada estiver ligada (evita o celular travar
   // sozinho no meio do culto). No web usa a Wake Lock API do navegador — sem suporte, é um no-op.
   const algumaCamadaLigada = Object.values(estados).some((estado) => estado.ligada);
@@ -131,12 +124,10 @@ export function PadContinuoScreen() {
     };
   }, [algumaCamadaLigada]);
 
-  // Ao sair da tela (voltar, trocar de aba, etc.) desliga qualquer camada que tenha ficado tocando.
-  useFocusEffect(
-    useCallback(() => {
-      return () => pararTudoRef.current();
-    }, []),
-  );
+  // Propositalmente NÃO para as camadas ao sair da tela (trocar de aba, abrir outra
+  // tela, etc.) — o pad continua tocando em segundo plano, permitindo usar outras
+  // partes do app (Octapad, escalas, etc.) com o pad ainda soando. Só para de tocar
+  // quando a pessoa desliga a camada manualmente (aqui ou voltando a esta tela).
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
