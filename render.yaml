@@ -1,0 +1,57 @@
+# Render Blueprint — API (backend Express).
+# Suba pelo painel do Render: New > Blueprint > aponte pro repo. O Render lê este
+# arquivo. As env vars marcadas `sync: false` você preenche no painel (segredos) —
+# NÃO ficam no git. As URLs do banco vêm do Neon.
+services:
+  - type: web
+    name: worship-stage-api
+    runtime: node
+    rootDir: backend
+    plan: free
+    branch: main
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      # --- Banco (Neon) ---
+      # DATABASE_URL: role admin (migrations/seed). APP_DATABASE_URL: role deepscales_app (app c/ RLS).
+      - key: DATABASE_URL
+        sync: false
+      - key: APP_DATABASE_URL
+        sync: false
+      # --- App ---
+      - key: JWT_SECRET
+        generateValue: true
+      - key: APP_ENC_KEY
+        generateValue: true
+      # URL do front em prod (Vercel) — usada em e-mails e liberada no CORS.
+      - key: FRONTEND_URL
+        sync: false
+      # Origens extras do CORS (lista separada por vírgula), se houver domínio próprio.
+      - key: CORS_ORIGINS
+        sync: false
+      # --- Integrações (preencha as que usar) ---
+      - key: RESEND_API_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      # --- Billing (Stripe) ---
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_PRO_MENSAL
+        sync: false
+      - key: STRIPE_PRICE_PRO_ANUAL
+        sync: false
+      - key: BILLING_SUCCESS_URL
+        sync: false
+      - key: BILLING_CANCEL_URL
+        sync: false
+      # --- Metadados de música (opcional) ---
+      - key: GETSONGBPM_API_KEY
+        sync: false
