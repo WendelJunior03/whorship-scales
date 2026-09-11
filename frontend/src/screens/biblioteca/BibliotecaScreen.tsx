@@ -159,8 +159,10 @@ export function BibliotecaScreen() {
       if (meta.tom && !c.tom) setTom(meta.tom);
       if (meta.bpm && !c.bpm) setBpm(String(meta.bpm));
       if (meta.capaUrl && !c.capaUrl) setCapaUrl(meta.capaUrl);
+      if (meta.linkSpotify && !audio.trim()) setAudio(meta.linkSpotify);
+      if (meta.linkCifraClub && !cifra.trim()) setCifra(meta.linkCifraClub);
     } catch {
-      // tom/BPM são só um extra — não interrompem o preenchimento se falhar.
+      // tom/BPM/links são só um extra — não interrompem o preenchimento se falhar.
     }
   }
 
@@ -180,6 +182,8 @@ export function BibliotecaScreen() {
       if (meta.tom && !tom.trim()) setTom(meta.tom);
       if (meta.bpm && !bpm.trim()) setBpm(String(meta.bpm));
       if (meta.capaUrl) setCapaUrl(meta.capaUrl);
+      if (meta.linkSpotify && !audio.trim()) setAudio(meta.linkSpotify);
+      if (meta.linkCifraClub && !cifra.trim()) setCifra(meta.linkCifraClub);
     } catch {
       setErroBusca('Não foi possível buscar agora.');
     } finally {
@@ -230,9 +234,10 @@ export function BibliotecaScreen() {
     }
   }
 
+  // Exclui direto, sem confirmação — decisão do dono do projeto.
   function removerMusica(musica: Musica) {
     confirmAction(
-      { title: 'Excluir música', message: `Excluir "${musica.nome}" da biblioteca?`, confirmLabel: 'Excluir', destructive: true },
+      { title: 'Excluir música', message: `Deseja realmente excluir "${musica.nome}" da biblioteca?`, confirmLabel: 'Excluir', destructive: true },
       async () => {
         try {
           await musicasService.apagarMusica(musica.id);

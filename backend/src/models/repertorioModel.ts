@@ -1,6 +1,6 @@
 import { query } from "../config/database";
 
-export async function createRepertorio(cultoId: number, nome: string, tom: string, linkMusica: string, musicaId: number | null) {
+export async function createRepertorio(cultoId: number, nome: string, tom: string, linkMusica: string | null, musicaId: number | null) {
     const result = await query(
         'INSERT INTO repertorio (culto_id, nome, tom, link_musica, musica_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
         [cultoId, nome, tom, linkMusica, musicaId],

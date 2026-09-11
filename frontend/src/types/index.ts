@@ -198,7 +198,8 @@ export interface Repertorio {
   culto_id: number;
   nome: string;
   tom: string;
-  link_musica: string;
+  /** Opcional — sem link, a Biblioteca (via musica_id) ainda pode ter áudio/cifra sugeridos sozinha. */
+  link_musica: string | null;
   /** Vínculo com a Biblioteca (auto: acha por nome ou cria) — null em linhas antigas. */
   musica_id: number | null;
   /** Capa da música vinculada (JOIN em musicas) — null se não tiver vínculo/capa. */

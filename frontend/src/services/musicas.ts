@@ -16,6 +16,8 @@ export interface MetadadosMusica {
   capaUrl: string | null;
   tom: string | null;
   bpm: number | null;
+  linkSpotify: string | null;
+  linkCifraClub: string | null;
 }
 
 export interface CandidatoMusica {
